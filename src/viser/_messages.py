@@ -1542,7 +1542,7 @@ class ThemeConfigurationMessage(Message):
 
     titlebar_content: Optional[theme.TitlebarConfig]
     control_layout: Literal["floating", "collapsible", "fixed"]
-    control_width: Literal["small", "medium", "large"]
+    control_width: str
     show_logo: bool
     show_share_button: bool
     dark_mode: bool

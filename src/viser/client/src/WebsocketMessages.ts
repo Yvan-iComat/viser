@@ -1404,7 +1404,7 @@ export interface ThemeConfigurationMessage {
     } | null;
   } | null;
   control_layout: "floating" | "collapsible" | "fixed";
-  control_width: "small" | "medium" | "large";
+  control_width: string;
   show_logo: boolean;
   show_share_button: boolean;
   dark_mode: boolean;
