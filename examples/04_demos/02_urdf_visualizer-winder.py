@@ -22,7 +22,6 @@ from typing import Literal
 
 import numpy as np
 import tyro
-from robot_descriptions.loaders.yourdfpy import load_robot_description
 
 import viser
 from viser.extras import ViserUrdf

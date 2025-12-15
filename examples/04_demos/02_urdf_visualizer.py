@@ -76,8 +76,10 @@ def main(
     load_meshes: bool = True,
     load_collision_meshes: bool = False,
 ) -> None:
+    
     # Start viser server.
     server = viser.ViserServer()
+    server.gui.configure_theme(dark_mode=False,control_width="large")
 
     # Load URDF.
     #
