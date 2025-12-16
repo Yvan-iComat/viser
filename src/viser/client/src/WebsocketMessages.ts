@@ -477,7 +477,7 @@ export interface GuiButtonGroupMessage {
   container_uuid: string;
   props: {'order': number, 'label': string, 'hint': (string | null), 'visible': boolean, 'disabled': boolean, 'options': string[]};
 }
-/** Table data GUI element with editable cells and row selection.
+/** GuiTableDataMessage(uuid: 'str', value: 'Tuple[Tuple[Union[str, float, int], ...], ...]', container_uuid: 'str', props: 'GuiTableDataProps')
  *
  * (automatically generated)
  */
@@ -757,7 +757,7 @@ export interface SceneNodeClickMessage {
 export interface ResetGuiMessage {
   type: "ResetGuiMessage";
 }
-/** GuiModalMessage(order: 'float', uuid: 'str', title: 'str')
+/** GuiModalMessage(order: 'float', uuid: 'str', title: 'str', size: "Literal['xs', 'sm', 'md', 'lg', 'xl'] | str")
  *
  * (automatically generated)
  */
@@ -766,6 +766,7 @@ export interface GuiModalMessage {
   order: number;
   uuid: string;
   title: string;
+  size: ('xs' | 'sm' | 'md' | 'lg' | 'xl' | string);
 }
 /** GuiCloseModalMessage(uuid: 'str')
  *
@@ -817,7 +818,7 @@ export interface ThemeConfigurationMessage {
   type: "ThemeConfigurationMessage";
   titlebar_content: ({'buttons': ({'text': (string | null), 'icon': ('GitHub' | 'Description' | 'Keyboard' | null), 'href': (string | null)}[] | null), 'image': ({'image_url_light': string, 'image_url_dark': (string | null), 'image_alt': string, 'href': (string | null)} | null)} | null);
   control_layout: 'floating' | 'collapsible' | 'fixed';
-  control_width: string;
+  control_width: ('small' | 'medium' | 'large' | string);
   show_logo: boolean;
   show_share_button: boolean;
   dark_mode: boolean;

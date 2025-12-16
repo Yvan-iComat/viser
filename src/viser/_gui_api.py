@@ -593,6 +593,7 @@ class GuiApi:
         self,
         title: str,
         *,
+        size: Literal["xs", "sm", "md", "lg", "xl"] | int | float | str = "md",
         order: float | None = None,
     ) -> GuiModalHandle:
         """Show a modal window, which can be useful for popups and messages, then return
@@ -600,6 +601,8 @@ class GuiApi:
 
         Args:
             title: Title to display on the modal.
+            size: Size of the modal. Can be a preset ("xs", "sm", "md", "lg", "xl"),
+                a pixel value (int/float), or a custom string like "80%". Defaults to "md".
             order: Optional ordering, smallest values will be displayed first.
 
         Returns:
@@ -607,11 +610,20 @@ class GuiApi:
         """
         modal_container_id = _make_uuid()
         order = _apply_default_order(order)
+
+        # Convert numeric size to pixel string
+        size_str: str
+        if isinstance(size, (int, float)):
+            size_str = f"{size}px"
+        else:
+            size_str = size
+
         self._websock_interface.queue_message(
             _messages.GuiModalMessage(
                 order=order,
                 uuid=modal_container_id,
                 title=title,
+                size=size_str,
             )
         )
         return GuiModalHandle(

@@ -1278,6 +1278,7 @@ class GuiModalMessage(Message):
     order: float
     uuid: str
     title: str
+    size: Literal["xs", "sm", "md", "lg", "xl"] | str
 
     @override
     def redundancy_key(self) -> str:
