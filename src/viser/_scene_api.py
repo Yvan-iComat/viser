@@ -625,7 +625,7 @@ class SceneApi:
         visible: bool = True,
         cast_shadow: bool = True,
         receive_shadow: bool | float = True,
-        smooth_shading: bool = True,
+        smooth_shading: bool = False,
     ) -> GlbHandle:
         """Add a general 3D asset via binary glTF (GLB).
 
@@ -1484,7 +1484,7 @@ class SceneApi:
         opacity: float | None = None,
         material: Literal["standard", "toon3", "toon5"] = "standard",
         flat_shading: bool = False,
-        smooth_shading: bool = True,
+        smooth_shading: bool = False,
         side: Literal["front", "back", "double"] = "front",
         cast_shadow: bool = True,
         receive_shadow: bool | float = True,
@@ -1564,7 +1564,7 @@ class SceneApi:
         visible: bool = True,
         cast_shadow: bool = True,
         receive_shadow: bool | float = True,
-        smooth_shading: bool = True,
+        smooth_shading: bool = False,
     ) -> GlbHandle:
         """Add a trimesh mesh to the scene. Internally calls `self.add_glb()`.
 
@@ -1792,7 +1792,7 @@ class SceneApi:
         lod: Literal["auto", "off"] | tuple[tuple[float, float], ...] = "auto",
         cast_shadow: bool = True,
         receive_shadow: bool = True,
-        smooth_shading: bool = True,
+        smooth_shading: bool = False,
         wxyz: tuple[float, float, float, float] | np.ndarray = (1.0, 0.0, 0.0, 0.0),
         position: tuple[float, float, float] | np.ndarray = (0.0, 0.0, 0.0),
         visible: bool = True,

@@ -297,7 +297,7 @@ class ViserUrdf:
 
         # Add the URDF's meshes/geometry to viser.
         index_mesh = 0
-        smooth_shading = True
+        smooth_shading = False
 
         for link_name, mesh in scene.geometry.items():
 
@@ -345,7 +345,7 @@ class ViserUrdf:
                         mesh.faces,
                         color=mesh_color_override[:3],
                         opacity=mesh_color_override[3],
-                        smooth_shading=True,
+                        smooth_shading=False,
                     )
                 )
             else:
