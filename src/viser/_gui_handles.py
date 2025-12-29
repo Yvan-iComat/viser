@@ -36,6 +36,7 @@ from ._messages import (
     GuiCloseModalMessage,
     GuiDropdownProps,
     GuiFolderProps,
+    GuiFolderSelectButtonProps,
     GuiHtmlProps,
     GuiImageProps,
     GuiMarkdownProps,
@@ -443,6 +444,46 @@ class GuiUploadButtonHandle(_GuiInputHandle[UploadedFile], GuiUploadButtonProps)
         self: TGuiHandle, func: Callable[[GuiEvent[TGuiHandle]], NoneOrCoroutine]
     ) -> Callable[[GuiEvent[TGuiHandle]], NoneOrCoroutine]:
         """Attach a function to call when a file is uploaded.
+
+        Note:
+        - If `func` is a regular function (defined with `def`), it will be executed in a thread pool.
+        - If `func` is an async function (defined with `async def`), it will be executed in the event loop.
+
+        Using async functions can be useful for reducing race conditions.
+        """
+        self._impl.update_cb.append(func)
+        return func
+
+
+class GuiFolderSelectButtonHandle(_GuiInputHandle[str], GuiFolderSelectButtonProps):
+    """Handle for a folder select button in our visualizer.
+
+    The `.value` attribute will be updated with the absolute path of the selected folder.
+
+    .. attribute:: value
+       :type: str
+
+       Value of the input. Contains the absolute path of the selected folder.
+    """
+
+    def __init__(self, _impl: _GuiHandleState[str], _icon: IconName | None):
+        super().__init__(impl=_impl)
+        self._icon = _icon
+
+    @property
+    def icon(self) -> IconName | None:
+        """Icon to display on the folder select button. When set to None, no icon is displayed."""
+        return self._icon
+
+    @icon.setter
+    def icon(self, icon: IconName | None) -> None:
+        self._icon = icon
+        self._icon_html = None if icon is None else svg_from_icon(icon)
+
+    def on_select(
+        self: TGuiHandle, func: Callable[[GuiEvent[TGuiHandle]], NoneOrCoroutine]
+    ) -> Callable[[GuiEvent[TGuiHandle]], NoneOrCoroutine]:
+        """Attach a function to call when a folder is selected.
 
         Note:
         - If `func` is a regular function (defined with `def`), it will be executed in a thread pool.

@@ -1367,6 +1367,20 @@ class GuiUploadButtonMessage(_CreateGuiComponentMessage):
 
 
 @dataclasses.dataclass
+class GuiFolderSelectButtonProps(GuiBaseProps):
+    color: Union[LiteralColor, Tuple[int, int, int], None]
+    """Color of the folder select button."""
+    _icon_html: Optional[str]
+    """(Private) HTML string for the icon to be displayed on the folder select button."""
+
+
+@dataclasses.dataclass
+class GuiFolderSelectButtonMessage(_CreateGuiComponentMessage):
+    container_uuid: str
+    props: GuiFolderSelectButtonProps
+
+
+@dataclasses.dataclass
 class GuiSliderProps(GuiBaseProps):
     min: float
     """Minimum value for the slider."""
@@ -1809,6 +1823,14 @@ class FileTransferPartAck(Message):
             + "-"
             + str(self.transferred_bytes)
         )
+
+
+@dataclasses.dataclass
+class FolderSelectMessage(Message):
+    """Message from client->server carrying the selected folder path."""
+
+    source_component_uuid: str
+    folder_path: str
 
 
 @dataclasses.dataclass

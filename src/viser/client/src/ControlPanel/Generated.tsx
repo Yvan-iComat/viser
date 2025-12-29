@@ -23,6 +23,7 @@ import TabGroupComponent from "../components/TabGroup";
 import FolderComponent from "../components/Folder";
 import MultiSliderComponent from "../components/MultiSlider";
 import UploadButtonComponent from "../components/UploadButton";
+import FolderSelectButtonComponent from "../components/FolderSelectButton";
 import ProgressBarComponent from "../components/ProgressBar";
 import ImageComponent from "../components/Image";
 import HtmlComponent from "../components/Html";
@@ -138,6 +139,8 @@ function GeneratedInput(props: {
       return <ButtonComponent {...conf} />;
     case "GuiUploadButtonMessage":
       return <UploadButtonComponent {...conf} />;
+    case "GuiFolderSelectButtonMessage":
+      return <FolderSelectButtonComponent {...conf} />;
     case "GuiSliderMessage":
       return <SliderComponent {...conf} />;
     case "GuiMultiSliderMessage":

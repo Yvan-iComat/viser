@@ -57,6 +57,7 @@ from ._gui_handles import (
     GuiTableDataHandle,
     GuiTextHandle,
     GuiUploadButtonHandle,
+    GuiFolderSelectButtonHandle,
     GuiUplotHandle,
     GuiVector2Handle,
     GuiVector3Handle,
@@ -228,6 +229,10 @@ class GuiApi:
         self._websock_interface.register_handler(
             _messages.FileTransferPart,
             self._handle_file_transfer_part,
+        )
+        self._websock_interface.register_handler(
+            _messages.FolderSelectMessage,
+            self._handle_folder_select,
         )
 
     async def _handle_gui_updates(
@@ -413,6 +418,44 @@ class GuiApi:
 
         # Update state.
         handle_state.value = value
+        handle_state.update_timestamp = time.time()
+
+        # Trigger callbacks.
+        for cb in handle_state.update_cb:
+            from ._viser import ClientHandle, ViserServer
+
+            # Get the handle of the client that triggered this event.
+            if isinstance(self._owner, ClientHandle):
+                client = self._owner
+            elif isinstance(self._owner, ViserServer):
+                client = self._owner._connected_clients.get(client_id, None)
+                if client is None:
+                    return
+            else:
+                assert False
+
+            if asyncio.iscoroutinefunction(cb):
+                self._event_loop.create_task(cb(GuiEvent(client, client_id, handle)))
+            else:
+                self._thread_executor.submit(
+                    cb, GuiEvent(client, client_id, handle)
+                ).add_done_callback(print_threadpool_errors)
+
+    def _handle_folder_select(
+        self, client_id: ClientId, message: _messages.FolderSelectMessage
+    ) -> None:
+        if message.source_component_uuid not in self._gui_input_handle_from_uuid:
+            return
+        handle = self._gui_input_handle_from_uuid.get(
+            message.source_component_uuid, None
+        )
+        if handle is None:
+            return
+
+        handle_state = handle._impl
+
+        # Update state.
+        handle_state.value = message.folder_path
         handle_state.update_timestamp = time.time()
 
         # Trigger callbacks.
@@ -1129,6 +1172,77 @@ class GuiApi:
                         hint=hint,
                         color=color,
                         mime_type=mime_type,
+                        _icon_html=None if icon is None else svg_from_icon(icon),
+                    ),
+                ),
+                is_button=True,
+            ),
+            _icon=icon,
+        )
+
+    @deprecated_positional_shim
+    def add_folder_select_button(
+        self,
+        label: str,
+        *,
+        disabled: bool = False,
+        visible: bool = True,
+        hint: str | None = None,
+        color: LiteralColor | tuple[int, int, int] | None = None,
+        icon: IconName | None = None,
+        order: float | None = None,
+    ) -> GuiFolderSelectButtonHandle:
+        """Add a button to the GUI for selecting a folder.
+
+        **Path Information:**
+        - **Chrome/Edge 86+:** Uses File System Access API for better path information
+        - **Other browsers:** Falls back to folder name only due to security restrictions
+
+        **For Absolute Paths:** See `FOLDER_SELECTION_GUIDE.md` for solutions:
+        1. File System Access API (already implemented, works in Chrome/Edge)
+        2. Server-side file browser (guaranteed absolute paths, all browsers)
+        3. Manual path input (simple fallback)
+        4. Electron/Tauri (desktop apps with full file system access)
+
+        Example::
+
+            folder_button = server.gui.add_folder_select_button("Select Folder")
+
+            @folder_button.on_select
+            def handle_folder(event):
+                folder_path = event.target.value
+                print(f"Selected: {folder_path}")
+
+        Args:
+            label: Label to display on the button.
+            visible: Whether the button is visible.
+            disabled: Whether the button is disabled.
+            hint: Optional hint to display on hover.
+            color: Optional color to use for the button.
+            icon: Optional icon to display on the button.
+            order: Optional ordering, smallest values will be displayed first.
+
+        Returns:
+            A handle that can be used to interact with the GUI element.
+            The `.value` will contain folder path information (varies by browser).
+        """
+
+        # Re-wrap the GUI handle with a button interface.
+        uuid = _make_uuid()
+        order = _apply_default_order(order)
+        return GuiFolderSelectButtonHandle(
+            self._create_gui_input(
+                value="",
+                message=_messages.GuiFolderSelectButtonMessage(
+                    uuid=uuid,
+                    container_uuid=self._get_container_uuid(),
+                    props=_messages.GuiFolderSelectButtonProps(
+                        disabled=disabled,
+                        visible=visible,
+                        order=order,
+                        label=label,
+                        hint=hint,
+                        color=color,
                         _icon_html=None if icon is None else svg_from_icon(icon),
                     ),
                 ),

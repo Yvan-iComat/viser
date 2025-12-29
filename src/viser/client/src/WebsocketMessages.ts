@@ -356,6 +356,16 @@ export interface GuiUploadButtonMessage {
   container_uuid: string;
   props: {'order': number, 'label': string, 'hint': (string | null), 'visible': boolean, 'disabled': boolean, 'color': ('dark' | 'gray' | 'red' | 'pink' | 'grape' | 'violet' | 'indigo' | 'blue' | 'cyan' | 'green' | 'lime' | 'yellow' | 'orange' | 'teal' | [number, number, number] | null), '_icon_html': (string | null), 'mime_type': string};
 }
+/** GuiFolderSelectButtonMessage(uuid: 'str', container_uuid: 'str', props: 'GuiFolderSelectButtonProps')
+ *
+ * (automatically generated)
+ */
+export interface GuiFolderSelectButtonMessage {
+  type: "GuiFolderSelectButtonMessage";
+  uuid: string;
+  container_uuid: string;
+  props: {'order': number, 'label': string, 'hint': (string | null), 'visible': boolean, 'disabled': boolean, 'color': ('dark' | 'gray' | 'red' | 'pink' | 'grape' | 'violet' | 'indigo' | 'blue' | 'cyan' | 'green' | 'lime' | 'yellow' | 'orange' | 'teal' | [number, number, number] | null), '_icon_html': (string | null)};
+}
 /** GuiSliderMessage(uuid: 'str', value: 'float', container_uuid: 'str', props: 'GuiSliderProps')
  *
  * (automatically generated)
@@ -757,7 +767,7 @@ export interface SceneNodeClickMessage {
 export interface ResetGuiMessage {
   type: "ResetGuiMessage";
 }
-/** GuiModalMessage(order: 'float', uuid: 'str', title: 'str', size: "Literal['xs', 'sm', 'md', 'lg', 'xl'] | str")
+/** GuiModalMessage(order: 'float', uuid: 'str', title: 'str')
  *
  * (automatically generated)
  */
@@ -766,7 +776,6 @@ export interface GuiModalMessage {
   order: number;
   uuid: string;
   title: string;
-  size: ('xs' | 'sm' | 'md' | 'lg' | 'xl' | string);
 }
 /** GuiCloseModalMessage(uuid: 'str')
  *
@@ -901,6 +910,15 @@ export interface FileTransferPartAck {
   transferred_bytes: number;
   total_bytes: number;
 }
+/** Message from client->server carrying the selected folder path.
+ *
+ * (automatically generated)
+ */
+export interface FolderSelectMessage {
+  type: "FolderSelectMessage";
+  source_component_uuid: string;
+  folder_path: string;
+}
 /** Message from client->server to connect to the share URL server.
  *
  * (automatically generated)
@@ -970,6 +988,7 @@ export type Message =
   | GuiTabGroupMessage
   | GuiButtonMessage
   | GuiUploadButtonMessage
+  | GuiFolderSelectButtonMessage
   | GuiSliderMessage
   | GuiMultiSliderMessage
   | GuiNumberMessage
@@ -1022,6 +1041,7 @@ export type Message =
   | FileTransferStartDownload
   | FileTransferPart
   | FileTransferPartAck
+  | FolderSelectMessage
   | ShareUrlRequest
   | ShareUrlUpdated
   | ShareUrlDisconnect
@@ -1064,6 +1084,7 @@ export type GuiComponentMessage =
   | GuiTabGroupMessage
   | GuiButtonMessage
   | GuiUploadButtonMessage
+  | GuiFolderSelectButtonMessage
   | GuiSliderMessage
   | GuiMultiSliderMessage
   | GuiNumberMessage
@@ -1079,6 +1100,6 @@ export type GuiComponentMessage =
 const typeSetSceneNodeMessage = new Set(['CameraFrustumMessage', 'GlbMessage', 'FrameMessage', 'BatchedAxesMessage', 'GridMessage', 'LabelMessage', 'Gui3DMessage', 'PointCloudMessage', 'DirectionalLightMessage', 'AmbientLightMessage', 'HemisphereLightMessage', 'PointLightMessage', 'RectAreaLightMessage', 'SpotLightMessage', 'MeshMessage', 'BoxMessage', 'IcosphereMessage', 'SkinnedMeshMessage', 'BatchedMeshesMessage', 'BatchedGlbMessage', 'TransformControlsMessage', 'ImageMessage', 'LineSegmentsMessage', 'CatmullRomSplineMessage', 'CubicBezierSplineMessage', 'GaussianSplatsMessage']);export function isSceneNodeMessage(message: Message): message is SceneNodeMessage {
     return typeSetSceneNodeMessage.has(message.type);
 }
-const typeSetGuiComponentMessage = new Set(['GuiFolderMessage', 'GuiMarkdownMessage', 'GuiHtmlMessage', 'GuiProgressBarMessage', 'GuiPlotlyMessage', 'GuiUplotMessage', 'GuiImageMessage', 'GuiTabGroupMessage', 'GuiButtonMessage', 'GuiUploadButtonMessage', 'GuiSliderMessage', 'GuiMultiSliderMessage', 'GuiNumberMessage', 'GuiRgbMessage', 'GuiRgbaMessage', 'GuiCheckboxMessage', 'GuiVector2Message', 'GuiVector3Message', 'GuiTextMessage', 'GuiDropdownMessage', 'GuiButtonGroupMessage', 'GuiTableDataMessage']);export function isGuiComponentMessage(message: Message): message is GuiComponentMessage {
+const typeSetGuiComponentMessage = new Set(['GuiFolderMessage', 'GuiMarkdownMessage', 'GuiHtmlMessage', 'GuiProgressBarMessage', 'GuiPlotlyMessage', 'GuiUplotMessage', 'GuiImageMessage', 'GuiTabGroupMessage', 'GuiButtonMessage', 'GuiUploadButtonMessage', 'GuiFolderSelectButtonMessage', 'GuiSliderMessage', 'GuiMultiSliderMessage', 'GuiNumberMessage', 'GuiRgbMessage', 'GuiRgbaMessage', 'GuiCheckboxMessage', 'GuiVector2Message', 'GuiVector3Message', 'GuiTextMessage', 'GuiDropdownMessage', 'GuiButtonGroupMessage', 'GuiTableDataMessage']);export function isGuiComponentMessage(message: Message): message is GuiComponentMessage {
     return typeSetGuiComponentMessage.has(message.type);
 }
