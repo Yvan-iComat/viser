@@ -1301,9 +1301,9 @@ class GuiApi:
     @deprecated_positional_shim
     def add_table_data(
         self,
-        label: str,
-        columns: Sequence[str] | Sequence[tuple[str, Literal["string", "number"], bool]],
+        label: str | None = None,
         *,
+        columns: Sequence[str] | Sequence[tuple[str, Literal["string", "number"], bool]],
         initial_rows: Sequence[Sequence[str | float | int]] | None = None,
         selection_mode: Literal["none", "single"] = "none",
         disabled: bool = False,
@@ -1314,7 +1314,7 @@ class GuiApi:
         """Add an editable data table to the GUI.
 
         Args:
-            label: Label to display above the table.
+            label: Optional label to display above the table. If None, table will dock to the left.
             columns: Column definitions. Can be either:
                 - List of strings (column titles, all editable string columns)
                 - List of tuples (title, cell_type, editable) for full control

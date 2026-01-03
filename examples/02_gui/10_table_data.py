@@ -37,6 +37,7 @@ with server.gui.add_folder("Table Controls"):
     clear_button = server.gui.add_button("Clear All Rows")
     delete_last_button = server.gui.add_button("Delete Last Row")
     update_cell_button = server.gui.add_button("Update Cell (0,2)")
+    show_modal_button = server.gui.add_button("Show Large Table in Modal")
 
 # Display current selection
 selection_text = server.gui.add_text(
@@ -89,6 +90,33 @@ def _(_):
         print(f"Updated cell (0,2) to {new_value}")
     else:
         print("Table is empty, nothing to update")
+
+
+@show_modal_button.on_click
+def _(_):
+    """Show a modal window with a large table."""
+    modal = server.gui.add_modal("Large Data Table", size="100%")
+    
+    with modal:
+        large_table = server.gui.add_table_data(
+            label=None,
+            columns=[
+                f"Column {i+1}" for i in range(10)
+            ],
+            initial_rows=[
+                tuple(f"Cell {row+1},{col+1}" for col in range(10))
+                for row in range(5)
+            ],
+            hint="This is a large table with 10 columns and 5 rows",
+        )
+        
+        close_button = server.gui.add_button("Close")
+        
+        @close_button.on_click
+        def _(_):
+            modal.close()
+    
+    print("Modal with large table opened")
 
 
 @table.on_select_row
