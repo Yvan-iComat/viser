@@ -1,6 +1,6 @@
 import React from "react";
 import * as THREE from "three";
-import { SceneNodeMessage } from "./WebsocketMessages";
+import { SceneNodeMessage, ToolbarButton } from "./WebsocketMessages";
 import { create, StoreApi, UseBoundStore } from "zustand";
 
 export type SceneNode = {
@@ -16,9 +16,17 @@ export type SceneNode = {
   effectiveVisibility?: boolean; // Computed visibility including parent chain.
 };
 
+export type ToolbarConfig = {
+  visible: boolean;
+  buttons: ToolbarButton[];
+};
+
 export type SceneTreeState = {
   // Scene graph structure: nodes are stored flat at the root level.
   [name: string]: SceneNode | undefined;
+} & {
+  // Toolbar configuration (special property, not a scene node)
+  toolbarConfig?: ToolbarConfig;
 };
 
 // Pre-defined scene nodes.
@@ -254,6 +262,12 @@ function createSceneTreeActions(
       }
       updateChildren(name, effective);
       store.setState(updates);
+    },
+
+    setToolbarConfig: (config: ToolbarConfig) => {
+      store.setState({
+        toolbarConfig: config,
+      } as SceneTreeState);
     },
   };
 

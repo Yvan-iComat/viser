@@ -246,6 +246,23 @@ export interface GaussianSplatsMessage {
   name: string;
   props: {'buffer': Uint8Array<ArrayBuffer>};
 }
+/** Message from client->server when a toolbar action is triggered.
+ *
+ * (automatically generated)
+ */
+export interface ToolbarActionMessage {
+  type: "ToolbarActionMessage";
+  action: 'reframe_view' | 'zoom' | 'perspective_view' | 'snapshot';
+}
+/** Configure the horizontal toolbar at the top of the 3D view.
+ *
+ * (automatically generated)
+ */
+export interface ToolbarConfigMessage {
+  type: "ToolbarConfigMessage";
+  visible: boolean;
+  buttons: {'action': string, 'icon': string, 'tooltip': string}[];
+}
 /** Remove a particular node from the scene.
  *
  * (automatically generated)
@@ -767,7 +784,7 @@ export interface SceneNodeClickMessage {
 export interface ResetGuiMessage {
   type: "ResetGuiMessage";
 }
-/** GuiModalMessage(order: 'float', uuid: 'str', title: 'str')
+/** GuiModalMessage(order: 'float', uuid: 'str', title: 'str', size: "Literal['xs', 'sm', 'md', 'lg', 'xl'] | str")
  *
  * (automatically generated)
  */
@@ -776,6 +793,7 @@ export interface GuiModalMessage {
   order: number;
   uuid: string;
   title: string;
+  size: ('xs' | 'sm' | 'md' | 'lg' | 'xl' | string);
 }
 /** GuiCloseModalMessage(uuid: 'str')
  *
@@ -977,6 +995,8 @@ export type Message =
   | CatmullRomSplineMessage
   | CubicBezierSplineMessage
   | GaussianSplatsMessage
+  | ToolbarActionMessage
+  | ToolbarConfigMessage
   | RemoveSceneNodeMessage
   | GuiFolderMessage
   | GuiMarkdownMessage
@@ -1103,3 +1123,6 @@ const typeSetSceneNodeMessage = new Set(['CameraFrustumMessage', 'GlbMessage', '
 const typeSetGuiComponentMessage = new Set(['GuiFolderMessage', 'GuiMarkdownMessage', 'GuiHtmlMessage', 'GuiProgressBarMessage', 'GuiPlotlyMessage', 'GuiUplotMessage', 'GuiImageMessage', 'GuiTabGroupMessage', 'GuiButtonMessage', 'GuiUploadButtonMessage', 'GuiFolderSelectButtonMessage', 'GuiSliderMessage', 'GuiMultiSliderMessage', 'GuiNumberMessage', 'GuiRgbMessage', 'GuiRgbaMessage', 'GuiCheckboxMessage', 'GuiVector2Message', 'GuiVector3Message', 'GuiTextMessage', 'GuiDropdownMessage', 'GuiButtonGroupMessage', 'GuiTableDataMessage']);export function isGuiComponentMessage(message: Message): message is GuiComponentMessage {
     return typeSetGuiComponentMessage.has(message.type);
 }
+
+// Export ToolbarButton type for convenience
+export type ToolbarButton = {'action': string, 'icon': string, 'tooltip': string};

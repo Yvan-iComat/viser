@@ -35,6 +35,7 @@ import { useGuiState } from "./ControlPanel/GuiState";
 import { searchParamKey } from "./SearchParamsUtils";
 import { WebsocketMessageProducer } from "./WebsocketInterface";
 import { Titlebar } from "./Titlebar";
+import { HorizontalToolbar } from "./HorizontalToolbar";
 import { ViserModal } from "./Modal";
 import { TimelineSlider } from "./components/Timeline";
 import { useSceneTreeState } from "./SceneTreeState";
@@ -338,6 +339,7 @@ function ViewerContents({ children }: { children: React.ReactNode }) {
               })}
             >
               {canvases}
+              {messageSource === "websocket" && <HorizontalToolbar />}
               {showLogo && messageSource === "websocket" && <ViserLogo />}
             </Box>
             {messageSource === "websocket" && (

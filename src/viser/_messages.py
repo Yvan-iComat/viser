@@ -97,6 +97,27 @@ class _CreateSceneNodeMessage(Message, tag="SceneNodeMessage"):
 
 
 @dataclasses.dataclass
+class ToolbarActionMessage(Message):
+    """Message from client->server when a toolbar action is triggered."""
+    action: Literal["reframe_view", "zoom", "perspective_view", "snapshot"]
+
+
+@dataclasses.dataclass(frozen=True)
+class ToolbarButton:
+    """Configuration for a custom toolbar button."""
+    action: str  # Custom action identifier
+    icon: str  # Icon name from Tabler Icons (e.g., "IconCamera", "IconDownload")
+    tooltip: str  # Tooltip text shown on hover
+
+
+@dataclasses.dataclass
+class ToolbarConfigMessage(Message):
+    """Configure the horizontal toolbar at the top of the 3D view."""
+    visible: bool  # Whether toolbar is visible
+    buttons: Tuple[ToolbarButton, ...]  # Custom buttons to add to toolbar
+
+
+@dataclasses.dataclass
 class RemoveSceneNodeMessage(Message):
     """Remove a particular node from the scene."""
 

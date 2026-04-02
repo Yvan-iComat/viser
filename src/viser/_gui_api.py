@@ -585,6 +585,64 @@ class GuiApi:
             ),
         )
 
+    def configure_toolbar(
+        self,
+        *,
+        visible: bool = True,
+        buttons: Sequence[_messages.ToolbarButton] | None = None,
+    ) -> None:
+        """Configure the horizontal toolbar that appears at the top of the 3D view.
+
+        The toolbar allows for quick access to common actions. You can control its
+        visibility and add custom buttons with icons and tooltips.
+
+        Args:
+            visible: Whether the toolbar should be visible. Default is True.
+            buttons: Optional sequence of custom buttons to add to the toolbar.
+                Each button is defined by a ToolbarButton with:
+                - action: Custom action identifier (used in on_toolbar_action callbacks)
+                - icon: Icon name from Tabler Icons (e.g., "IconCamera", "IconDownload")
+                - tooltip: Tooltip text shown on hover
+
+        Example:
+            >>> # Hide the toolbar
+            >>> server.gui.configure_toolbar(visible=False)
+            >>>
+            >>> # Add custom buttons
+            >>> from viser._messages import ToolbarButton
+            >>> server.gui.configure_toolbar(
+            ...     visible=True,
+            ...     buttons=[
+            ...         ToolbarButton(
+            ...             action="custom_save",
+            ...             icon="IconDeviceFloppy",
+            ...             tooltip="Save scene",
+            ...         ),
+            ...         ToolbarButton(
+            ...             action="custom_export",
+            ...             icon="IconFileExport",
+            ...             tooltip="Export data",
+            ...         ),
+            ...     ],
+            ... )
+            >>>
+            >>> # Handle custom button clicks
+            >>> @server.on_client_connect
+            >>> def _(client):
+            ...     @client.on_toolbar_action
+            ...     def handle_action(action: str):
+            ...         if action == "custom_save":
+            ...             print("Saving scene...")
+            ...         elif action == "custom_export":
+            ...             print("Exporting data...")
+        """
+        self._websock_interface.queue_message(
+            _messages.ToolbarConfigMessage(
+                visible=visible,
+                buttons=tuple(buttons) if buttons is not None else (),
+            ),
+        )
+
     @deprecated_positional_shim
     def add_folder(
         self,

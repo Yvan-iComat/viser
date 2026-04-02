@@ -330,6 +330,7 @@ class ClientHandle(DeprecatedAttributeShim if not TYPE_CHECKING else object):
         # Private attributes.
         self._websock_connection = conn
         self._viser_server = server
+        self._toolbar_action_callbacks: list[Callable[[str], NoneOrCoroutine]] = []
 
         # Public attributes.
         self.scene: SceneApi = SceneApi(
@@ -344,6 +345,47 @@ class ClientHandle(DeprecatedAttributeShim if not TYPE_CHECKING else object):
         """Unique ID for this client."""
         self.camera: CameraHandle = CameraHandle(self)
         """Handle for reading from and manipulating the client's viewport camera."""
+
+        # Register handler for toolbar actions
+        async def _handle_toolbar_action(
+            client_id: int, message: _messages.ToolbarActionMessage
+        ) -> None:
+            del client_id  # Unused
+            for cb in self._toolbar_action_callbacks:
+                if asyncio.iscoroutinefunction(cb):
+                    await cb(message.action)
+                else:
+                    server._thread_executor.submit(cb, message.action).add_done_callback(
+                        print_threadpool_errors
+                    )
+
+        conn.register_handler(_messages.ToolbarActionMessage, _handle_toolbar_action)
+
+    def on_toolbar_action(
+        self, callback: Callable[[str], NoneOrCoroutine]
+    ) -> Callable[[str], NoneOrCoroutine]:
+        """Attach a callback to run when a toolbar action is triggered.
+
+        The callback will be invoked with the action name as a string argument.
+        Available actions are: "reframe_view", "zoom", "perspective_view", "snapshot".
+
+        The callback can be either a standard function or an async function:
+
+        Example:
+            ```python
+            @client.on_toolbar_action
+            def _(action: str) -> None:
+                print(f"Toolbar action: {action}")
+            ```
+
+        Args:
+            callback: Callback function to run when a toolbar action is triggered.
+
+        Returns:
+            The callback function (for decorator syntax).
+        """
+        self._toolbar_action_callbacks.append(callback)
+        return callback
 
     def flush(self) -> None:
         """Flush the outgoing message buffer. Any buffered messages will immediately be

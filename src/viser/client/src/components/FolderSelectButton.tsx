@@ -44,7 +44,7 @@ export default function FolderSelectButtonComponent({
       }
 
       // Send the folder path to the server
-      viewer.sendMessage({
+      viewer.mutable.current.sendMessage({
         type: "FolderSelectMessage",
         source_component_uuid: uuid,
         folder_path: fullPath,
@@ -70,7 +70,7 @@ export default function FolderSelectButtonComponent({
 
     const folderName = relativePath.split('/')[0];
 
-    viewer.sendMessage({
+    viewer.mutable.current.sendMessage({
       type: "FolderSelectMessage",
       source_component_uuid: uuid,
       folder_path: folderName,
@@ -96,7 +96,7 @@ export default function FolderSelectButtonComponent({
         style={{ display: "none" }}
         id={`folder_select_${uuid}`}
         name="folder"
-        webkitdirectory=""
+        {...({ webkitdirectory: "" } as any)}
         ref={folderSelectRef}
         onChange={handleLegacyFolderSelect}
       />
