@@ -1,9 +1,10 @@
 """Horizontal Toolbar Example
 
 This example demonstrates the horizontal toolbar that appears at the top-middle
-of the main 3D viewer window. The toolbar contains three action buttons:
-- Fit Model in View: Reset camera to default view with proper FOV
-- Zoom: Adjust zoom level
+of the main 3D viewer window. The default toolbar contains these action buttons:
+- Fit Model in View: Reframe the camera to fit the scene (handled client-side)
+- Zoom In / Zoom Out: Dolly the camera toward/away from the orbit target
+  (handled client-side)
 - Snapshot: Capture current view as image
 """
 
@@ -57,14 +58,12 @@ def main():
                     auto_close_seconds=2.0,
                 )
 
-            elif action == "zoom":
-                # Adjust camera FOV for zoom effect
-                current_fov = client.camera.fov
-                new_fov = 50.0 if current_fov != 50.0 else 30.0
-                client.camera.fov = new_fov
+            elif action in ("zoom_in", "zoom_out"):
+                # Zooming itself is handled client-side (camera dolly); the
+                # server is still notified so custom logic can hook in here.
                 client.add_notification(
-                    title="Zoom Adjusted",
-                    body=f"FOV set to {new_fov}°",
+                    title="Zoom In" if action == "zoom_in" else "Zoom Out",
+                    body="Camera dollied " + ("closer" if action == "zoom_in" else "farther"),
                     auto_close_seconds=2.0,
                 )
 

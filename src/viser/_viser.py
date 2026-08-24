@@ -367,7 +367,8 @@ class ClientHandle(DeprecatedAttributeShim if not TYPE_CHECKING else object):
         """Attach a callback to run when a toolbar action is triggered.
 
         The callback will be invoked with the action name as a string argument.
-        Available actions are: "reframe_view", "zoom", "perspective_view", "snapshot".
+        Available actions are: "reframe_view", "zoom_in", "zoom_out",
+        "perspective_view", "snapshot".
 
         The callback can be either a standard function or an async function:
 

@@ -1,12 +1,11 @@
 import { ActionIcon, Group, Paper, Tooltip, useMantineColorScheme } from "@mantine/core";
-import {
-  IconMaximize,
-  IconCamera,
-} from "@tabler/icons-react";
 import * as TablerIcons from "@tabler/icons-react";
 import { useContext } from "react";
 import { ViewerContext } from "./ViewerContext";
 import { ToolbarButton } from "./WebsocketMessages";
+
+/** Multiplier applied to the camera-to-target distance on each zoom step. */
+const ZOOM_FACTOR = 1.5;
 
 /**
  * Horizontal toolbar component docked at the top-middle of the main canvas.
@@ -32,6 +31,16 @@ export function HorizontalToolbar() {
       tooltip: "Fit model in view",
     },
     {
+      action: "zoom_in",
+      icon: "IconZoomIn",
+      tooltip: "Zoom in",
+    },
+    {
+      action: "zoom_out",
+      icon: "IconZoomOut",
+      tooltip: "Zoom out",
+    },
+    {
       action: "snapshot",
       icon: "IconCamera",
       tooltip: "Snapshot",
@@ -44,13 +53,19 @@ export function HorizontalToolbar() {
     : defaultButtons;
 
   const handleAction = (action: string) => {
-    // Special handling for reframe_view action
+    const cameraControls = viewer.mutable.current.cameraControl;
+
+    // Built-in camera actions, handled directly on the client.
     if (action === "reframe_view") {
-      const cameraControls = viewer.mutable.current.cameraControl;
       const scene = viewer.mutable.current.scene;
       if (cameraControls && scene) {
         cameraControls.fitToSphere(scene, true);
       }
+    } else if (action === "zoom_in" && cameraControls) {
+      // Dolly toward the orbit target; clamped by min/max distance.
+      cameraControls.dollyTo(cameraControls.distance / ZOOM_FACTOR, true);
+    } else if (action === "zoom_out" && cameraControls) {
+      cameraControls.dollyTo(cameraControls.distance * ZOOM_FACTOR, true);
     }
 
     // Send message to server for all actions

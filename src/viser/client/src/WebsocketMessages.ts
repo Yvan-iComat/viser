@@ -252,7 +252,7 @@ export interface GaussianSplatsMessage {
  */
 export interface ToolbarActionMessage {
   type: "ToolbarActionMessage";
-  action: 'reframe_view' | 'zoom' | 'perspective_view' | 'snapshot';
+  action: 'reframe_view' | 'zoom_in' | 'zoom_out' | 'perspective_view' | 'snapshot';
 }
 /** Configure the horizontal toolbar at the top of the 3D view.
  *

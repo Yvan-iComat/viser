@@ -99,7 +99,7 @@ class _CreateSceneNodeMessage(Message, tag="SceneNodeMessage"):
 @dataclasses.dataclass
 class ToolbarActionMessage(Message):
     """Message from client->server when a toolbar action is triggered."""
-    action: Literal["reframe_view", "zoom", "perspective_view", "snapshot"]
+    action: Literal["reframe_view", "zoom_in", "zoom_out", "perspective_view", "snapshot"]
 
 
 @dataclasses.dataclass(frozen=True)
