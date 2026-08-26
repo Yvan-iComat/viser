@@ -2658,6 +2658,14 @@ class SetGuiPanelLabelMessage(Message, include_in_scene_serialization=False):
 
 
 @dataclasses.dataclass
+class SetTitleMessage(Message, include_in_scene_serialization=True):
+    """Message from server->client to set the title shown in the browser tab."""
+
+    title: Optional[str]
+    """New browser tab title. If None, the default title is restored."""
+
+
+@dataclasses.dataclass
 class CommandProps:
     """Properties for a command in the command palette."""
 

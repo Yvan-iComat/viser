@@ -1057,6 +1057,14 @@ class GuiApi:
         """
         self._websock_interface.queue_message(_messages.SetGuiPanelLabelMessage(label))
 
+    def set_title(self, title: str | None) -> None:
+        """Set the title shown in the browser tab.
+
+        Args:
+            title: The new tab title. If None, the default title is restored.
+        """
+        self._websock_interface.queue_message(_messages.SetTitleMessage(title))
+
     def configure_theme(
         self,
         *,

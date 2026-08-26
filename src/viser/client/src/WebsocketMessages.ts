@@ -2132,6 +2132,14 @@ export interface SetGuiPanelLabelMessage {
   type: "SetGuiPanelLabelMessage";
   label: string | null;
 }
+/** Message from server->client to set the title shown in the browser tab.
+ *
+ * (automatically generated)
+ */
+export interface SetTitleMessage {
+  type: "SetTitleMessage";
+  title: string | null;
+}
 /** Message from server->client to register a command in the command palette.
  *
  * (automatically generated)
@@ -2395,6 +2403,7 @@ export type Message =
   | ShareUrlUpdated
   | ShareUrlDisconnect
   | SetGuiPanelLabelMessage
+  | SetTitleMessage
   | RegisterCommandMessage
   | CommandUpdateMessage
   | RemoveCommandMessage

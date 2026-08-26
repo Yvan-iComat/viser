@@ -25,6 +25,10 @@ import { ownerOf, rootNodeTemplate, SceneNode } from "./SceneTreeState";
 import { applyGuiConfigUpdate } from "./ControlPanel/GuiState";
 import { GaussianSplatsContext } from "./Splatting/GaussianSplatsHelpers";
 
+/** Title the document loaded with, restored when the server sends a null title. */
+const DEFAULT_DOCUMENT_TITLE =
+  typeof document === "undefined" ? "" : document.title;
+
 /** Swap a background-material uniform to a new texture (or null), disposing the
  * previous texture if there was one. */
 function swapBackgroundTexture(
@@ -288,6 +292,11 @@ function useMessageHandler() {
       // Set the GUI panel label.
       case "SetGuiPanelLabelMessage": {
         viewer.useGui.set({ label: message.label ?? "" });
+        return;
+      }
+      // Set the browser tab title.
+      case "SetTitleMessage": {
+        document.title = message.title ?? DEFAULT_DOCUMENT_TITLE;
         return;
       }
       // Write-only, per-axis panel placement commands. Each merges its single
