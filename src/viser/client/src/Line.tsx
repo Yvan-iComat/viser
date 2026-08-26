@@ -3,6 +3,8 @@
  * But takes typed arrays as input instead of vanilla arrays.
  */
 
+import "./r3f-extend";
+import "./patchLineMaterial";
 import * as React from "react";
 import * as THREE from "three";
 import { ColorRepresentation } from "three";
@@ -17,6 +19,7 @@ import {
 } from "three-stdlib";
 import { ForwardRefComponent } from "@react-three/drei/helpers/ts-utils";
 import type { LineSegmentsMessage } from "./WebsocketMessages";
+import { normalizeScale } from "./utils/normalizeScale";
 
 export type LineProps = {
   points: Float32Array; // length must be n * 3
@@ -29,6 +32,9 @@ export type LineProps = {
     color?: ColorRepresentation;
   };
 
+// Fringe pass objects are visual-only; the core object handles picking.
+const noopRaycast = () => undefined;
+
 export const Line: ForwardRefComponent<LineProps, Line2 | LineSegments2> =
   /* @__PURE__ */ React.forwardRef<Line2 | LineSegments2, LineProps>(
     function Line(
@@ -40,72 +46,163 @@ export const Line: ForwardRefComponent<LineProps, Line2 | LineSegments2> =
         lineWidth,
         segments,
         dashed,
+        worldUnits,
         ...rest
       },
       ref,
     ) {
       const size = useThree((state) => state.size);
-      const line2 = React.useMemo(
-        () => (segments ? new LineSegments2() : new Line2()),
-        [segments],
-      );
-      const [lineMaterial] = React.useState(() => new LineMaterial());
-      const itemSize = 3; // We're now always using RGB colors (3 components)
+      const lineRef = React.useRef<Line2 | LineSegments2>(null);
+      const matRef = React.useRef<LineMaterial>(null);
+
+      // Build a fresh geometry per change: reusing one instance and calling
+      // setPositions() in a layout effect intermittently truncates the draw
+      // on LineSegments2. See:
+      //   https://github.com/nerfstudio-project/viser/issues/719
       const lineGeom = React.useMemo(() => {
         const geom = segments ? new LineSegmentsGeometry() : new LineGeometry();
-
-        // points is already a Float32Array of [x,y,z] values
         geom.setPositions(points);
-
         if (vertexColors) {
-          // Convert Uint8Array (0-255) to Float32Array (0-1)
-          const normalizedColors = new Float32Array(vertexColors).map(
-            (c) => c / 255,
-          );
-          color = 0xffffff;
-          geom.setColors(normalizedColors, itemSize);
+          const normalizedColors = new Float32Array(vertexColors.length);
+          for (let i = 0; i < vertexColors.length; i++) {
+            normalizedColors[i] = vertexColors[i] / 255;
+          }
+          geom.setColors(normalizedColors, 3);
         }
-
         return geom;
-      }, [points, segments, vertexColors, itemSize]);
-
-      React.useLayoutEffect(() => {
-        line2.computeLineDistances();
-      }, [points, line2]);
-
-      React.useLayoutEffect(() => {
-        if (dashed) {
-          lineMaterial.defines.USE_DASH = "";
-        } else {
-          // Setting lineMaterial.defines.USE_DASH to undefined is apparently not sufficient.
-          delete lineMaterial.defines.USE_DASH;
-        }
-        lineMaterial.needsUpdate = true;
-      }, [dashed, lineMaterial]);
+      }, [points, vertexColors, segments]);
 
       React.useEffect(() => {
         return () => {
           lineGeom.dispose();
-          lineMaterial.dispose();
         };
       }, [lineGeom]);
 
-      return (
-        <primitive object={line2} ref={ref} {...rest}>
-          <primitive object={lineGeom} attach="geometry" />
-          <primitive
-            object={lineMaterial}
-            attach="material"
-            color={color}
-            vertexColors={Boolean(vertexColors)}
-            resolution={[size.width, size.height]}
-            linewidth={linewidth ?? lineWidth ?? 1}
-            dashed={dashed}
-            transparent={false} /*need to set to true if itemSize === 4*/
-            {...rest}
-          />
-        </primitive>
+      React.useLayoutEffect(() => {
+        lineRef.current?.computeLineDistances();
+      }, [lineGeom]);
+
+      // Handle dashed defines via ref (can't be expressed as a prop).
+      React.useLayoutEffect(() => {
+        const mat = matRef.current;
+        if (!mat) return;
+        if (dashed) {
+          mat.defines.USE_DASH = "";
+        } else {
+          // Setting lineMaterial.defines.USE_DASH to undefined is apparently not sufficient.
+          delete mat.defines.USE_DASH;
+        }
+        mat.needsUpdate = true;
+      }, [dashed]);
+
+      // worldUnits toggles a shader define (WORLD_UNITS); the three-stdlib
+      // setter doesn't bump the material version, so recompile explicitly.
+      React.useLayoutEffect(() => {
+        const mat = matRef.current;
+        if (!mat) return;
+        mat.worldUnits = worldUnits ?? false;
+        mat.needsUpdate = true;
+      }, [worldUnits]);
+
+      // World-unit lines get a second, alpha-blended antialiasing pass (see
+      // patchLineMaterial): the fringe material re-draws the line with a
+      // smooth edge falloff, depth-tested but not depth-written, on top of
+      // the opaque depth-anchoring core.
+      const showFringe = (worldUnits ?? false) && !(dashed ?? false);
+      // The fringe define is applied via callback ref rather than an effect
+      // keyed on showFringe: the fringe material remounts when the
+      // segments/dashed JSX branch flips while showFringe stays true, and an
+      // effect keyed on showFringe would skip the fresh material -- leaving
+      // it without VISER_LINE_FRINGE, rendered as a transparent duplicate of
+      // the core instead of the antialiasing skirt.
+      const setFringeMatRef = React.useCallback((mat: LineMaterial | null) => {
+        if (!mat) return;
+        mat.defines.VISER_LINE_FRINGE = "";
+        mat.worldUnits = true;
+        mat.needsUpdate = true;
+      }, []);
+
+      const effectiveColor = vertexColors ? 0xffffff : color;
+
+      // Merge forwarded ref with internal ref.
+      const setLineRef = React.useCallback(
+        (instance: Line2 | LineSegments2 | null) => {
+          (
+            lineRef as React.MutableRefObject<Line2 | LineSegments2 | null>
+          ).current = instance;
+          if (typeof ref === "function") ref(instance);
+          else if (ref)
+            (ref as { current: Line2 | LineSegments2 | null }).current =
+              instance;
+        },
+        [ref],
       );
+
+      // Reversed-depth and antialiasing fixes for LineMaterial are applied
+      // globally (all instances, including drei's) in patchLineMaterial.
+
+      // R3F manages lifecycle for all declarative children -- no manual disposal.
+      const materialJsx = (
+        <lineMaterial
+          ref={matRef}
+          color={effectiveColor}
+          vertexColors={Boolean(vertexColors)}
+          resolution={[size.width, size.height]}
+          linewidth={linewidth ?? lineWidth ?? 1}
+          worldUnits={worldUnits ?? false}
+          dashed={dashed ?? false}
+          transparent={false}
+          fog={true}
+        />
+      );
+
+      // The fringe object shares the core's geometry; picking goes through
+      // the core only.
+      const fringeMaterialJsx = (
+        <lineMaterial
+          ref={setFringeMatRef}
+          color={effectiveColor}
+          vertexColors={Boolean(vertexColors)}
+          resolution={[size.width, size.height]}
+          linewidth={linewidth ?? lineWidth ?? 1}
+          worldUnits={true}
+          transparent={true}
+          depthWrite={false}
+          fog={true}
+        />
+      );
+
+      if (segments) {
+        return (
+          <>
+            <lineSegments2 ref={setLineRef} {...rest}>
+              <primitive object={lineGeom} attach="geometry" />
+              {materialJsx}
+            </lineSegments2>
+            {showFringe && (
+              <lineSegments2 raycast={noopRaycast}>
+                <primitive object={lineGeom} attach="geometry" />
+                {fringeMaterialJsx}
+              </lineSegments2>
+            )}
+          </>
+        );
+      } else {
+        return (
+          <>
+            <line2 ref={setLineRef} {...rest}>
+              <primitive object={lineGeom} attach="geometry" />
+              {materialJsx}
+            </line2>
+            {showFringe && (
+              <line2 raycast={noopRaycast}>
+                <primitive object={lineGeom} attach="geometry" />
+                {fringeMaterialJsx}
+              </line2>
+            )}
+          </>
+        );
+      }
     },
   );
 
@@ -114,28 +211,9 @@ export const LineSegments = React.forwardRef<
   THREE.Group,
   LineSegmentsMessage & { children?: React.ReactNode }
 >(function LineSegments({ props, children }, ref) {
-  // Convert buffer views to typed arrays.
-  const pointsArray = React.useMemo(
-    () =>
-      new Float32Array(
-        props.points.buffer.slice(
-          props.points.byteOffset,
-          props.points.byteOffset + props.points.byteLength,
-        ),
-      ),
-    [props.points],
-  );
-
-  const colorArray = React.useMemo(
-    () =>
-      new Uint8Array(
-        props.colors.buffer.slice(
-          props.colors.byteOffset,
-          props.colors.byteOffset + props.colors.byteLength,
-        ),
-      ),
-    [props.colors],
-  );
+  // Binary arrays arrive as typed views. Use directly, zero copy.
+  const pointsArray = props.points;
+  const colorArray = props.colors;
 
   // Handle uniform color vs per-vertex colors.
   const { color, vertexColors } = React.useMemo(() => {
@@ -156,13 +234,16 @@ export const LineSegments = React.forwardRef<
 
   return (
     <group ref={ref}>
-      <Line
-        points={pointsArray}
-        lineWidth={props.line_width}
-        color={color}
-        vertexColors={vertexColors}
-        segments={true}
-      />
+      <group scale={normalizeScale(props.scale)}>
+        <Line
+          points={pointsArray}
+          lineWidth={props.thickness}
+          worldUnits={props.thickness_units === "world"}
+          color={color}
+          vertexColors={vertexColors}
+          segments={true}
+        />
+      </group>
       {children}
     </group>
   );

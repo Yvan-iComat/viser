@@ -2,11 +2,14 @@ from __future__ import annotations
 
 import asyncio
 import multiprocessing as mp
+import ssl
 import threading
 from functools import lru_cache
 from multiprocessing.managers import DictProxy
 from pathlib import Path
 from typing import Callable, Literal
+
+import rich
 
 
 @lru_cache
@@ -64,7 +67,8 @@ class ViserTunnel:
         def call_on_disconnect() -> None:
             try:
                 self._disconnect_event.wait()
-            except EOFError:
+            except (EOFError, BrokenPipeError, ConnectionResetError):
+                # Manager already gone; see wait_job in on_connect.
                 return
             callback()
 
@@ -81,7 +85,19 @@ class ViserTunnel:
         def wait_job() -> None:
             try:
                 self._connect_event.wait()
-            except EOFError:
+                # close() sets _connect_event to release this thread for
+                # tunnels that never connected (a "failed" tunnel otherwise
+                # parks it forever, pinning the mp.Manager and leaking its
+                # child process on every failed-tunnel replacement). Only a
+                # real connection runs the callback: _connect_job stores
+                # "connected" BEFORE setting the event, so this read is
+                # race-free.
+                if self._shared_state["status"] != "connected":
+                    return
+            except (EOFError, BrokenPipeError, ConnectionResetError):
+                # Manager already gone (interpreter teardown after a failed
+                # tunnel) -- the same trio close() tolerates when it sets
+                # _connect_event; the proxy read can raise any of them.
                 return
             callback(self._shared_state["max_conn_count"])
 
@@ -138,13 +154,34 @@ class ViserTunnel:
         if self._thread is not None:
             assert self._event_loop is not None
 
-            @self._event_loop.call_soon_threadsafe
-            def _() -> None:
-                assert self._close_event is not None
-                self._close_event.set()
+            try:
+
+                @self._event_loop.call_soon_threadsafe
+                def _() -> None:
+                    assert self._close_event is not None
+                    self._close_event.set()
+
+            except RuntimeError:
+                # The tunnel job already tore its loop down (a failed
+                # connection exits and closes the loop); there's nothing left
+                # to signal, but we still want the join + disconnect below.
+                pass
 
             self._thread.join()
             self._disconnect_event.set()
+
+        # Release the on_connect watcher thread. For a tunnel that never
+        # connected, _connect_event was never set, so wait_job would block
+        # forever -- keeping the mp.Manager proxies (and therefore the
+        # SyncManager child process) alive long after close(). wait_job's
+        # status guard keeps this from firing the connect callback. The
+        # process/thread teardown above already happened, so a late
+        # _connect_job can no longer flip the status to "connected".
+        try:
+            self._connect_event.set()
+        except (EOFError, BrokenPipeError, ConnectionResetError):
+            # Manager already gone; its threads died with it.
+            pass
 
 
 def _connect_job(
@@ -190,9 +227,8 @@ async def _make_tunnel(
     local_port: int,
     shared_state: DictProxy | dict,
 ) -> None:
-    share_domain = "share.viser.studio"
-
     import requests
+    import requests.exceptions
 
     try:
         response = requests.request(
@@ -211,6 +247,17 @@ async def _make_tunnel(
         raise e
 
     res = response.json()
+
+    # Require TLS for secure tunnel connections.
+    tls_port = res.get("tls_port")
+    if tls_port is None:
+        shared_state["status"] = "failed"
+        rich.print(
+            "[bold](viser)[/bold] Share server does not support encrypted connections. "
+            "Please update the server or use an older viser version."
+        )
+        return
+
     shared_state["url"] = res["url"]
     shared_state["max_conn_count"] = res["max_conn_count"]
     shared_state["status"] = "connected"
@@ -223,7 +270,7 @@ async def _make_tunnel(
                     "127.0.0.1",
                     local_port,
                     share_domain,
-                    res["port"],
+                    tls_port,
                     close_event if close_event is not None else asyncio.Event(),
                 )
             )
@@ -243,7 +290,8 @@ async def _simple_proxy(
     remote_port: int,
     close_event: asyncio.Event,
 ) -> None:
-    """Establish a connection to the tunnel server."""
+    """Establish an encrypted TLS connection to the tunnel server."""
+    ssl_context = ssl.create_default_context()
 
     async def close_writer(writer: asyncio.StreamWriter) -> None:
         """Utility for closing a writer and waiting until done, while suppressing errors
@@ -275,7 +323,9 @@ async def _simple_proxy(
         remote_w = None
         try:
             local_r, local_w = await asyncio.open_connection(local_host, local_port)
-            remote_r, remote_w = await asyncio.open_connection(remote_host, remote_port)
+            remote_r, remote_w = await asyncio.open_connection(
+                remote_host, remote_port, ssl=ssl_context
+            )
             await asyncio.wait(
                 [
                     asyncio.gather(

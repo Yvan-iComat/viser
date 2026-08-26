@@ -1,9 +1,43 @@
-import { decodeAsync, decode } from "@msgpack/msgpack";
-import { Message } from "./WebsocketMessages";
-import { decompress } from "fflate";
+import {
+  SerializedMessages,
+  deserializeEmbeddedData,
+  deserializeZstdMsgpackFile,
+} from "./PlaybackDecode";
 
-import { useCallback, useContext, useEffect, useRef, useState } from "react";
+import {
+  Dispatch,
+  SetStateAction,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { ViewerContext } from "./ViewerContext";
+import { defaultEnvironmentState } from "./EnvironmentState";
+import { isFormElement } from "./utils/isFormElement";
+import { PlaybackScenePanel } from "./PlaybackScenePanel";
+import { VISER_VERSION } from "./VersionInfo";
+import { notifications } from "@mantine/notifications";
+
+/** Toggle `paused` on spacebar, unless a form control is focused -- so typing a
+ * space in the playback time/speed inputs doesn't toggle playback. */
+function useSpacebarTogglePause(setPaused: Dispatch<SetStateAction<boolean>>) {
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.code !== "Space") return;
+      if (
+        isFormElement(event.target) ||
+        isFormElement(document.activeElement)
+      ) {
+        return;
+      }
+      setPaused((prev) => !prev);
+    }
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [setPaused]);
+}
 import {
   ActionIcon,
   NumberInput,
@@ -12,69 +46,32 @@ import {
   Select,
   Slider,
   Tooltip,
+  useComputedColorScheme,
   useMantineTheme,
 } from "@mantine/core";
 import {
+  IconBinaryTree2,
   IconPlayerPauseFilled,
   IconPlayerPlayFilled,
 } from "@tabler/icons-react";
 
-/** Download, decompress, and deserialize a file, which should be serialized
- * via msgpack and compressed via gzip. Also takes a hook for status updates. */
-async function deserializeGzippedMsgpackFile<T>(
-  fileUrl: string,
-  setStatus: (status: { downloaded: number; total: number }) => void,
-): Promise<T> {
-  const response = await fetch(fileUrl);
-  if (!response.ok) {
-    throw new Error(`Failed to fetch the file: ${response.statusText}`);
-  }
-  return new Promise<T>((resolve) => {
-    const gzipTotalLength = parseInt(response.headers.get("Content-Length")!);
-    if (typeof DecompressionStream === "undefined") {
-      // Implementation without DecompressionStream.
-      console.log("DecompressionStream is unavailable. Using fallback.");
-      setStatus({ downloaded: 0.1 * gzipTotalLength, total: gzipTotalLength });
-      response.arrayBuffer().then((buffer) => {
-        setStatus({
-          downloaded: 0.8 * gzipTotalLength,
-          total: gzipTotalLength,
-        });
-        decompress(new Uint8Array(buffer), (error, result) => {
-          setStatus({
-            downloaded: 1.0 * gzipTotalLength,
-            total: gzipTotalLength,
-          });
-          resolve(decode(result) as T);
-        });
-      });
-    } else {
-      // Stream: fetch -> gzip -> msgpack.
-      let gzipReceived = 0;
-      const progressStream = // Count number of (compressed) bytes.
-        new TransformStream({
-          transform(chunk, controller) {
-            gzipReceived += chunk.length;
-            setStatus({ downloaded: gzipReceived, total: gzipTotalLength });
-            controller.enqueue(chunk);
-          },
-        });
-      decodeAsync(
-        response
-          .body!.pipeThrough(progressStream)
-          .pipeThrough(new DecompressionStream("gzip")),
-      ).then((val) => resolve(val as T));
-    }
-  });
-}
-
-interface SerializedMessages {
-  durationSeconds: number;
-  messages: [number, Message][]; // (time in seconds, message).
-  viserVersion: string;
-}
-
-export function PlaybackFromFile({ fileUrl }: { fileUrl: string }) {
+/** Shared playback UI and timing logic for recorded scenes.
+ *
+ * The two entry points -- downloading a `.viser` file vs. decoding embedded
+ * base64 data -- differ only in how the recording is fetched, so they delegate
+ * here with a `deserialize` callback. `reloadKey` is the load effect's
+ * dependency (so embedded data reloads when the base64 payload changes). */
+function PlaybackInterface({
+  deserialize,
+  loadedLogPrefix,
+  reloadKey,
+}: {
+  deserialize: (
+    setStatus: (status: { downloaded: number; total: number }) => void,
+  ) => Promise<SerializedMessages>;
+  loadedLogPrefix: string;
+  reloadKey: unknown;
+}) {
   const viewer = useContext(ViewerContext)!;
   const viewerMutable = viewer.mutable.current; // Get mutable once
 
@@ -83,15 +80,34 @@ export function PlaybackFromFile({ fileUrl }: { fileUrl: string }) {
   const [playbackSpeed, setPlaybackSpeed] = useState("1x");
   const [paused, setPaused] = useState(false);
   const [recording, setRecording] = useState<SerializedMessages | null>(null);
+  // Scene tree panel visibility, toggled from the playback bar's scene tree
+  // button (animated recordings) or the floating corner button (static
+  // scenes); see the render below.
+  const [scenePanelOpen, setScenePanelOpen] = useState(false);
+  // Handle to the playback bar, so scene tree panel drags can't occlude it.
+  const playbackBarRef = useRef<HTMLDivElement | null>(null);
 
   // Instead of removing all of the existing scene nodes, we're just going to hide them.
   // This will prevent unnecessary remounting when messages are looped.
   function resetScene() {
-    const sceneTreeState = viewer.useSceneTree.getState();
+    // Restore the global environment (env map / fog / lights) to defaults:
+    // these are set imperatively partway through a recording and, unlike
+    // scene nodes, have no other per-loop/per-scrub reset -- so without this
+    // a mid-timeline env change "stuck" from the previous pass during the
+    // window before it was (re-)applied.
+    viewer.useEnvironment.set(defaultEnvironmentState());
+
+    const sceneTreeState = viewer.useSceneTree.getAll();
     Object.keys(sceneTreeState).forEach((key) => {
       if (key === "") return;
       const node = sceneTreeState[key];
       const nodeMessage = node?.message;
+      // Reset pose via mutable ref (no re-render).
+      viewer.mutable.current.nodePoseData[key] = {
+        wxyz: [1, 0, 0, 0],
+        position: [0, 0, 0],
+        poseUpdateState: "needsUpdate",
+      };
       if (
         nodeMessage !== undefined &&
         (nodeMessage.type !== "FrameMessage" || nodeMessage.props.show_axes)
@@ -101,14 +117,6 @@ export function PlaybackFromFile({ fileUrl }: { fileUrl: string }) {
         // will be no message to un-hide them.
         viewer.sceneTreeActions.updateNodeAttributes(key, {
           visibility: false,
-          wxyz: [1, 0, 0, 0],
-          position: [0, 0, 0],
-        });
-      } else if (node !== undefined) {
-        // Still reset poses for frames.
-        viewer.sceneTreeActions.updateNodeAttributes(key, {
-          wxyz: [1, 0, 0, 0],
-          position: [0, 0, 0],
         });
       }
     });
@@ -117,18 +125,31 @@ export function PlaybackFromFile({ fileUrl }: { fileUrl: string }) {
   const [currentTime, setCurrentTime] = useState(0.0);
 
   const theme = useMantineTheme();
+  const colorScheme = useComputedColorScheme("light");
 
   useEffect(() => {
-    deserializeGzippedMsgpackFile<SerializedMessages>(fileUrl, setStatus).then(
-      (data) => {
-        console.log(
-          "File loaded! Saved with Viser version:",
-          data.viserVersion,
-        );
-        setRecording(data);
-      },
-    );
-  }, []);
+    deserialize(setStatus).then((data) => {
+      console.log(loadedLogPrefix, data.viserVersion);
+      // Recordings aren't version-checked like live connections are, and the
+      // message format can drift between releases; warn instead of playing a
+      // mismatched file back silently wrong. (Embeds from as_html() bundle the
+      // client build that wrote them, so this only fires for .viser files.)
+      if (data.viserVersion !== VISER_VERSION) {
+        notifications.show({
+          id: "playback-version-mismatch",
+          title: "Version mismatch",
+          message:
+            `This recording was saved with Viser version ` +
+            `'${data.viserVersion}', but the viewer is version ` +
+            `'${VISER_VERSION}'. Playback may be incorrect.`,
+          color: "yellow",
+          autoClose: false,
+          withCloseButton: true,
+        });
+      }
+      setRecording(data);
+    });
+  }, [reloadKey]);
 
   const playbackMutable = useRef({ currentTime: 0.0, currentIndex: 0 });
 
@@ -153,7 +174,11 @@ export function PlaybackFromFile({ fileUrl }: { fileUrl: string }) {
       viewerMutable.messageQueue.push(message);
     }
 
-    if (mutable.currentTime >= recording.durationSeconds) {
+    // Don't loop for static scenes (durationSeconds === 0).
+    if (
+      mutable.currentTime >= recording.durationSeconds &&
+      recording.durationSeconds > 0
+    ) {
       mutable.currentIndex = 0;
       mutable.currentTime = recording.messages[0][0];
     }
@@ -171,6 +196,7 @@ export function PlaybackFromFile({ fileUrl }: { fileUrl: string }) {
         lastUpdate = now;
 
         updatePlayback();
+        // Stop playback for static scenes once all messages are processed.
         if (
           playbackMutable.current.currentIndex === recording.messages.length &&
           recording.durationSeconds === 0.0
@@ -190,17 +216,7 @@ export function PlaybackFromFile({ fileUrl }: { fileUrl: string }) {
   ]);
 
   // Pause/play with spacebar.
-  useEffect(() => {
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.code === "Space") {
-        setPaused(!paused);
-      }
-    }
-    window.addEventListener("keydown", handleKeyDown);
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [paused]); // Empty dependency array ensures this runs once on mount and cleanup on unmount
+  useSpacebarTogglePause(setPaused);
 
   const updateCurrentTime = useCallback(
     (value: number) => {
@@ -238,82 +254,161 @@ export function PlaybackFromFile({ fileUrl }: { fileUrl: string }) {
       </div>
     );
   } else {
+    const isStaticScene = recording.durationSeconds === 0.0;
     return (
-      <Paper
-        radius="xs"
-        shadow="0.1em 0 1em 0 rgba(0,0,0,0.1)"
-        style={{
-          position: "fixed",
-          bottom: "1em",
-          left: "50%",
-          transform: "translateX(-50%)",
-          width: "25em",
-          maxWidth: "95%",
-          zIndex: 1,
-          padding: "0.5em",
-          display: recording.durationSeconds === 0.0 ? "none" : "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: "0.375em",
-        }}
-      >
-        <ActionIcon
-          size="md"
-          variant="subtle"
-          onClick={() => setPaused(!paused)}
-        >
-          {paused ? (
-            <IconPlayerPlayFilled height="1.125em" width="1.125em" />
-          ) : (
-            <IconPlayerPauseFilled height="1.125em" width="1.125em" />
-          )}
-        </ActionIcon>
-        <NumberInput
-          size="xs"
-          hideControls
-          value={currentTime.toFixed(1)}
-          step={0.01}
-          styles={{
-            wrapper: {
-              width: "3.1em",
-            },
-            input: {
-              padding: "0.2em",
-              fontFamily: theme.fontFamilyMonospace,
-              textAlign: "center",
-            },
-          }}
-          onChange={(value) =>
-            updateCurrentTime(
-              typeof value === "number" ? value : parseFloat(value),
-            )
-          }
-        />
-        <Slider
-          thumbSize={0}
-          radius="xs"
-          step={1e-4}
-          style={{ flexGrow: 1 }}
-          min={0}
-          max={recording.durationSeconds}
-          value={currentTime}
-          onChange={updateCurrentTime}
-          styles={{ thumb: { display: "none" } }}
-        />
-        <Tooltip zIndex={10} label={"Playback speed"} withinPortal>
-          <Select
-            size="xs"
-            value={playbackSpeed}
-            onChange={(val) => (val === null ? null : setPlaybackSpeed(val))}
-            radius="xs"
-            data={["0.5x", "1x", "2x", "4x", "8x"]}
-            styles={{
-              wrapper: { width: "3.25em" },
-            }}
-            comboboxProps={{ zIndex: 5, width: "5.25em" }}
+      <>
+        {/* Hidden-by-default scene tree, keeping playback consistent with the
+        panel-free canvas of a live connection's defaults. The panel is
+        draggable and its visibility is owned entirely by a scene tree toggle:
+        in the playback bar for animated recordings, or -- since static scenes
+        hide the playback bar entirely -- floating in the corner (with the
+        panel opening below it). Everything here mounts only once the
+        recording is loaded, so nothing floats above the download progress
+        screen. */}
+        {scenePanelOpen && (
+          <PlaybackScenePanel
+            top={isStaticScene ? "3.75em" : undefined}
+            bottomBoundRef={playbackBarRef}
           />
-        </Tooltip>
-      </Paper>
+        )}
+        {isStaticScene && (
+          <Tooltip zIndex={10} label={"Scene tree"} withinPortal>
+            <Paper
+              radius="xs"
+              shadow="0.1em 0 1em 0 rgba(0,0,0,0.1)"
+              style={{ position: "fixed", top: "1em", right: "1em", zIndex: 1 }}
+            >
+              <ActionIcon
+                size="lg"
+                variant={scenePanelOpen ? "light" : "subtle"}
+                aria-label={`${scenePanelOpen ? "Hide" : "Show"} scene tree`}
+                onClick={() => setScenePanelOpen(!scenePanelOpen)}
+              >
+                <IconBinaryTree2 height="1.25em" width="1.25em" />
+              </ActionIcon>
+            </Paper>
+          </Tooltip>
+        )}
+        {/* Docked, full-width playback bar: a normal row at the bottom of the
+        layout column (see AppLayout's messageProducer slot), so the canvas
+        ends above it instead of being covered by a floating bar. Hidden
+        entirely for static scenes. */}
+        <Paper
+          ref={playbackBarRef}
+          radius={0}
+          style={{
+            width: "100%",
+            flexShrink: 0,
+            // Softer than --mantine-color-default-border, which reads too
+            // heavy as a full-width line.
+            borderTop: `1px solid ${
+              colorScheme === "dark"
+                ? theme.colors.dark[5]
+                : theme.colors.gray[2]
+            }`,
+            padding: "0.375em 0.625em",
+            display: recording.durationSeconds === 0.0 ? "none" : "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: "0.5em",
+          }}
+        >
+          <ActionIcon
+            size="md"
+            variant="subtle"
+            onClick={() => setPaused(!paused)}
+          >
+            {paused ? (
+              <IconPlayerPlayFilled height="1.125em" width="1.125em" />
+            ) : (
+              <IconPlayerPauseFilled height="1.125em" width="1.125em" />
+            )}
+          </ActionIcon>
+          <NumberInput
+            size="xs"
+            hideControls
+            value={currentTime.toFixed(1)}
+            step={0.01}
+            styles={{
+              wrapper: {
+                width: "3.1em",
+              },
+              input: {
+                padding: "0.2em",
+                fontFamily: theme.fontFamilyMonospace,
+                textAlign: "center",
+              },
+            }}
+            onChange={(value) => {
+              // Ignore the transient empty/NaN value while the field is
+              // cleared; committing NaN would freeze playback at NaN.
+              const t = typeof value === "number" ? value : parseFloat(value);
+              if (Number.isFinite(t)) updateCurrentTime(t);
+            }}
+          />
+          <Slider
+            thumbSize={0}
+            radius="xs"
+            step={1e-4}
+            style={{ flexGrow: 1 }}
+            min={0}
+            max={recording.durationSeconds}
+            value={currentTime}
+            onChange={updateCurrentTime}
+            styles={{ thumb: { display: "none" } }}
+          />
+          <Tooltip zIndex={10} label={"Playback speed"} withinPortal>
+            <Select
+              size="xs"
+              value={playbackSpeed}
+              onChange={(val) => (val === null ? null : setPlaybackSpeed(val))}
+              radius="xs"
+              data={["0.5x", "1x", "2x", "4x", "8x"]}
+              styles={{
+                wrapper: { width: "3.25em" },
+              }}
+              comboboxProps={{ zIndex: 5, width: "5.25em" }}
+            />
+          </Tooltip>
+          <Tooltip zIndex={10} label={"Scene tree"} withinPortal>
+            <ActionIcon
+              size="md"
+              variant={scenePanelOpen ? "light" : "subtle"}
+              aria-label={`${scenePanelOpen ? "Hide" : "Show"} scene tree`}
+              onClick={() => setScenePanelOpen(!scenePanelOpen)}
+            >
+              <IconBinaryTree2 height="1.125em" width="1.125em" />
+            </ActionIcon>
+          </Tooltip>
+        </Paper>
+      </>
     );
   }
+}
+
+/** Playback from a downloaded `.viser` recording file. */
+export function PlaybackFromFile({ fileUrl }: { fileUrl: string }) {
+  return (
+    <PlaybackInterface
+      deserialize={(setStatus) =>
+        deserializeZstdMsgpackFile<SerializedMessages>(fileUrl, setStatus)
+      }
+      loadedLogPrefix="File loaded! Saved with Viser version:"
+      reloadKey={fileUrl}
+    />
+  );
+}
+
+/** Playback from embedded base64 scene data.
+ * Used for static embedding in HTML pages (e.g., myst-nb documentation). */
+export function PlaybackFromEmbedData({ base64Data }: { base64Data: string }) {
+  return (
+    <PlaybackInterface
+      deserialize={(setStatus) =>
+        deserializeEmbeddedData<SerializedMessages>(base64Data, setStatus)
+      }
+      loadedLogPrefix="Embedded data loaded! Saved with Viser version:"
+      reloadKey={base64Data}
+    />
+  );
 }

@@ -21,3 +21,15 @@ examples/assets
 
 **/.claude/settings.local.json
 test_robot.urdf
+uv.lock
+
+# E2E test failure artifacts (screenshots, HTML, video, traces)
+test-results/
+
+# Scene verification outputs
+scene_verification_outputs/
+tests/e2e/test_webgl_warning.py
+.venv/
+
+# Local project files (not for upstream)
+src/viser/ybd/

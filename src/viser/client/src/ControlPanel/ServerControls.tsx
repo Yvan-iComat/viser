@@ -5,7 +5,6 @@ import {
   Image,
   Checkbox,
   Divider,
-  Group,
   Stack,
   Text,
   TextInput,
@@ -14,6 +13,9 @@ import {
 } from "@mantine/core";
 import { IconHomeMove, IconPhoto } from "@tabler/icons-react";
 import React from "react";
+
+// Import logo as asset for proper bundling/inlining.
+import logoSvg from "../assets/logo.svg";
 import SceneTreeTable from "./SceneTreeTable";
 import { DevSettingsPanel } from "../DevSettingsPanel";
 
@@ -32,7 +34,7 @@ export default function ServerControls() {
           <TextInput
             leftSection={
               <Image
-                src="./logo.svg"
+                src={logoSvg}
                 style={{
                   width: "1rem",
                   height: "auto",
@@ -43,7 +45,7 @@ export default function ServerControls() {
             leftSectionWidth="1.8rem"
             defaultValue={viewer.useGui((state) => state.server)}
             onBlur={(event) =>
-              viewer.useGui.setState({ server: event.currentTarget.value })
+              viewer.useGui.set({ server: event.currentTarget.value })
             }
             onKeyDown={(event) => {
               if (event.key === "Enter") {
@@ -53,7 +55,7 @@ export default function ServerControls() {
             }}
           />
         </Tooltip>
-        <Group gap="0.5em">
+        <Box style={{ display: "flex", flexWrap: "wrap", gap: "0.5em" }}>
           <Button
             onClick={async () => {
               const supportsFileSystemAccess =
@@ -108,7 +110,7 @@ export default function ServerControls() {
                 });
               }
             }}
-            flex={1}
+            flex="1 0 8rem"
             leftSection={
               controlWidth === "small" ? undefined : <IconPhoto size="1rem" />
             }
@@ -119,9 +121,9 @@ export default function ServerControls() {
           </Button>
           <Button
             onClick={() => {
-              viewerMutable.resetCameraView!();
+              viewerMutable.resetCameraPose!(true);
             }}
-            flex={1}
+            flex="1 0 8rem"
             leftSection={
               controlWidth === "small" ? undefined : (
                 <IconHomeMove size="1rem" />
@@ -132,8 +134,8 @@ export default function ServerControls() {
           >
             Reset View
           </Button>
-        </Group>
-        <Group gap="md">
+        </Box>
+        <Box style={{ display: "flex", flexWrap: "wrap", gap: "0.5em 1em" }}>
           <Tooltip
             label={
               <>
@@ -154,13 +156,13 @@ export default function ServerControls() {
               radius="xs"
               label="Orbit Origin Tool"
               onChange={(event) => {
-                viewer.useGui.setState({
+                viewer.useGui.set({
                   showOrbitOriginTool: event.currentTarget.checked,
                 });
               }}
               styles={{
                 label: { paddingLeft: "8px", letterSpacing: "-0.3px" },
-                root: { flex: 1 },
+                root: { flex: "1 0 auto" },
               }}
               size="sm"
             />
@@ -173,13 +175,13 @@ export default function ServerControls() {
             }}
             styles={{
               label: { paddingLeft: "8px", letterSpacing: "-0.3px" },
-              root: { flex: 1 },
+              root: { flex: "1 0 auto" },
             }}
             size="sm"
           />
-        </Group>
+        </Box>
         <Box mt="-0.4em">
-          <Collapse in={showDevSettings}>
+          <Collapse expanded={showDevSettings}>
             <Box mt="0.4em">
               <DevSettingsPanel devSettingsStore={viewer.useDevSettings} />
             </Box>

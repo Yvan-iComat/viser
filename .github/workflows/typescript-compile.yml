@@ -6,17 +6,31 @@ on:
   pull_request:
     branches: [main]
 
+concurrency:
+  group: typescript-compile-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   typescript-compile:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Use Node.js
         uses: actions/setup-node@v6
         with:
           node-version: 24
+          cache: npm
+          cache-dependency-path: src/viser/client/package-lock.json
       - name: Run tsc
         run: |
           cd src/viser/client
-          npm install
+          npm ci
           npx tsc
+
+      # Client unit tests (vitest, jsdom): layout ops, hit testing, width
+      # reconciliation, and the dock regression suites. Fast, so they ride
+      # along with the type check rather than needing their own workflow.
+      - name: Run vitest
+        run: |
+          cd src/viser/client
+          npx vitest run

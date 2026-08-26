@@ -15,12 +15,12 @@ def cv2_imencode_with_fallback(
     """Helper for encoding images to bytes using OpenCV or imageio.
 
     We default to OpenCV if available, which we find is usually faster:
-        https://github.com/nerfstudio-project/viser/pull/494
+        https://github.com/viser-project/viser/pull/494
 
     We fall back to imageio if OpenCV is not available. This lets us avoid
     adding OpenCV as a strict dependency, since it can be annoying to install
     on some machines:
-        https://github.com/nerfstudio-project/viser/issues/535
+        https://github.com/viser-project/viser/issues/535
     """
     if jpeg_quality is None:
         jpeg_quality = 75  # Default JPEG quality if not specified.
@@ -44,10 +44,11 @@ def cv2_imencode_with_fallback(
 
     # OpenCV is available!
     if channel_ordering == "rgb":
-        # Convert to BGR if needed.
-        image = image[
-            :, :, np.array((2, 1, 0, 3) if image.shape[-1] == 4 else (2, 1, 0))
-        ]
+        # Convert to BGR.
+        image = cv2.cvtColor(
+            image,
+            cv2.COLOR_RGBA2BGRA if image.shape[-1] == 4 else cv2.COLOR_RGB2BGR,
+        )
     if format == "png":
         success, encoded_image = cv2.imencode(".png", image)
     elif format == "jpeg":

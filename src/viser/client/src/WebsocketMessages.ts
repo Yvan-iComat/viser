@@ -1,7 +1,7 @@
 // AUTOMATICALLY GENERATED message interfaces, from Python dataclass definitions.
 // This file should not be manually modified.
 /** Variant of CameraMessage used for visualizing camera frustums.
- * 
+ *
  * OpenCV convention, +Z forward.
  *
  * (automatically generated)
@@ -9,7 +9,21 @@
 export interface CameraFrustumMessage {
   type: "CameraFrustumMessage";
   name: string;
-  props: {'fov': number, 'aspect': number, 'scale': number, 'line_width': number, 'color': [number, number, number], '_format': 'jpeg' | 'png', '_image_data': (Uint8Array<ArrayBuffer> | null), 'cast_shadow': boolean, 'receive_shadow': (boolean | number), 'variant': 'wireframe' | 'filled'};
+  owner: string;
+  virtual: boolean;
+  props: {
+    fov: number;
+    aspect: number;
+    thickness: number;
+    color: [number, number, number];
+    _format: "jpeg" | "png";
+    _image_data: Uint8Array<ArrayBuffer> | null;
+    cast_shadow: boolean;
+    receive_shadow: boolean | number;
+    variant: "wireframe" | "filled";
+    scale: number | [number, number, number];
+    thickness_units: "screen" | "world";
+  };
 }
 /** GlTF message.
  *
@@ -18,7 +32,15 @@ export interface CameraFrustumMessage {
 export interface GlbMessage {
   type: "GlbMessage";
   name: string;
-  props: {'glb_data': Uint8Array<ArrayBuffer>, 'scale': number, 'cast_shadow': boolean, 'receive_shadow': (boolean | number), 'smooth_shading': boolean};
+  owner: string;
+  virtual: boolean;
+  props: {
+    glb_data: Uint8Array<ArrayBuffer>;
+    cast_shadow: boolean;
+    receive_shadow: boolean | number;
+    smooth_shading: boolean;
+    scale: number | [number, number, number];
+  };
 }
 /** Coordinate frame message.
  *
@@ -27,10 +49,19 @@ export interface GlbMessage {
 export interface FrameMessage {
   type: "FrameMessage";
   name: string;
-  props: {'show_axes': boolean, 'axes_length': number, 'axes_radius': number, 'origin_radius': number, 'origin_color': [number, number, number]};
+  owner: string;
+  virtual: boolean;
+  props: {
+    show_axes: boolean;
+    axes_length: number;
+    axes_radius: number;
+    origin_radius: number;
+    origin_color: [number, number, number];
+    scale: number | [number, number, number];
+  };
 }
 /** Batched axes message.
- * 
+ *
  * Positions and orientations should follow a `T_parent_local` convention, which
  * corresponds to the R matrix and t vector in `p_parent = [R | t] p_local`.
  *
@@ -39,7 +70,16 @@ export interface FrameMessage {
 export interface BatchedAxesMessage {
   type: "BatchedAxesMessage";
   name: string;
-  props: {'batched_wxyzs': Uint8Array<ArrayBuffer>, 'batched_positions': Uint8Array<ArrayBuffer>, 'batched_scales': (Uint8Array<ArrayBuffer> | null), 'axes_length': number, 'axes_radius': number};
+  owner: string;
+  virtual: boolean;
+  props: {
+    batched_wxyzs: Float32Array;
+    batched_positions: Float32Array;
+    batched_scales: Float32Array | null;
+    axes_length: number;
+    axes_radius: number;
+    scale: number | [number, number, number];
+  };
 }
 /** Grid message. Helpful for visualizing things like ground planes.
  *
@@ -48,7 +88,27 @@ export interface BatchedAxesMessage {
 export interface GridMessage {
   type: "GridMessage";
   name: string;
-  props: {'width': number, 'height': number, 'plane': 'xz' | 'xy' | 'yx' | 'yz' | 'zx' | 'zy', 'cell_color': [number, number, number], 'cell_thickness': number, 'cell_size': number, 'section_color': [number, number, number], 'section_thickness': number, 'section_size': number, 'infinite_grid': boolean, 'fade_distance': number, 'fade_strength': number, 'fade_from': 'camera' | 'origin', 'shadow_opacity': number};
+  owner: string;
+  virtual: boolean;
+  props: {
+    width: number;
+    height: number;
+    plane: "xz" | "xy" | "yx" | "yz" | "zx" | "zy";
+    cell_color: [number, number, number];
+    cell_thickness: number;
+    cell_size: number;
+    section_color: [number, number, number];
+    section_thickness: number;
+    section_size: number;
+    infinite_grid: boolean;
+    fade_distance: number;
+    fade_strength: number;
+    fade_from: "camera" | "origin";
+    shadow_opacity: number;
+    plane_color: [number, number, number];
+    plane_opacity: number;
+    scale: number | [number, number, number];
+  };
 }
 /** Add a 2D label to the scene.
  *
@@ -57,7 +117,25 @@ export interface GridMessage {
 export interface LabelMessage {
   type: "LabelMessage";
   name: string;
-  props: {'text': string, 'font_size_mode': 'screen' | 'scene', 'font_screen_scale': number, 'font_scene_height': number, 'depth_test': boolean, 'anchor': 'top-left' | 'top-center' | 'top-right' | 'center-left' | 'center-center' | 'center-right' | 'bottom-left' | 'bottom-center' | 'bottom-right'};
+  owner: string;
+  virtual: boolean;
+  props: {
+    text: string;
+    font_size_mode: "screen" | "scene";
+    font_screen_scale: number;
+    font_scene_height: number;
+    depth_test: boolean;
+    anchor:
+      | "top-left"
+      | "top-center"
+      | "top-right"
+      | "center-left"
+      | "center-center"
+      | "center-right"
+      | "bottom-left"
+      | "bottom-center"
+      | "bottom-right";
+  };
 }
 /** Add a 3D gui element to the scene.
  *
@@ -66,12 +144,14 @@ export interface LabelMessage {
 export interface Gui3DMessage {
   type: "Gui3DMessage";
   name: string;
-  props: {'order': number, 'container_uuid': string};
+  owner: string;
+  virtual: boolean;
+  props: { order: number; container_uuid: string };
 }
 /** Point cloud message.
- * 
+ *
  * Positions are internally canonicalized to float32, colors to uint8.
- * 
+ *
  * Float color inputs should be in the range [0,1], int color inputs should be in the
  * range [0,255].
  *
@@ -80,7 +160,17 @@ export interface Gui3DMessage {
 export interface PointCloudMessage {
   type: "PointCloudMessage";
   name: string;
-  props: {'points': (Uint8Array<ArrayBuffer>), 'colors': Uint8Array<ArrayBuffer>, 'point_size': number, 'point_shape': 'square' | 'diamond' | 'circle' | 'rounded' | 'sparkle', 'precision': 'float16' | 'float32'};
+  owner: string;
+  virtual: boolean;
+  props: {
+    points: Uint16Array | Float32Array;
+    colors: Uint8Array<ArrayBuffer>;
+    point_size: number;
+    point_shape: "square" | "diamond" | "circle" | "rounded" | "sparkle";
+    precision: "float16" | "float32";
+    scale: number | [number, number, number];
+    point_shading: "flat" | "gradient";
+  };
 }
 /** Directional light message.
  *
@@ -89,7 +179,13 @@ export interface PointCloudMessage {
 export interface DirectionalLightMessage {
   type: "DirectionalLightMessage";
   name: string;
-  props: {'color': [number, number, number], 'intensity': number, 'cast_shadow': boolean};
+  owner: string;
+  virtual: boolean;
+  props: {
+    color: [number, number, number];
+    intensity: number;
+    cast_shadow: boolean;
+  };
 }
 /** Ambient light message.
  *
@@ -98,7 +194,9 @@ export interface DirectionalLightMessage {
 export interface AmbientLightMessage {
   type: "AmbientLightMessage";
   name: string;
-  props: {'color': [number, number, number], 'intensity': number};
+  owner: string;
+  virtual: boolean;
+  props: { color: [number, number, number]; intensity: number };
 }
 /** Hemisphere light message.
  *
@@ -107,7 +205,13 @@ export interface AmbientLightMessage {
 export interface HemisphereLightMessage {
   type: "HemisphereLightMessage";
   name: string;
-  props: {'sky_color': [number, number, number], 'ground_color': [number, number, number], 'intensity': number};
+  owner: string;
+  virtual: boolean;
+  props: {
+    sky_color: [number, number, number];
+    ground_color: [number, number, number];
+    intensity: number;
+  };
 }
 /** Point light message.
  *
@@ -116,7 +220,15 @@ export interface HemisphereLightMessage {
 export interface PointLightMessage {
   type: "PointLightMessage";
   name: string;
-  props: {'color': [number, number, number], 'intensity': number, 'distance': number, 'decay': number, 'cast_shadow': boolean};
+  owner: string;
+  virtual: boolean;
+  props: {
+    color: [number, number, number];
+    intensity: number;
+    distance: number;
+    decay: number;
+    cast_shadow: boolean;
+  };
 }
 /** Rectangular Area light message.
  *
@@ -125,7 +237,14 @@ export interface PointLightMessage {
 export interface RectAreaLightMessage {
   type: "RectAreaLightMessage";
   name: string;
-  props: {'color': [number, number, number], 'intensity': number, 'width': number, 'height': number};
+  owner: string;
+  virtual: boolean;
+  props: {
+    color: [number, number, number];
+    intensity: number;
+    width: number;
+    height: number;
+  };
 }
 /** Spot light message.
  *
@@ -134,10 +253,21 @@ export interface RectAreaLightMessage {
 export interface SpotLightMessage {
   type: "SpotLightMessage";
   name: string;
-  props: {'color': [number, number, number], 'intensity': number, 'distance': number, 'angle': number, 'penumbra': number, 'decay': number, 'cast_shadow': boolean};
+  owner: string;
+  virtual: boolean;
+  props: {
+    color: [number, number, number];
+    intensity: number;
+    distance: number;
+    angle: number;
+    penumbra: number;
+    decay: number;
+    cast_shadow: boolean;
+    direction: [number, number, number];
+  };
 }
 /** Mesh message.
- * 
+ *
  * Vertices are internally canonicalized to float32, faces to uint32.
  *
  * (automatically generated)
@@ -145,7 +275,21 @@ export interface SpotLightMessage {
 export interface MeshMessage {
   type: "MeshMessage";
   name: string;
-  props: {'vertices': Uint8Array<ArrayBuffer>, 'faces': Uint8Array<ArrayBuffer>, 'color': [number, number, number], 'wireframe': boolean, 'opacity': (number | null), 'flat_shading': boolean, 'side': 'front' | 'back' | 'double', 'material': 'standard' | 'toon3' | 'toon5', 'cast_shadow': boolean, 'receive_shadow': (boolean | number)};
+  owner: string;
+  virtual: boolean;
+  props: {
+    vertices: Float32Array;
+    faces: Uint32Array;
+    color: [number, number, number];
+    wireframe: boolean;
+    opacity: number | null;
+    flat_shading: boolean;
+    side: "front" | "back" | "double";
+    material: "standard" | "toon3" | "toon5";
+    scale: number | [number, number, number];
+    cast_shadow: boolean;
+    receive_shadow: boolean | number;
+  };
 }
 /** Box message.
  *
@@ -154,7 +298,20 @@ export interface MeshMessage {
 export interface BoxMessage {
   type: "BoxMessage";
   name: string;
-  props: {'dimensions': [number, number, number], 'color': [number, number, number], 'wireframe': boolean, 'opacity': (number | null), 'flat_shading': boolean, 'side': 'front' | 'back' | 'double', 'material': 'standard' | 'toon3' | 'toon5', 'cast_shadow': boolean, 'receive_shadow': (boolean | number)};
+  owner: string;
+  virtual: boolean;
+  props: {
+    dimensions: [number, number, number];
+    color: [number, number, number];
+    wireframe: boolean;
+    opacity: number | null;
+    flat_shading: boolean;
+    side: "front" | "back" | "double";
+    material: "standard" | "toon3" | "toon5";
+    cast_shadow: boolean;
+    receive_shadow: boolean | number;
+    scale: number | [number, number, number];
+  };
 }
 /** Icosphere message.
  *
@@ -163,7 +320,45 @@ export interface BoxMessage {
 export interface IcosphereMessage {
   type: "IcosphereMessage";
   name: string;
-  props: {'radius': number, 'subdivisions': number, 'color': [number, number, number], 'wireframe': boolean, 'opacity': (number | null), 'flat_shading': boolean, 'side': 'front' | 'back' | 'double', 'material': 'standard' | 'toon3' | 'toon5', 'cast_shadow': boolean, 'receive_shadow': (boolean | number)};
+  owner: string;
+  virtual: boolean;
+  props: {
+    radius: number;
+    subdivisions: number;
+    color: [number, number, number];
+    wireframe: boolean;
+    opacity: number | null;
+    flat_shading: boolean;
+    side: "front" | "back" | "double";
+    material: "standard" | "toon3" | "toon5";
+    cast_shadow: boolean;
+    receive_shadow: boolean | number;
+    scale: number | [number, number, number];
+  };
+}
+/** Cylinder message.
+ *
+ * (automatically generated)
+ */
+export interface CylinderMessage {
+  type: "CylinderMessage";
+  name: string;
+  owner: string;
+  virtual: boolean;
+  props: {
+    radius: number;
+    height: number;
+    color: [number, number, number];
+    radial_segments: number;
+    wireframe: boolean;
+    opacity: number | null;
+    flat_shading: boolean;
+    side: "front" | "back" | "double";
+    material: "standard" | "toon3" | "toon5";
+    cast_shadow: boolean;
+    receive_shadow: boolean | number;
+    scale: number | [number, number, number];
+  };
 }
 /** Skinned mesh message.
  *
@@ -172,7 +367,25 @@ export interface IcosphereMessage {
 export interface SkinnedMeshMessage {
   type: "SkinnedMeshMessage";
   name: string;
-  props: {'vertices': Uint8Array<ArrayBuffer>, 'faces': Uint8Array<ArrayBuffer>, 'color': [number, number, number], 'wireframe': boolean, 'opacity': (number | null), 'flat_shading': boolean, 'side': 'front' | 'back' | 'double', 'material': 'standard' | 'toon3' | 'toon5', 'cast_shadow': boolean, 'receive_shadow': (boolean | number), 'bone_wxyzs': Uint8Array<ArrayBuffer>, 'bone_positions': Uint8Array<ArrayBuffer>, 'skin_indices': Uint8Array<ArrayBuffer>, 'skin_weights': Uint8Array<ArrayBuffer>};
+  owner: string;
+  virtual: boolean;
+  props: {
+    vertices: Float32Array;
+    faces: Uint32Array;
+    color: [number, number, number];
+    wireframe: boolean;
+    opacity: number | null;
+    flat_shading: boolean;
+    side: "front" | "back" | "double";
+    material: "standard" | "toon3" | "toon5";
+    scale: number | [number, number, number];
+    cast_shadow: boolean;
+    receive_shadow: boolean | number;
+    bone_wxyzs: Float32Array;
+    bone_positions: Float32Array;
+    skin_indices: Uint16Array;
+    skin_weights: Float32Array;
+  };
 }
 /** Message from server->client carrying batched meshes information.
  *
@@ -181,7 +394,26 @@ export interface SkinnedMeshMessage {
 export interface BatchedMeshesMessage {
   type: "BatchedMeshesMessage";
   name: string;
-  props: {'batched_wxyzs': Uint8Array<ArrayBuffer>, 'batched_positions': Uint8Array<ArrayBuffer>, 'batched_scales': (Uint8Array<ArrayBuffer> | null), 'lod': ('auto' | 'off' | [number, number][]), 'vertices': Uint8Array<ArrayBuffer>, 'faces': Uint8Array<ArrayBuffer>, 'batched_colors': Uint8Array<ArrayBuffer>, 'wireframe': boolean, 'opacity': (number | null), 'flat_shading': boolean, 'side': 'front' | 'back' | 'double', 'material': 'standard' | 'toon3' | 'toon5', 'cast_shadow': boolean, 'receive_shadow': boolean};
+  owner: string;
+  virtual: boolean;
+  props: {
+    batched_wxyzs: Float32Array;
+    batched_positions: Float32Array;
+    batched_scales: Float32Array | null;
+    lod: "auto" | "off" | [number, number][];
+    vertices: Float32Array;
+    faces: Uint32Array;
+    batched_colors: Uint8Array<ArrayBuffer>;
+    wireframe: boolean;
+    opacity: number | null;
+    flat_shading: boolean;
+    side: "front" | "back" | "double";
+    material: "standard" | "toon3" | "toon5";
+    cast_shadow: boolean;
+    receive_shadow: boolean;
+    batched_opacities: Float32Array | null;
+    scale: number | [number, number, number];
+  };
 }
 /** Message from server->client carrying batched GLB information.
  *
@@ -190,7 +422,19 @@ export interface BatchedMeshesMessage {
 export interface BatchedGlbMessage {
   type: "BatchedGlbMessage";
   name: string;
-  props: {'batched_wxyzs': Uint8Array<ArrayBuffer>, 'batched_positions': Uint8Array<ArrayBuffer>, 'batched_scales': (Uint8Array<ArrayBuffer> | null), 'lod': ('auto' | 'off' | [number, number][]), 'glb_data': Uint8Array<ArrayBuffer>, 'cast_shadow': boolean, 'receive_shadow': boolean, 'smooth_shading': boolean};
+  owner: string;
+  virtual: boolean;
+  props: {
+    batched_wxyzs: Float32Array;
+    batched_positions: Float32Array;
+    batched_scales: Float32Array | null;
+    lod: "auto" | "off" | [number, number][];
+    glb_data: Uint8Array<ArrayBuffer>;
+    cast_shadow: boolean;
+    receive_shadow: boolean;
+    smooth_shading: boolean;
+    scale: number | [number, number, number];
+  };
 }
 /** Message for transform gizmos.
  *
@@ -199,7 +443,21 @@ export interface BatchedGlbMessage {
 export interface TransformControlsMessage {
   type: "TransformControlsMessage";
   name: string;
-  props: {'scale': number, 'line_width': number, 'fixed': boolean, 'active_axes': [boolean, boolean, boolean], 'disable_axes': boolean, 'disable_sliders': boolean, 'disable_rotations': boolean, 'translation_limits': [[number, number], [number, number], [number, number]], 'rotation_limits': [[number, number], [number, number], [number, number]], 'depth_test': boolean, 'opacity': number};
+  owner: string;
+  virtual: boolean;
+  props: {
+    scale: number;
+    line_width: number;
+    fixed: boolean;
+    active_axes: [boolean, boolean, boolean];
+    disable_axes: boolean;
+    disable_sliders: boolean;
+    disable_rotations: boolean;
+    translation_limits: [[number, number], [number, number], [number, number]];
+    rotation_limits: [[number, number], [number, number], [number, number]];
+    depth_test: boolean;
+    opacity: number;
+  };
 }
 /** Message for rendering 2D images.
  *
@@ -208,7 +466,17 @@ export interface TransformControlsMessage {
 export interface ImageMessage {
   type: "ImageMessage";
   name: string;
-  props: {'_format': 'jpeg' | 'png', '_data': Uint8Array<ArrayBuffer>, 'render_width': number, 'render_height': number, 'cast_shadow': boolean, 'receive_shadow': (boolean | number)};
+  owner: string;
+  virtual: boolean;
+  props: {
+    _format: "jpeg" | "png";
+    _data: Uint8Array<ArrayBuffer>;
+    render_width: number;
+    render_height: number;
+    cast_shadow: boolean;
+    receive_shadow: boolean | number;
+    scale: number | [number, number, number];
+  };
 }
 /** Message from server->client carrying line segments information.
  *
@@ -217,7 +485,33 @@ export interface ImageMessage {
 export interface LineSegmentsMessage {
   type: "LineSegmentsMessage";
   name: string;
-  props: {'points': Uint8Array<ArrayBuffer>, 'line_width': number, 'colors': Uint8Array<ArrayBuffer>};
+  owner: string;
+  virtual: boolean;
+  props: {
+    points: Float32Array;
+    thickness: number;
+    colors: Uint8Array<ArrayBuffer>;
+    scale: number | [number, number, number];
+    thickness_units: "screen" | "world";
+  };
+}
+/** Message from server->client carrying arrow information.
+ *
+ * (automatically generated)
+ */
+export interface ArrowMessage {
+  type: "ArrowMessage";
+  name: string;
+  owner: string;
+  virtual: boolean;
+  props: {
+    points: Float32Array;
+    colors: Uint8Array<ArrayBuffer>;
+    shaft_radius: number;
+    head_radius: number;
+    head_length: number;
+    scale: number | [number, number, number];
+  };
 }
 /** Message from server->client carrying Catmull-Rom spline information.
  *
@@ -226,7 +520,19 @@ export interface LineSegmentsMessage {
 export interface CatmullRomSplineMessage {
   type: "CatmullRomSplineMessage";
   name: string;
-  props: {'points': Uint8Array<ArrayBuffer>, 'curve_type': 'centripetal' | 'chordal' | 'catmullrom', 'tension': number, 'closed': boolean, 'line_width': number, 'color': [number, number, number], 'segments': (number | null)};
+  owner: string;
+  virtual: boolean;
+  props: {
+    points: Float32Array;
+    curve_type: "centripetal" | "chordal" | "catmullrom";
+    tension: number;
+    closed: boolean;
+    thickness: number;
+    color: [number, number, number];
+    segments: number | null;
+    scale: number | [number, number, number];
+    thickness_units: "screen" | "world";
+  };
 }
 /** Message from server->client carrying Cubic Bezier spline information.
  *
@@ -235,7 +541,17 @@ export interface CatmullRomSplineMessage {
 export interface CubicBezierSplineMessage {
   type: "CubicBezierSplineMessage";
   name: string;
-  props: {'points': Uint8Array<ArrayBuffer>, 'control_points': Uint8Array<ArrayBuffer>, 'line_width': number, 'color': [number, number, number], 'segments': (number | null)};
+  owner: string;
+  virtual: boolean;
+  props: {
+    points: Float32Array;
+    control_points: Float32Array;
+    thickness: number;
+    color: [number, number, number];
+    segments: number | null;
+    scale: number | [number, number, number];
+    thickness_units: "screen" | "world";
+  };
 }
 /** Message from server->client carrying splattable Gaussians.
  *
@@ -244,7 +560,9 @@ export interface CubicBezierSplineMessage {
 export interface GaussianSplatsMessage {
   type: "GaussianSplatsMessage";
   name: string;
-  props: {'buffer': Uint8Array<ArrayBuffer>};
+  owner: string;
+  virtual: boolean;
+  props: { buffer: Uint32Array; scale: number | [number, number, number] };
 }
 /** Message from client->server when a toolbar action is triggered.
  *
@@ -252,7 +570,8 @@ export interface GaussianSplatsMessage {
  */
 export interface ToolbarActionMessage {
   type: "ToolbarActionMessage";
-  action: 'reframe_view' | 'zoom_in' | 'zoom_out' | 'perspective_view' | 'snapshot';
+  action:
+    "reframe_view" | "zoom_in" | "zoom_out" | "perspective_view" | "snapshot";
 }
 /** Configure the horizontal toolbar at the top of the 3D view.
  *
@@ -261,15 +580,19 @@ export interface ToolbarActionMessage {
 export interface ToolbarConfigMessage {
   type: "ToolbarConfigMessage";
   visible: boolean;
-  buttons: {'action': string, 'icon': string, 'tooltip': string}[];
+  buttons: { action: string; icon: string; tooltip: string }[];
 }
-/** Remove a particular node from the scene.
+/** Remove a particular node's variant, for the scope stamped in
+ * ``owner``, from the scene. Removal is scope-local: it never touches the
+ * other scope's variant of the same name (the server enumerates one such
+ * message per same-scope descendant; the client does not cascade).
  *
  * (automatically generated)
  */
 export interface RemoveSceneNodeMessage {
   type: "RemoveSceneNodeMessage";
   name: string;
+  owner: string;
 }
 /** GuiFolderMessage(uuid: 'str', container_uuid: 'str', props: 'GuiFolderProps')
  *
@@ -279,7 +602,31 @@ export interface GuiFolderMessage {
   type: "GuiFolderMessage";
   uuid: string;
   container_uuid: string;
-  props: {'order': number, 'label': string, 'visible': boolean, 'expand_by_default': boolean};
+  props: {
+    order: number;
+    label: string | null;
+    visible: boolean;
+    expand_by_default: boolean;
+  };
+}
+/** A form is a folder whose children's values can be committed together.
+ *
+ * Reuses ``GuiFolderProps`` because the visual shape is identical to a
+ * folder; the form-specific behavior (``on_submit`` callbacks, dirty
+ * indicator, Cmd/Ctrl+Enter) is keyed off the message type alone.
+ *
+ * (automatically generated)
+ */
+export interface GuiFormMessage {
+  type: "GuiFormMessage";
+  uuid: string;
+  container_uuid: string;
+  props: {
+    order: number;
+    label: string | null;
+    visible: boolean;
+    expand_by_default: boolean;
+  };
 }
 /** GuiMarkdownMessage(uuid: 'str', container_uuid: 'str', props: 'GuiMarkdownProps')
  *
@@ -289,7 +636,7 @@ export interface GuiMarkdownMessage {
   type: "GuiMarkdownMessage";
   uuid: string;
   container_uuid: string;
-  props: {'order': number, '_markdown': string, 'visible': boolean};
+  props: { order: number; _markdown: string; visible: boolean };
 }
 /** GuiHtmlMessage(uuid: 'str', container_uuid: 'str', props: 'GuiHtmlProps')
  *
@@ -299,7 +646,17 @@ export interface GuiHtmlMessage {
   type: "GuiHtmlMessage";
   uuid: string;
   container_uuid: string;
-  props: {'order': number, 'content': string, 'visible': boolean};
+  props: { order: number; content: string; visible: boolean };
+}
+/** GuiDividerMessage(uuid: 'str', container_uuid: 'str', props: 'GuiDividerProps')
+ *
+ * (automatically generated)
+ */
+export interface GuiDividerMessage {
+  type: "GuiDividerMessage";
+  uuid: string;
+  container_uuid: string;
+  props: { order: number; visible: boolean };
 }
 /** GuiProgressBarMessage(uuid: 'str', value: 'float', container_uuid: 'str', props: 'GuiProgressBarProps')
  *
@@ -310,7 +667,28 @@ export interface GuiProgressBarMessage {
   uuid: string;
   value: number;
   container_uuid: string;
-  props: {'order': number, 'animated': boolean, 'color': ('dark' | 'gray' | 'red' | 'pink' | 'grape' | 'violet' | 'indigo' | 'blue' | 'cyan' | 'green' | 'lime' | 'yellow' | 'orange' | 'teal' | [number, number, number] | null), 'visible': boolean};
+  props: {
+    order: number;
+    animated: boolean;
+    color:
+      | "dark"
+      | "gray"
+      | "red"
+      | "pink"
+      | "grape"
+      | "violet"
+      | "indigo"
+      | "blue"
+      | "cyan"
+      | "green"
+      | "lime"
+      | "yellow"
+      | "orange"
+      | "teal"
+      | [number, number, number]
+      | null;
+    visible: boolean;
+  };
 }
 /** GuiPlotlyMessage(uuid: 'str', container_uuid: 'str', props: 'GuiPlotlyProps')
  *
@@ -320,7 +698,12 @@ export interface GuiPlotlyMessage {
   type: "GuiPlotlyMessage";
   uuid: string;
   container_uuid: string;
-  props: {'order': number, '_plotly_json_str': string, 'aspect': number, 'visible': boolean};
+  props: {
+    order: number;
+    _plotly_json_str: string;
+    aspect: number;
+    visible: boolean;
+  };
 }
 /** GuiUplotMessage(uuid: 'str', container_uuid: 'str', props: 'GuiUplotProps')
  *
@@ -330,7 +713,191 @@ export interface GuiUplotMessage {
   type: "GuiUplotMessage";
   uuid: string;
   container_uuid: string;
-  props: {'order': number, 'data': Uint8Array<ArrayBuffer>[], 'mode': (1 | 2 | null), 'title': (string | null), 'series': {'show'?: boolean, 'class'?: string, 'scale'?: string, 'auto'?: boolean, 'sorted'?: 0 | 1 | -1, 'spanGaps'?: boolean, 'gaps'?: ([number, number][] | never), 'pxAlign'?: (number | boolean), 'label'?: (string | never), 'value'?: (string | never), 'values'?: never, 'paths'?: never, 'points'?: {'show'?: (boolean | never), 'paths'?: never, 'filter'?: (number[] | null | never), 'size'?: number, 'space'?: number, 'width'?: number, 'stroke'?: string, 'dash'?: number[], 'cap'?: string, 'fill'?: string}, 'facets'?: {'scale': string, 'auto'?: boolean, 'sorted'?: 0 | 1 | -1}[], 'width'?: number, 'stroke'?: string, 'fill'?: string, 'fillTo'?: (number | never), 'dash'?: number[], 'cap'?: string, 'alpha'?: number, 'idxs'?: [number, number], 'min'?: number, 'max'?: number}[], 'bands': ({'series': [number, number], 'fill'?: string, 'dir'?: (1 | -1)}[] | null), 'scales': ({[key: string]: {'time'?: boolean, 'auto'?: (boolean | never), 'range'?: ([(number | null), (number | null)] | never | any), 'from'?: string, 'distr'?: 1 | 2 | 3 | 4 | 100, 'log'?: (10 | 2), 'clamp'?: (number | never), 'asinh'?: number, 'fwd'?: never, 'bwd'?: never, 'min'?: number, 'max'?: number, 'dir'?: (1 | -1), 'ori'?: (0 | 1), 'key'?: string}} | null), 'axes': ({'show'?: boolean, 'scale'?: string, 'side'?: 0 | 1 | 2 | 3, 'size'?: (number | never), 'gap'?: number, 'font'?: string, 'lineGap'?: number, 'stroke'?: string, 'label'?: (string | never), 'labelSize'?: number, 'labelGap'?: number, 'labelFont'?: string, 'space'?: (number | never), 'incrs'?: (number[] | never), 'splits'?: (number[] | never), 'filter'?: never, 'values'?: ((string | number | null)[] | never | string | (string | number | null)[][]), 'rotate'?: (number | never), 'align'?: 1 | 2, 'alignTo'?: 1 | 2, 'grid'?: {'show'?: boolean, 'stroke'?: string, 'width'?: number, 'dash'?: number[], 'cap'?: string, 'filter'?: never}, 'ticks'?: {'show'?: boolean, 'stroke'?: string, 'width'?: number, 'dash'?: number[], 'cap'?: string, 'filter'?: never, 'size'?: number}, 'border'?: {'show'?: boolean, 'stroke'?: string, 'width'?: number, 'dash'?: number[], 'cap'?: string}}[] | null), 'legend': ({'show'?: boolean, 'live'?: boolean, 'isolate'?: boolean, 'markers'?: {'show'?: boolean, 'width'?: (number | never), 'stroke'?: string, 'fill'?: string, 'dash'?: string}, 'mount'?: any, 'idx'?: (number | null), 'idxs'?: (number | null)[], 'values'?: (string | never)[]} | null), 'cursor': ({'show'?: boolean, 'x'?: boolean, 'y'?: boolean, 'left'?: number, 'top'?: number, 'idx'?: (number | null), 'dataIdx'?: never, 'idxs'?: (number | null)[], 'move'?: never, 'points'?: {'show'?: (boolean | never), 'one'?: boolean, 'size'?: (number | never), 'bbox'?: never, 'width'?: (number | never), 'stroke'?: string, 'fill'?: string}, 'bind'?: {'mousedown'?: never, 'mouseup'?: never, 'click'?: never, 'dblclick'?: never, 'mousemove'?: never, 'mouseleave'?: never, 'mouseenter'?: never}, 'drag'?: {'setScale'?: boolean, 'x'?: boolean, 'y'?: boolean, 'dist'?: number, 'uni'?: number, 'click'?: any}, 'sync'?: {'key': string, 'setSeries'?: boolean, 'scales'?: [(string | null), (string | null)], 'match'?: [never, never, any, any, never], 'filters'?: any, 'values'?: [number, number]}, 'focus'?: {'prox': number, 'bias'?: 0 | 1 | -1, 'dist'?: any}, 'hover'?: {'prox'?: (number | null | any), 'bias'?: 0 | 1 | -1, 'skip'?: any[]}, 'lock'?: boolean, 'event'?: never} | null), 'focus': ({'alpha': number} | null), 'aspect': number, 'visible': boolean};
+  props: {
+    order: number;
+    data: Float64Array[];
+    mode: 1 | 2 | null;
+    title: string | null;
+    series: {
+      show?: boolean;
+      class?: string;
+      scale?: string;
+      auto?: boolean;
+      sorted?: 0 | 1 | -1;
+      spanGaps?: boolean;
+      gaps?: [number, number][] | never;
+      pxAlign?: number | boolean;
+      label?: string | never;
+      value?: string | never;
+      values?: never;
+      paths?: never;
+      points?: {
+        show?: boolean | never;
+        paths?: never;
+        filter?: number[] | null | never;
+        size?: number;
+        space?: number;
+        width?: number;
+        stroke?: string;
+        dash?: number[];
+        cap?: string;
+        fill?: string;
+      };
+      facets?: { scale: string; auto?: boolean; sorted?: 0 | 1 | -1 }[];
+      width?: number;
+      stroke?: string;
+      fill?: string;
+      fillTo?: number | never;
+      dash?: number[];
+      cap?: string;
+      alpha?: number;
+      idxs?: [number, number];
+      min?: number;
+      max?: number;
+    }[];
+    bands: { series: [number, number]; fill?: string; dir?: 1 | -1 }[] | null;
+    scales: {
+      [key: string]: {
+        time?: boolean;
+        auto?: boolean | never;
+        range?: [number | null, number | null] | never | any;
+        from?: string;
+        distr?: 1 | 2 | 3 | 4 | 100;
+        log?: 10 | 2;
+        clamp?: number | never;
+        asinh?: number;
+        fwd?: never;
+        bwd?: never;
+        min?: number;
+        max?: number;
+        dir?: 1 | -1;
+        ori?: 0 | 1;
+        key?: string;
+      };
+    } | null;
+    axes:
+      | {
+          show?: boolean;
+          scale?: string;
+          side?: 0 | 1 | 2 | 3;
+          size?: number | never;
+          gap?: number;
+          font?: string;
+          lineGap?: number;
+          stroke?: string;
+          label?: string | never;
+          labelSize?: number;
+          labelGap?: number;
+          labelFont?: string;
+          space?: number | never;
+          incrs?: number[] | never;
+          splits?: number[] | never;
+          filter?: never;
+          values?:
+            | (string | number | null)[]
+            | never
+            | string
+            | (string | number | null)[][];
+          rotate?: number | never;
+          align?: 1 | 2;
+          alignTo?: 1 | 2;
+          grid?: {
+            show?: boolean;
+            stroke?: string;
+            width?: number;
+            dash?: number[];
+            cap?: string;
+            filter?: never;
+          };
+          ticks?: {
+            show?: boolean;
+            stroke?: string;
+            width?: number;
+            dash?: number[];
+            cap?: string;
+            filter?: never;
+            size?: number;
+          };
+          border?: {
+            show?: boolean;
+            stroke?: string;
+            width?: number;
+            dash?: number[];
+            cap?: string;
+          };
+        }[]
+      | null;
+    legend: {
+      show?: boolean;
+      live?: boolean;
+      isolate?: boolean;
+      markers?: {
+        show?: boolean;
+        width?: number | never;
+        stroke?: string;
+        fill?: string;
+        dash?: string;
+      };
+      mount?: any;
+      idx?: number | null;
+      idxs?: (number | null)[];
+      values?: (string | never)[];
+    } | null;
+    cursor: {
+      show?: boolean;
+      x?: boolean;
+      y?: boolean;
+      left?: number;
+      top?: number;
+      idx?: number | null;
+      dataIdx?: never;
+      idxs?: (number | null)[];
+      move?: never;
+      points?: {
+        show?: boolean | never;
+        one?: boolean;
+        size?: number | never;
+        bbox?: never;
+        width?: number | never;
+        stroke?: string;
+        fill?: string;
+      };
+      bind?: {
+        mousedown?: never;
+        mouseup?: never;
+        click?: never;
+        dblclick?: never;
+        mousemove?: never;
+        mouseleave?: never;
+        mouseenter?: never;
+      };
+      drag?: {
+        setScale?: boolean;
+        x?: boolean;
+        y?: boolean;
+        dist?: number;
+        uni?: number;
+        click?: any;
+      };
+      sync?: {
+        key: string;
+        setSeries?: boolean;
+        scales?: [string | null, string | null];
+        match?: [never, never, any, any, never];
+        filters?: any;
+        values?: [number, number];
+      };
+      focus?: { prox: number; bias?: 0 | 1 | -1; dist?: any };
+      hover?: { prox?: number | null | any; bias?: 0 | 1 | -1; skip?: any[] };
+      lock?: boolean;
+      event?: never;
+    } | null;
+    focus: { alpha: number } | null;
+    aspect: number;
+    height: number | null;
+    padding: [number, number, number, number] | null;
+    visible: boolean;
+  };
 }
 /** GuiImageMessage(uuid: 'str', container_uuid: 'str', props: 'GuiImageProps')
  *
@@ -340,7 +907,13 @@ export interface GuiImageMessage {
   type: "GuiImageMessage";
   uuid: string;
   container_uuid: string;
-  props: {'order': number, 'label': (string | null), '_data': (Uint8Array<ArrayBuffer> | null), '_format': 'jpeg' | 'png', 'visible': boolean};
+  props: {
+    order: number;
+    label: string | null;
+    _data: Uint8Array<ArrayBuffer> | null;
+    _format: "jpeg" | "png";
+    visible: boolean;
+  };
 }
 /** GuiTabGroupMessage(uuid: 'str', container_uuid: 'str', props: 'GuiTabGroupProps')
  *
@@ -350,7 +923,13 @@ export interface GuiTabGroupMessage {
   type: "GuiTabGroupMessage";
   uuid: string;
   container_uuid: string;
-  props: {'_tab_labels': string[], '_tab_icons_html': (string | null)[], '_tab_container_ids': string[], 'order': number, 'visible': boolean};
+  props: {
+    _tab_labels: string[];
+    _tab_icons_html: (string | null)[];
+    _tab_container_ids: string[];
+    order: number;
+    visible: boolean;
+  };
 }
 /** GuiButtonMessage(uuid: 'str', value: 'bool', container_uuid: 'str', props: 'GuiButtonProps')
  *
@@ -361,7 +940,32 @@ export interface GuiButtonMessage {
   uuid: string;
   value: boolean;
   container_uuid: string;
-  props: {'order': number, 'label': string, 'hint': (string | null), 'visible': boolean, 'disabled': boolean, 'color': ('dark' | 'gray' | 'red' | 'pink' | 'grape' | 'violet' | 'indigo' | 'blue' | 'cyan' | 'green' | 'lime' | 'yellow' | 'orange' | 'teal' | [number, number, number] | null), '_icon_html': (string | null)};
+  props: {
+    order: number;
+    label: string;
+    hint: string | null;
+    visible: boolean;
+    disabled: boolean;
+    color:
+      | "dark"
+      | "gray"
+      | "red"
+      | "pink"
+      | "grape"
+      | "violet"
+      | "indigo"
+      | "blue"
+      | "cyan"
+      | "green"
+      | "lime"
+      | "yellow"
+      | "orange"
+      | "teal"
+      | [number, number, number]
+      | null;
+    _icon_html: string | null;
+    _hold_callback_freqs: number[];
+  };
 }
 /** GuiUploadButtonMessage(uuid: 'str', container_uuid: 'str', props: 'GuiUploadButtonProps')
  *
@@ -371,7 +975,32 @@ export interface GuiUploadButtonMessage {
   type: "GuiUploadButtonMessage";
   uuid: string;
   container_uuid: string;
-  props: {'order': number, 'label': string, 'hint': (string | null), 'visible': boolean, 'disabled': boolean, 'color': ('dark' | 'gray' | 'red' | 'pink' | 'grape' | 'violet' | 'indigo' | 'blue' | 'cyan' | 'green' | 'lime' | 'yellow' | 'orange' | 'teal' | [number, number, number] | null), '_icon_html': (string | null), 'mime_type': string};
+  props: {
+    order: number;
+    label: string;
+    hint: string | null;
+    visible: boolean;
+    disabled: boolean;
+    color:
+      | "dark"
+      | "gray"
+      | "red"
+      | "pink"
+      | "grape"
+      | "violet"
+      | "indigo"
+      | "blue"
+      | "cyan"
+      | "green"
+      | "lime"
+      | "yellow"
+      | "orange"
+      | "teal"
+      | [number, number, number]
+      | null;
+    _icon_html: string | null;
+    mime_type: string;
+  };
 }
 /** GuiFolderSelectButtonMessage(uuid: 'str', container_uuid: 'str', props: 'GuiFolderSelectButtonProps')
  *
@@ -381,7 +1010,31 @@ export interface GuiFolderSelectButtonMessage {
   type: "GuiFolderSelectButtonMessage";
   uuid: string;
   container_uuid: string;
-  props: {'order': number, 'label': string, 'hint': (string | null), 'visible': boolean, 'disabled': boolean, 'color': ('dark' | 'gray' | 'red' | 'pink' | 'grape' | 'violet' | 'indigo' | 'blue' | 'cyan' | 'green' | 'lime' | 'yellow' | 'orange' | 'teal' | [number, number, number] | null), '_icon_html': (string | null)};
+  props: {
+    order: number;
+    label: string;
+    hint: string | null;
+    visible: boolean;
+    disabled: boolean;
+    color:
+      | "dark"
+      | "gray"
+      | "red"
+      | "pink"
+      | "grape"
+      | "violet"
+      | "indigo"
+      | "blue"
+      | "cyan"
+      | "green"
+      | "lime"
+      | "yellow"
+      | "orange"
+      | "teal"
+      | [number, number, number]
+      | null;
+    _icon_html: string | null;
+  };
 }
 /** GuiSliderMessage(uuid: 'str', value: 'float', container_uuid: 'str', props: 'GuiSliderProps')
  *
@@ -392,7 +1045,18 @@ export interface GuiSliderMessage {
   uuid: string;
   value: number;
   container_uuid: string;
-  props: {'order': number, 'label': string, 'hint': (string | null), 'visible': boolean, 'disabled': boolean, 'min': number, 'max': number, 'step': number, 'precision': number, '_marks': ({'value': number, 'label': (string | null)}[] | null)};
+  props: {
+    order: number;
+    label: string;
+    hint: string | null;
+    visible: boolean;
+    disabled: boolean;
+    min: number;
+    max: number;
+    step: number;
+    precision: number;
+    _marks: { value: number; label: string | null }[] | null;
+  };
 }
 /** GuiMultiSliderMessage(uuid: 'str', value: 'Tuple[float, ...]', container_uuid: 'str', props: 'GuiMultiSliderProps')
  *
@@ -403,7 +1067,20 @@ export interface GuiMultiSliderMessage {
   uuid: string;
   value: number[];
   container_uuid: string;
-  props: {'order': number, 'label': string, 'hint': (string | null), 'visible': boolean, 'disabled': boolean, 'min': number, 'max': number, 'step': number, 'min_range': (number | null), 'precision': number, 'fixed_endpoints': boolean, '_marks': ({'value': number, 'label': (string | null)}[] | null)};
+  props: {
+    order: number;
+    label: string;
+    hint: string | null;
+    visible: boolean;
+    disabled: boolean;
+    min: number;
+    max: number;
+    step: number;
+    min_range: number | null;
+    precision: number;
+    fixed_endpoints: boolean;
+    _marks: { value: number; label: string | null }[] | null;
+  };
 }
 /** GuiNumberMessage(uuid: 'str', value: 'float', container_uuid: 'str', props: 'GuiNumberProps')
  *
@@ -414,7 +1091,17 @@ export interface GuiNumberMessage {
   uuid: string;
   value: number;
   container_uuid: string;
-  props: {'order': number, 'label': string, 'hint': (string | null), 'visible': boolean, 'disabled': boolean, 'precision': number, 'step': number, 'min': (number | null), 'max': (number | null)};
+  props: {
+    order: number;
+    label: string;
+    hint: string | null;
+    visible: boolean;
+    disabled: boolean;
+    precision: number;
+    step: number;
+    min: number | null;
+    max: number | null;
+  };
 }
 /** GuiRgbMessage(uuid: 'str', value: 'Tuple[int, int, int]', container_uuid: 'str', props: 'GuiRgbProps')
  *
@@ -425,7 +1112,13 @@ export interface GuiRgbMessage {
   uuid: string;
   value: [number, number, number];
   container_uuid: string;
-  props: {'order': number, 'label': string, 'hint': (string | null), 'visible': boolean, 'disabled': boolean};
+  props: {
+    order: number;
+    label: string;
+    hint: string | null;
+    visible: boolean;
+    disabled: boolean;
+  };
 }
 /** GuiRgbaMessage(uuid: 'str', value: 'Tuple[int, int, int, int]', container_uuid: 'str', props: 'GuiRgbaProps')
  *
@@ -436,7 +1129,13 @@ export interface GuiRgbaMessage {
   uuid: string;
   value: [number, number, number, number];
   container_uuid: string;
-  props: {'order': number, 'label': string, 'hint': (string | null), 'visible': boolean, 'disabled': boolean};
+  props: {
+    order: number;
+    label: string;
+    hint: string | null;
+    visible: boolean;
+    disabled: boolean;
+  };
 }
 /** GuiCheckboxMessage(uuid: 'str', value: 'bool', container_uuid: 'str', props: 'GuiCheckboxProps')
  *
@@ -447,7 +1146,13 @@ export interface GuiCheckboxMessage {
   uuid: string;
   value: boolean;
   container_uuid: string;
-  props: {'order': number, 'label': string, 'hint': (string | null), 'visible': boolean, 'disabled': boolean};
+  props: {
+    order: number;
+    label: string;
+    hint: string | null;
+    visible: boolean;
+    disabled: boolean;
+  };
 }
 /** GuiVector2Message(uuid: 'str', value: 'Tuple[float, float]', container_uuid: 'str', props: 'GuiVector2Props')
  *
@@ -458,7 +1163,17 @@ export interface GuiVector2Message {
   uuid: string;
   value: [number, number];
   container_uuid: string;
-  props: {'order': number, 'label': string, 'hint': (string | null), 'visible': boolean, 'disabled': boolean, 'min': ([number, number] | null), 'max': ([number, number] | null), 'step': number, 'precision': number};
+  props: {
+    order: number;
+    label: string;
+    hint: string | null;
+    visible: boolean;
+    disabled: boolean;
+    min: [number, number] | null;
+    max: [number, number] | null;
+    step: number;
+    precision: number;
+  };
 }
 /** GuiVector3Message(uuid: 'str', value: 'Tuple[float, float, float]', container_uuid: 'str', props: 'GuiVector3Props')
  *
@@ -469,7 +1184,17 @@ export interface GuiVector3Message {
   uuid: string;
   value: [number, number, number];
   container_uuid: string;
-  props: {'order': number, 'label': string, 'hint': (string | null), 'visible': boolean, 'disabled': boolean, 'min': ([number, number, number] | null), 'max': ([number, number, number] | null), 'step': number, 'precision': number};
+  props: {
+    order: number;
+    label: string;
+    hint: string | null;
+    visible: boolean;
+    disabled: boolean;
+    min: [number, number, number] | null;
+    max: [number, number, number] | null;
+    step: number;
+    precision: number;
+  };
 }
 /** GuiTextMessage(uuid: 'str', value: 'str', container_uuid: 'str', props: 'GuiTextProps')
  *
@@ -480,7 +1205,14 @@ export interface GuiTextMessage {
   uuid: string;
   value: string;
   container_uuid: string;
-  props: {'order': number, 'label': string, 'hint': (string | null), 'visible': boolean, 'disabled': boolean, 'multiline': boolean};
+  props: {
+    order: number;
+    label: string;
+    hint: string | null;
+    visible: boolean;
+    disabled: boolean;
+    multiline: boolean;
+  };
 }
 /** GuiDropdownMessage(uuid: 'str', value: 'str', container_uuid: 'str', props: 'GuiDropdownProps')
  *
@@ -491,7 +1223,14 @@ export interface GuiDropdownMessage {
   uuid: string;
   value: string;
   container_uuid: string;
-  props: {'order': number, 'label': string, 'hint': (string | null), 'visible': boolean, 'disabled': boolean, 'options': string[]};
+  props: {
+    order: number;
+    label: string;
+    hint: string | null;
+    visible: boolean;
+    disabled: boolean;
+    options: string[];
+  };
 }
 /** GuiButtonGroupMessage(uuid: 'str', value: 'str', container_uuid: 'str', props: 'GuiButtonGroupProps')
  *
@@ -502,7 +1241,14 @@ export interface GuiButtonGroupMessage {
   uuid: string;
   value: string;
   container_uuid: string;
-  props: {'order': number, 'label': string, 'hint': (string | null), 'visible': boolean, 'disabled': boolean, 'options': string[]};
+  props: {
+    order: number;
+    label: string;
+    hint: string | null;
+    visible: boolean;
+    disabled: boolean;
+    options: string[];
+  };
 }
 /** GuiTableDataMessage(uuid: 'str', value: 'Tuple[Tuple[Union[str, float, int], ...], ...]', container_uuid: 'str', props: 'GuiTableDataProps')
  *
@@ -513,7 +1259,19 @@ export interface GuiTableDataMessage {
   uuid: string;
   value: (string | number)[][];
   container_uuid: string;
-  props: {'order': number, 'label': string, 'hint': (string | null), 'visible': boolean, 'disabled': boolean, 'columns': {'title': string, 'cell_type': 'string' | 'number', 'editable': boolean}[], 'selection_mode': 'none' | 'single'};
+  props: {
+    order: number;
+    label: string;
+    hint: string | null;
+    visible: boolean;
+    disabled: boolean;
+    columns: {
+      title: string;
+      cell_type: "string" | "number";
+      editable: boolean;
+    }[];
+    selection_mode: "none" | "single";
+  };
 }
 /** Sent server->client to remove a GUI element.
  *
@@ -533,15 +1291,72 @@ export interface RunJavascriptMessage {
   type: "RunJavascriptMessage";
   source: string;
 }
-/** Notification message.
+/** Server -> client message to show a new notification.
  *
  * (automatically generated)
  */
-export interface NotificationMessage {
-  type: "NotificationMessage";
-  mode: 'show' | 'update';
+export interface NotificationShowMessage {
+  type: "NotificationShowMessage";
   uuid: string;
-  props: {'title': string, 'body': string, 'loading': boolean, 'with_close_button': boolean, 'auto_close_seconds': (number | null), 'color': ('dark' | 'gray' | 'red' | 'pink' | 'grape' | 'violet' | 'indigo' | 'blue' | 'cyan' | 'green' | 'lime' | 'yellow' | 'orange' | 'teal' | [number, number, number] | null)};
+  props: {
+    title: string;
+    body: string;
+    loading: boolean;
+    with_close_button: boolean;
+    auto_close_seconds: number | null;
+    color:
+      | "dark"
+      | "gray"
+      | "red"
+      | "pink"
+      | "grape"
+      | "violet"
+      | "indigo"
+      | "blue"
+      | "cyan"
+      | "green"
+      | "lime"
+      | "yellow"
+      | "orange"
+      | "teal"
+      | [number, number, number]
+      | null;
+  };
+}
+/** Server -> client message to update an existing notification.
+ *
+ * Carries the full ``NotificationProps`` so the client shares a construction
+ * path with ``NotificationShowMessage``.
+ *
+ * (automatically generated)
+ */
+export interface NotificationUpdateMessage {
+  type: "NotificationUpdateMessage";
+  uuid: string;
+  props: {
+    title: string;
+    body: string;
+    loading: boolean;
+    with_close_button: boolean;
+    auto_close_seconds: number | null;
+    color:
+      | "dark"
+      | "gray"
+      | "red"
+      | "pink"
+      | "grape"
+      | "violet"
+      | "indigo"
+      | "blue"
+      | "cyan"
+      | "green"
+      | "lime"
+      | "yellow"
+      | "orange"
+      | "teal"
+      | [number, number, number]
+      | null;
+  };
 }
 /** Remove a specific notification.
  *
@@ -572,25 +1387,67 @@ export interface ViewerCameraMessage {
  * origin is the viewing camera position, in world coordinates.
  * direction is the vector if a ray is projected from the camera through the
  * clicked pixel,
- * 
+ *
  *
  * (automatically generated)
  */
 export interface ScenePointerMessage {
   type: "ScenePointerMessage";
-  event_type: 'click' | 'rect-select';
-  ray_origin: ([number, number, number] | null);
-  ray_direction: ([number, number, number] | null);
+  event_type: "click" | "rect-select";
+  ray_origin: [number, number, number] | null;
+  ray_direction: [number, number, number] | null;
   screen_pos: [number, number][];
+  modifier:
+    | "cmd/ctrl"
+    | "alt"
+    | "shift"
+    | "cmd/ctrl+alt"
+    | "cmd/ctrl+shift"
+    | "alt+shift"
+    | "cmd/ctrl+alt+shift"
+    | null;
 }
-/** Message to enable/disable scene click events.
+/** Set the modifier-filter set for a scene pointer ``event_type``.
+ *
+ * An empty ``modifiers`` tuple disables all callbacks for that
+ * ``event_type`` in the sending scope. A non-empty tuple enables them,
+ * and the client uses the filter list to gate gesture engagement: a
+ * pointerdown whose held-modifier state doesn't match any filter is
+ * treated as if no callback were registered (no rectangle drawn, no
+ * message sent).
+ *
+ * Filters are kept per ``owner`` on the client and engagement uses the
+ * union across owners, so the broadcast scope and a client scope can
+ * register pointer callbacks independently -- one scope clearing its
+ * filters never deactivates the other's.
  *
  * (automatically generated)
  */
 export interface ScenePointerEnableMessage {
   type: "ScenePointerEnableMessage";
-  enable: boolean;
-  event_type: 'click' | 'rect-select';
+  event_type: "click" | "rect-select";
+  modifiers: (
+    | "cmd/ctrl"
+    | "alt"
+    | "shift"
+    | "cmd/ctrl+alt"
+    | "cmd/ctrl+shift"
+    | "alt+shift"
+    | "cmd/ctrl+alt+shift"
+    | null
+  )[];
+  owner: string;
+}
+/** Fog message.
+ *
+ * (automatically generated)
+ */
+export interface FogMessage {
+  type: "FogMessage";
+  near: number;
+  far: number;
+  color: [number, number, number];
+  enabled: boolean;
 }
 /** Environment Map message.
  *
@@ -598,7 +1455,18 @@ export interface ScenePointerEnableMessage {
  */
 export interface EnvironmentMapMessage {
   type: "EnvironmentMapMessage";
-  hdri: ('apartment' | 'city' | 'dawn' | 'forest' | 'lobby' | 'night' | 'park' | 'studio' | 'sunset' | 'warehouse' | null);
+  hdri:
+    | "apartment"
+    | "city"
+    | "dawn"
+    | "forest"
+    | "lobby"
+    | "night"
+    | "park"
+    | "studio"
+    | "sunset"
+    | "warehouse"
+    | null;
   background: boolean;
   background_blurriness: number;
   background_intensity: number;
@@ -616,7 +1484,7 @@ export interface EnableLightsMessage {
   cast_shadow: boolean;
 }
 /** Server -> client message to set a skinned mesh bone's orientation.
- * 
+ *
  * As with all other messages, transforms take the `T_parent_local` convention.
  *
  * (automatically generated)
@@ -626,9 +1494,10 @@ export interface SetBoneOrientationMessage {
   name: string;
   bone_index: number;
   wxyz: [number, number, number, number];
+  owner: string;
 }
 /** Server -> client message to set a skinned mesh bone's position.
- * 
+ *
  * As with all other messages, transforms take the `T_parent_local` convention.
  *
  * (automatically generated)
@@ -638,6 +1507,7 @@ export interface SetBonePositionMessage {
   name: string;
   bone_index: number;
   position: [number, number, number];
+  owner: string;
 }
 /** Server -> client message to set the camera's position.
  *
@@ -646,6 +1516,7 @@ export interface SetBonePositionMessage {
 export interface SetCameraPositionMessage {
   type: "SetCameraPositionMessage";
   position: [number, number, number];
+  initial: boolean;
 }
 /** Server -> client message to set the camera's up direction.
  *
@@ -654,6 +1525,7 @@ export interface SetCameraPositionMessage {
 export interface SetCameraUpDirectionMessage {
   type: "SetCameraUpDirectionMessage";
   position: [number, number, number];
+  initial: boolean;
 }
 /** Server -> client message to set the camera's look-at point.
  *
@@ -662,6 +1534,7 @@ export interface SetCameraUpDirectionMessage {
 export interface SetCameraLookAtMessage {
   type: "SetCameraLookAtMessage";
   look_at: [number, number, number];
+  initial: boolean;
 }
 /** Server -> client message to set the camera's near clipping plane.
  *
@@ -670,6 +1543,7 @@ export interface SetCameraLookAtMessage {
 export interface SetCameraNearMessage {
   type: "SetCameraNearMessage";
   near: number;
+  initial: boolean;
 }
 /** Server -> client message to set the camera's far clipping plane.
  *
@@ -678,6 +1552,7 @@ export interface SetCameraNearMessage {
 export interface SetCameraFarMessage {
   type: "SetCameraFarMessage";
   far: number;
+  initial: boolean;
 }
 /** Server -> client message to set the camera's field of view.
  *
@@ -686,9 +1561,33 @@ export interface SetCameraFarMessage {
 export interface SetCameraFovMessage {
   type: "SetCameraFovMessage";
   fov: number;
+  initial: boolean;
+}
+/** Server -> client message to set how close the camera may be dollied in
+ * to its orbit (look-at) point.
+ *
+ * A constraint rather than a pose, so unlike the camera position/look-at messages
+ * there is no `initial` flag: URL parameters override where the camera *is*, not how
+ * far it is allowed to travel.
+ *
+ *
+ * (automatically generated)
+ */
+export interface SetCameraMinOrbitDistanceMessage {
+  type: "SetCameraMinOrbitDistanceMessage";
+  min_orbit_distance: number;
+}
+/** Server -> client message to set how far the camera may be dollied out
+ * from its orbit (look-at) point.
+ *
+ * (automatically generated)
+ */
+export interface SetCameraMaxOrbitDistanceMessage {
+  type: "SetCameraMaxOrbitDistanceMessage";
+  max_orbit_distance: number;
 }
 /** Server -> client message to set a scene node's orientation.
- * 
+ *
  * As with all other messages, transforms take the `T_parent_local` convention.
  *
  * (automatically generated)
@@ -697,9 +1596,10 @@ export interface SetOrientationMessage {
   type: "SetOrientationMessage";
   name: string;
   wxyz: [number, number, number, number];
+  owner: string;
 }
 /** Server -> client message to set a scene node's position.
- * 
+ *
  * As with all other messages, transforms take the `T_parent_local` convention.
  *
  * (automatically generated)
@@ -708,9 +1608,10 @@ export interface SetPositionMessage {
   type: "SetPositionMessage";
   name: string;
   position: [number, number, number];
+  owner: string;
 }
 /** Client -> server message when a transform control is updated.
- * 
+ *
  * As with all other messages, transforms take the `T_parent_local` convention.
  *
  * (automatically generated)
@@ -720,6 +1621,7 @@ export interface TransformControlsUpdateMessage {
   name: string;
   wxyz: [number, number, number, number];
   position: [number, number, number];
+  owner: string;
 }
 /** Client -> server message when a transform control drag starts.
  *
@@ -728,6 +1630,7 @@ export interface TransformControlsUpdateMessage {
 export interface TransformControlsDragStartMessage {
   type: "TransformControlsDragStartMessage";
   name: string;
+  owner: string;
 }
 /** Client -> server message when a transform control drag ends.
  *
@@ -736,6 +1639,7 @@ export interface TransformControlsDragStartMessage {
 export interface TransformControlsDragEndMessage {
   type: "TransformControlsDragEndMessage";
   name: string;
+  owner: string;
 }
 /** Message for rendering a background image.
  *
@@ -743,9 +1647,9 @@ export interface TransformControlsDragEndMessage {
  */
 export interface BackgroundImageMessage {
   type: "BackgroundImageMessage";
-  format: 'jpeg' | 'png';
-  rgb_data: (Uint8Array<ArrayBuffer> | null);
-  depth_data: (Uint8Array<ArrayBuffer> | null);
+  format: "jpeg" | "png";
+  rgb_data: Uint8Array<ArrayBuffer> | null;
+  depth_data: Uint8Array<ArrayBuffer> | null;
 }
 /** Set the visibility of a particular node in the scene.
  *
@@ -755,15 +1659,67 @@ export interface SetSceneNodeVisibilityMessage {
   type: "SetSceneNodeVisibilityMessage";
   name: string;
   visible: boolean;
+  owner: string;
 }
-/** Set the clickability of a particular node in the scene.
+/** Declare the drag-input combinations a scene node listens for.
+ *
+ * Sent as a full set; empty ``bindings`` means the node is not draggable.
+ *
+ * Excluded from scene serialization: drag bindings are interaction state
+ * (callbacks live on the server, the client's ``DragLayer`` is null in
+ * static/embed/playback mode), so persisting them into ``.viser`` files
+ * would just make exported nodes look draggable while no callback can
+ * ever fire.
+ *
  *
  * (automatically generated)
  */
-export interface SetSceneNodeClickableMessage {
-  type: "SetSceneNodeClickableMessage";
+export interface SetSceneNodeDragBindingsMessage {
+  type: "SetSceneNodeDragBindingsMessage";
   name: string;
-  clickable: boolean;
+  bindings: {
+    button: "left" | "middle" | "right";
+    modifier:
+      | "cmd/ctrl"
+      | "alt"
+      | "shift"
+      | "cmd/ctrl+alt"
+      | "cmd/ctrl+shift"
+      | "alt+shift"
+      | "cmd/ctrl+alt+shift"
+      | null;
+  }[];
+  owner: string;
+}
+/** Declare the click-input combinations a scene node listens for.
+ *
+ * Sent as a full set; empty ``bindings`` means the node is not
+ * clickable. Mirrors :class:`SetSceneNodeDragBindingsMessage` for the
+ * click channel. Click and drag share the same `DragBinding` shape --
+ * button + exact-match modifier.
+ *
+ * Excluded from scene serialization for the same reason as the drag
+ * sibling -- click callbacks live on the server.
+ *
+ *
+ * (automatically generated)
+ */
+export interface SetSceneNodeClickBindingsMessage {
+  type: "SetSceneNodeClickBindingsMessage";
+  name: string;
+  bindings: {
+    button: "left" | "middle" | "right";
+    modifier:
+      | "cmd/ctrl"
+      | "alt"
+      | "shift"
+      | "cmd/ctrl+alt"
+      | "cmd/ctrl+shift"
+      | "alt+shift"
+      | "cmd/ctrl+alt+shift"
+      | null;
+  }[];
+  owner: string;
 }
 /** Message for clicked objects.
  *
@@ -772,10 +1728,50 @@ export interface SetSceneNodeClickableMessage {
 export interface SceneNodeClickMessage {
   type: "SceneNodeClickMessage";
   name: string;
-  instance_index: (number | null);
+  instance_index: number | null;
   ray_origin: [number, number, number];
   ray_direction: [number, number, number];
   screen_pos: [number, number];
+  modifier:
+    | "cmd/ctrl"
+    | "alt"
+    | "shift"
+    | "cmd/ctrl+alt"
+    | "cmd/ctrl+shift"
+    | "alt+shift"
+    | "cmd/ctrl+alt+shift"
+    | null;
+  owner: string;
+}
+/** Client -> server message for a scene-node drag (start/update/end).
+ *
+ * All position/screen fields are *live* -- recomputed on every
+ * start/update/end. ``start_*`` tracks the original click point as it
+ * moves with the object (the grab point); ``end_*`` tracks the current
+ * pointer projected onto the camera-aligned drag plane.
+ *
+ * (automatically generated)
+ */
+export interface SceneNodeDragMessage {
+  type: "SceneNodeDragMessage";
+  phase: "start" | "update" | "end";
+  name: string;
+  instance_index: number | null;
+  start_position: [number, number, number];
+  start_screen_pos: [number, number];
+  end_position: [number, number, number];
+  end_screen_pos: [number, number];
+  button: "left" | "middle" | "right";
+  modifier:
+    | "cmd/ctrl"
+    | "alt"
+    | "shift"
+    | "cmd/ctrl+alt"
+    | "cmd/ctrl+shift"
+    | "alt+shift"
+    | "cmd/ctrl+alt+shift"
+    | null;
+  owner: string;
 }
 /** Reset GUI.
  *
@@ -783,6 +1779,115 @@ export interface SceneNodeClickMessage {
  */
 export interface ResetGuiMessage {
   type: "ResetGuiMessage";
+}
+/** Bidirectional form submit signal.
+ *
+ * - Sent client->server when the user presses Cmd/Ctrl+Enter inside a form.
+ * The server fires the form's ``on_submit`` callbacks and broadcasts this
+ * message to all clients.
+ * - Sent server->client (broadcast) after any submit (client-initiated or
+ * via Python ``form.submit()``). Clients clear their dirty indicator on
+ * receipt.
+ *
+ * (automatically generated)
+ */
+export interface GuiFormSubmitMessage {
+  type: "GuiFormSubmitMessage";
+  uuid: string;
+}
+/** Bidirectional form dirty signal.
+ *
+ * - Sent client->server when any input inside the form first changes since
+ * the last submit. The server broadcasts this to all other clients.
+ * - Sent server->client (broadcast) to propagate dirty state. Clients show
+ * a dirty indicator on the form header on receipt.
+ *
+ * (automatically generated)
+ */
+export interface GuiFormDirtyMessage {
+  type: "GuiFormDirtyMessage";
+  uuid: string;
+}
+/** Dock/float a panel (or the main control panel). Write-only.
+ *
+ * (automatically generated)
+ */
+export interface GuiSetPanelPositionMessage {
+  type: "GuiSetPanelPositionMessage";
+  uuid: string;
+  position:
+    | { kind: "edge"; edge: "left" | "right" }
+    | { kind: "split"; anchor_uuid: string; side: "above" | "below" }
+    | { kind: "float"; x: number | null; y: number | null };
+  counter: number;
+  run_id: string;
+}
+/** Set a panel's width in pixels (None clears the override -> default/theme
+ * width). Write-only.
+ *
+ * (automatically generated)
+ */
+export interface GuiSetPanelWidthMessage {
+  type: "GuiSetPanelWidthMessage";
+  uuid: string;
+  width: number | null;
+  counter: number;
+  run_id: string;
+}
+/** Set a panel's height in pixels (floating panels only; None clears the
+ * override -> auto). Write-only.
+ *
+ * (automatically generated)
+ */
+export interface GuiSetPanelHeightMessage {
+  type: "GuiSetPanelHeightMessage";
+  uuid: string;
+  height: number | null;
+  counter: number;
+  run_id: string;
+}
+/** Minimize (collapse) or expand a panel's CONTAINER. Write-only.
+ *
+ * Collapse is container state on the client (a floating window's flag or a
+ * docked column's rail), so this applies to the panel's containing stack --
+ * panels stacked together minimize together, exactly like the on-screen
+ * minimize control (D47; supersedes D31's removal, whose motivating
+ * mixed-stack awkwardness was dissolved by container-owned collapse).
+ *
+ *
+ * (automatically generated)
+ */
+export interface GuiSetPanelCollapsedMessage {
+  type: "GuiSetPanelCollapsedMessage";
+  uuid: string;
+  collapsed: boolean;
+  counter: number;
+  run_id: string;
+}
+/** A standalone panel: a dockable / floating GUI container that lives outside
+ * the control panel. Deliberately NOT a GuiComponentMessage -- it is a
+ * top-level entity (like a modal), so it never enters the inline GUI tree.
+ *
+ * (automatically generated)
+ */
+export interface GuiPanelMessage {
+  type: "GuiPanelMessage";
+  uuid: string;
+  props: {
+    _tab_labels: string[];
+    _tab_icons_html: (string | null)[];
+    _tab_container_ids: string[];
+    order: number;
+    visible: boolean;
+  };
+}
+/** Sent server->client to remove a standalone panel.
+ *
+ * (automatically generated)
+ */
+export interface GuiPanelRemoveMessage {
+  type: "GuiPanelRemoveMessage";
+  uuid: string;
 }
 /** GuiModalMessage(order: 'float', uuid: 'str', title: 'str', size: "Literal['xs', 'sm', 'md', 'lg', 'xl'] | str")
  *
@@ -793,7 +1898,7 @@ export interface GuiModalMessage {
   order: number;
   uuid: string;
   title: string;
-  size: ('xs' | 'sm' | 'md' | 'lg' | 'xl' | string);
+  size: "xs" | "sm" | "md" | "lg" | "xl" | string;
 }
 /** GuiCloseModalMessage(uuid: 'str')
  *
@@ -810,7 +1915,14 @@ export interface GuiCloseModalMessage {
 export interface TimelineMessage {
   type: "TimelineMessage";
   value: number;
-  props: {'min': number, 'max': number, 'step': number, 'visible': boolean, 'precision': number, '_marks': ({'value': number, 'label': (string | null)}[] | null)};
+  props: {
+    min: number;
+    max: number;
+    step: number;
+    visible: boolean;
+    precision: number;
+    _marks: { value: number; label: string | null }[] | null;
+  };
 }
 /** Remove timeline from display.
  *
@@ -819,6 +1931,17 @@ export interface TimelineMessage {
 export interface TimelineRemoveMessage {
   type: "TimelineRemoveMessage";
 }
+/** Message sent from client->server when a button is being held.
+ *
+ * Sent periodically at the specified frequency while the button is pressed.
+ *
+ * (automatically generated)
+ */
+export interface GuiButtonHoldMessage {
+  type: "GuiButtonHoldMessage";
+  uuid: string;
+  frequency: number;
+}
 /** Sent client<->server when any property of a GUI component is changed.
  *
  * (automatically generated)
@@ -826,7 +1949,7 @@ export interface TimelineRemoveMessage {
 export interface GuiUpdateMessage {
   type: "GuiUpdateMessage";
   uuid: string;
-  updates: {[key: string]: any};
+  updates: { [key: string]: any };
 }
 /** Sent client<->server when any property of a scene node is changed.
  *
@@ -835,7 +1958,8 @@ export interface GuiUpdateMessage {
 export interface SceneNodeUpdateMessage {
   type: "SceneNodeUpdateMessage";
   name: string;
-  updates: {[key: string]: any};
+  updates: { [key: string]: any };
+  owner: string;
 }
 /** Message from server->client to configure parts of the GUI.
  *
@@ -843,13 +1967,40 @@ export interface SceneNodeUpdateMessage {
  */
 export interface ThemeConfigurationMessage {
   type: "ThemeConfigurationMessage";
-  titlebar_content: ({'buttons': ({'text': (string | null), 'icon': ('GitHub' | 'Description' | 'Keyboard' | null), 'href': (string | null)}[] | null), 'image': ({'image_url_light': string, 'image_url_dark': (string | null), 'image_alt': string, 'href': (string | null)} | null)} | null);
-  control_layout: 'floating' | 'collapsible' | 'fixed';
-  control_width: ('small' | 'medium' | 'large' | string);
+  titlebar_content: {
+    buttons:
+      | {
+          text: string | null;
+          icon: "GitHub" | "Description" | "Keyboard" | null;
+          href: string | null;
+        }[]
+      | null;
+    image: {
+      image_url_light: string;
+      image_url_dark: string | null;
+      image_alt: string;
+      href: string | null;
+    } | null;
+  } | null;
+  control_layout: "floating" | "collapsible" | "fixed";
+  control_width: "small" | "medium" | "large" | string;
   show_logo: boolean;
   show_share_button: boolean;
   dark_mode: boolean;
-  colors: ([string, string, string, string, string, string, string, string, string, string] | null);
+  colors:
+    | [
+        string,
+        string,
+        string,
+        string,
+        string,
+        string,
+        string,
+        string,
+        string,
+        string,
+      ]
+    | null;
 }
 /** Message from server->client requesting a render from a specified camera
  * pose.
@@ -858,13 +2009,14 @@ export interface ThemeConfigurationMessage {
  */
 export interface GetRenderRequestMessage {
   type: "GetRenderRequestMessage";
-  format: 'image/jpeg' | 'image/png';
+  format: "image/jpeg" | "image/png";
   height: number;
   width: number;
   quality: number;
   wxyz: [number, number, number, number];
   position: [number, number, number];
   fov: number;
+  render_uuid: string;
 }
 /** Message from client->server carrying a render.
  *
@@ -873,11 +2025,12 @@ export interface GetRenderRequestMessage {
 export interface GetRenderResponseMessage {
   type: "GetRenderResponseMessage";
   payload: Uint8Array<ArrayBuffer>;
+  render_uuid: string;
 }
 /** Signal that a file is about to be sent.
- * 
+ *
  * This message is used to upload files from clients to the server.
- * 
+ *
  *
  * (automatically generated)
  */
@@ -891,9 +2044,9 @@ export interface FileTransferStartUpload {
   size_bytes: number;
 }
 /** Signal that a file is about to be sent.
- * 
+ *
  * This message is used to send files to clients from the server.
- * 
+ *
  *
  * (automatically generated)
  */
@@ -912,7 +2065,7 @@ export interface FileTransferStartDownload {
  */
 export interface FileTransferPart {
   type: "FileTransferPart";
-  source_component_uuid: (string | null);
+  source_component_uuid: string | null;
   transfer_uuid: string;
   part_index: number;
   content: Uint8Array<ArrayBuffer>;
@@ -923,7 +2076,7 @@ export interface FileTransferPart {
  */
 export interface FileTransferPartAck {
   type: "FileTransferPartAck";
-  source_component_uuid: (string | null);
+  source_component_uuid: string | null;
   transfer_uuid: string;
   transferred_bytes: number;
   total_bytes: number;
@@ -944,13 +2097,25 @@ export interface FolderSelectMessage {
 export interface ShareUrlRequest {
   type: "ShareUrlRequest";
 }
+/** Server->client marker: the (re)connect replay of the persistent message
+ * buffer is complete -- everything after this is live traffic. Injected
+ * per-connection by the message producer (never stored in the buffer). The
+ * client uses it to end its reconnect phase: state held dormant across the
+ * replay (e.g. dock panes for panels that may be re-created under the same
+ * uuid) is purged for entities the replay did not revive.
+ *
+ * (automatically generated)
+ */
+export interface ReplayDoneMessage {
+  type: "ReplayDoneMessage";
+}
 /** Message from server->client to indicate that the share URL has been updated.
  *
  * (automatically generated)
  */
 export interface ShareUrlUpdated {
   type: "ShareUrlUpdated";
-  share_url: (string | null);
+  share_url: string | null;
 }
 /** Message from client->server to disconnect from the share URL server.
  *
@@ -965,10 +2130,154 @@ export interface ShareUrlDisconnect {
  */
 export interface SetGuiPanelLabelMessage {
   type: "SetGuiPanelLabelMessage";
-  label: (string | null);
+  label: string | null;
+}
+/** Message from server->client to register a command in the command palette.
+ *
+ * (automatically generated)
+ */
+export interface RegisterCommandMessage {
+  type: "RegisterCommandMessage";
+  uuid: string;
+  props: {
+    label: string;
+    description: string | null;
+    hotkey:
+      | "A"
+      | "B"
+      | "C"
+      | "D"
+      | "E"
+      | "F"
+      | "G"
+      | "H"
+      | "I"
+      | "J"
+      | "K"
+      | "L"
+      | "M"
+      | "N"
+      | "O"
+      | "P"
+      | "Q"
+      | "R"
+      | "S"
+      | "T"
+      | "U"
+      | "V"
+      | "W"
+      | "X"
+      | "Y"
+      | "Z"
+      | "0"
+      | "1"
+      | "2"
+      | "3"
+      | "4"
+      | "5"
+      | "6"
+      | "7"
+      | "8"
+      | "9"
+      | "space"
+      | "enter"
+      | "escape"
+      | "tab"
+      | "backspace"
+      | "delete"
+      | "insert"
+      | "home"
+      | "end"
+      | "pageup"
+      | "pagedown"
+      | "arrowup"
+      | "arrowdown"
+      | "arrowleft"
+      | "arrowright"
+      | null;
+    modifier:
+      | "cmd/ctrl"
+      | "alt"
+      | "shift"
+      | "cmd/ctrl+alt"
+      | "cmd/ctrl+shift"
+      | "alt+shift"
+      | "cmd/ctrl+alt+shift"
+      | null;
+    _icon_html: string | null;
+    disabled: boolean;
+  };
+}
+/** Message from server->client to update properties of an existing command.
+ *
+ * (automatically generated)
+ */
+export interface CommandUpdateMessage {
+  type: "CommandUpdateMessage";
+  uuid: string;
+  updates: { [key: string]: any };
+}
+/** Message from server->client to remove a command from the command palette.
+ *
+ * (automatically generated)
+ */
+export interface RemoveCommandMessage {
+  type: "RemoveCommandMessage";
+  uuid: string;
+}
+/** Message from client->server when a command is triggered from the command palette.
+ *
+ * (automatically generated)
+ */
+export interface CommandTriggerMessage {
+  type: "CommandTriggerMessage";
+  uuid: string;
+}
+/** Set a key in the client's localStorage.
+ *
+ * (automatically generated)
+ */
+export interface LocalStorageSetItemMessage {
+  type: "LocalStorageSetItemMessage";
+  key: string;
+  value: string;
+}
+/** Remove a key from the client's localStorage.
+ *
+ * (automatically generated)
+ */
+export interface LocalStorageRemoveItemMessage {
+  type: "LocalStorageRemoveItemMessage";
+  key: string;
+}
+/** Clear all viser-written keys from the client's localStorage.
+ *
+ * (automatically generated)
+ */
+export interface LocalStorageClearMessage {
+  type: "LocalStorageClearMessage";
+}
+/** Message from server->client requesting a value from localStorage.
+ *
+ * (automatically generated)
+ */
+export interface LocalStorageGetItemRequestMessage {
+  type: "LocalStorageGetItemRequestMessage";
+  key: string;
+  request_uuid: string;
+}
+/** Message from client->server carrying the requested localStorage value.
+ *
+ * (automatically generated)
+ */
+export interface LocalStorageGetItemResponseMessage {
+  type: "LocalStorageGetItemResponseMessage";
+  value: string | null;
+  error: string | null;
+  request_uuid: string;
 }
 
-export type Message = 
+export type Message =
   | CameraFrustumMessage
   | GlbMessage
   | FrameMessage
@@ -986,12 +2295,14 @@ export type Message =
   | MeshMessage
   | BoxMessage
   | IcosphereMessage
+  | CylinderMessage
   | SkinnedMeshMessage
   | BatchedMeshesMessage
   | BatchedGlbMessage
   | TransformControlsMessage
   | ImageMessage
   | LineSegmentsMessage
+  | ArrowMessage
   | CatmullRomSplineMessage
   | CubicBezierSplineMessage
   | GaussianSplatsMessage
@@ -999,8 +2310,10 @@ export type Message =
   | ToolbarConfigMessage
   | RemoveSceneNodeMessage
   | GuiFolderMessage
+  | GuiFormMessage
   | GuiMarkdownMessage
   | GuiHtmlMessage
+  | GuiDividerMessage
   | GuiProgressBarMessage
   | GuiPlotlyMessage
   | GuiUplotMessage
@@ -1023,11 +2336,13 @@ export type Message =
   | GuiTableDataMessage
   | GuiRemoveMessage
   | RunJavascriptMessage
-  | NotificationMessage
+  | NotificationShowMessage
+  | NotificationUpdateMessage
   | RemoveNotificationMessage
   | ViewerCameraMessage
   | ScenePointerMessage
   | ScenePointerEnableMessage
+  | FogMessage
   | EnvironmentMapMessage
   | EnableLightsMessage
   | SetBoneOrientationMessage
@@ -1038,6 +2353,8 @@ export type Message =
   | SetCameraNearMessage
   | SetCameraFarMessage
   | SetCameraFovMessage
+  | SetCameraMinOrbitDistanceMessage
+  | SetCameraMaxOrbitDistanceMessage
   | SetOrientationMessage
   | SetPositionMessage
   | TransformControlsUpdateMessage
@@ -1045,13 +2362,24 @@ export type Message =
   | TransformControlsDragEndMessage
   | BackgroundImageMessage
   | SetSceneNodeVisibilityMessage
-  | SetSceneNodeClickableMessage
+  | SetSceneNodeDragBindingsMessage
+  | SetSceneNodeClickBindingsMessage
   | SceneNodeClickMessage
+  | SceneNodeDragMessage
   | ResetGuiMessage
+  | GuiFormSubmitMessage
+  | GuiFormDirtyMessage
+  | GuiSetPanelPositionMessage
+  | GuiSetPanelWidthMessage
+  | GuiSetPanelHeightMessage
+  | GuiSetPanelCollapsedMessage
+  | GuiPanelMessage
+  | GuiPanelRemoveMessage
   | GuiModalMessage
   | GuiCloseModalMessage
   | TimelineMessage
   | TimelineRemoveMessage
+  | GuiButtonHoldMessage
   | GuiUpdateMessage
   | SceneNodeUpdateMessage
   | ThemeConfigurationMessage
@@ -1063,10 +2391,20 @@ export type Message =
   | FileTransferPartAck
   | FolderSelectMessage
   | ShareUrlRequest
+  | ReplayDoneMessage
   | ShareUrlUpdated
   | ShareUrlDisconnect
-  | SetGuiPanelLabelMessage;
-export type SceneNodeMessage = 
+  | SetGuiPanelLabelMessage
+  | RegisterCommandMessage
+  | CommandUpdateMessage
+  | RemoveCommandMessage
+  | CommandTriggerMessage
+  | LocalStorageSetItemMessage
+  | LocalStorageRemoveItemMessage
+  | LocalStorageClearMessage
+  | LocalStorageGetItemRequestMessage
+  | LocalStorageGetItemResponseMessage;
+export type SceneNodeMessage =
   | CameraFrustumMessage
   | GlbMessage
   | FrameMessage
@@ -1084,19 +2422,23 @@ export type SceneNodeMessage =
   | MeshMessage
   | BoxMessage
   | IcosphereMessage
+  | CylinderMessage
   | SkinnedMeshMessage
   | BatchedMeshesMessage
   | BatchedGlbMessage
   | TransformControlsMessage
   | ImageMessage
   | LineSegmentsMessage
+  | ArrowMessage
   | CatmullRomSplineMessage
   | CubicBezierSplineMessage
   | GaussianSplatsMessage;
-export type GuiComponentMessage = 
+export type GuiComponentMessage =
   | GuiFolderMessage
+  | GuiFormMessage
   | GuiMarkdownMessage
   | GuiHtmlMessage
+  | GuiDividerMessage
   | GuiProgressBarMessage
   | GuiPlotlyMessage
   | GuiUplotMessage
@@ -1117,12 +2459,1044 @@ export type GuiComponentMessage =
   | GuiDropdownMessage
   | GuiButtonGroupMessage
   | GuiTableDataMessage;
-const typeSetSceneNodeMessage = new Set(['CameraFrustumMessage', 'GlbMessage', 'FrameMessage', 'BatchedAxesMessage', 'GridMessage', 'LabelMessage', 'Gui3DMessage', 'PointCloudMessage', 'DirectionalLightMessage', 'AmbientLightMessage', 'HemisphereLightMessage', 'PointLightMessage', 'RectAreaLightMessage', 'SpotLightMessage', 'MeshMessage', 'BoxMessage', 'IcosphereMessage', 'SkinnedMeshMessage', 'BatchedMeshesMessage', 'BatchedGlbMessage', 'TransformControlsMessage', 'ImageMessage', 'LineSegmentsMessage', 'CatmullRomSplineMessage', 'CubicBezierSplineMessage', 'GaussianSplatsMessage']);export function isSceneNodeMessage(message: Message): message is SceneNodeMessage {
-    return typeSetSceneNodeMessage.has(message.type);
+const typeSetSceneNodeMessage = new Set([
+  "CameraFrustumMessage",
+  "GlbMessage",
+  "FrameMessage",
+  "BatchedAxesMessage",
+  "GridMessage",
+  "LabelMessage",
+  "Gui3DMessage",
+  "PointCloudMessage",
+  "DirectionalLightMessage",
+  "AmbientLightMessage",
+  "HemisphereLightMessage",
+  "PointLightMessage",
+  "RectAreaLightMessage",
+  "SpotLightMessage",
+  "MeshMessage",
+  "BoxMessage",
+  "IcosphereMessage",
+  "CylinderMessage",
+  "SkinnedMeshMessage",
+  "BatchedMeshesMessage",
+  "BatchedGlbMessage",
+  "TransformControlsMessage",
+  "ImageMessage",
+  "LineSegmentsMessage",
+  "ArrowMessage",
+  "CatmullRomSplineMessage",
+  "CubicBezierSplineMessage",
+  "GaussianSplatsMessage",
+]);
+export function isSceneNodeMessage(
+  message: Message,
+): message is SceneNodeMessage {
+  return typeSetSceneNodeMessage.has(message.type);
 }
-const typeSetGuiComponentMessage = new Set(['GuiFolderMessage', 'GuiMarkdownMessage', 'GuiHtmlMessage', 'GuiProgressBarMessage', 'GuiPlotlyMessage', 'GuiUplotMessage', 'GuiImageMessage', 'GuiTabGroupMessage', 'GuiButtonMessage', 'GuiUploadButtonMessage', 'GuiFolderSelectButtonMessage', 'GuiSliderMessage', 'GuiMultiSliderMessage', 'GuiNumberMessage', 'GuiRgbMessage', 'GuiRgbaMessage', 'GuiCheckboxMessage', 'GuiVector2Message', 'GuiVector3Message', 'GuiTextMessage', 'GuiDropdownMessage', 'GuiButtonGroupMessage', 'GuiTableDataMessage']);export function isGuiComponentMessage(message: Message): message is GuiComponentMessage {
-    return typeSetGuiComponentMessage.has(message.type);
+const typeSetGuiComponentMessage = new Set([
+  "GuiFolderMessage",
+  "GuiFormMessage",
+  "GuiMarkdownMessage",
+  "GuiHtmlMessage",
+  "GuiDividerMessage",
+  "GuiProgressBarMessage",
+  "GuiPlotlyMessage",
+  "GuiUplotMessage",
+  "GuiImageMessage",
+  "GuiTabGroupMessage",
+  "GuiButtonMessage",
+  "GuiUploadButtonMessage",
+  "GuiFolderSelectButtonMessage",
+  "GuiSliderMessage",
+  "GuiMultiSliderMessage",
+  "GuiNumberMessage",
+  "GuiRgbMessage",
+  "GuiRgbaMessage",
+  "GuiCheckboxMessage",
+  "GuiVector2Message",
+  "GuiVector3Message",
+  "GuiTextMessage",
+  "GuiDropdownMessage",
+  "GuiButtonGroupMessage",
+  "GuiTableDataMessage",
+]);
+export function isGuiComponentMessage(
+  message: Message,
+): message is GuiComponentMessage {
+  return typeSetGuiComponentMessage.has(message.type);
 }
 
-// Export ToolbarButton type for convenience
-export type ToolbarButton = {'action': string, 'icon': string, 'tooltip': string};
+export type ScenePropDescriptor = {
+  tsType: string;
+  editorHidden?: boolean;
+} & (
+  | { kind: "default" }
+  | { kind: "boolean" }
+  | { kind: "color" }
+  | { kind: "stringLiteral"; options: readonly string[] }
+);
+
+export const SceneNodePropsSchema: {
+  [messageType: string]: { [propName: string]: ScenePropDescriptor };
+} = {
+  CameraFrustumMessage: {
+    fov: {
+      kind: "default",
+      tsType: "number",
+    },
+    aspect: {
+      kind: "default",
+      tsType: "number",
+    },
+    thickness: {
+      kind: "default",
+      tsType: "number",
+    },
+    color: {
+      kind: "color",
+      tsType: "[number, number, number]",
+    },
+    _format: {
+      kind: "stringLiteral",
+      tsType: "'jpeg' | 'png'",
+      options: ["jpeg", "png"],
+    },
+    _image_data: {
+      kind: "default",
+      tsType: "(Uint8Array<ArrayBuffer> | null)",
+    },
+    cast_shadow: {
+      kind: "boolean",
+      tsType: "boolean",
+    },
+    receive_shadow: {
+      kind: "default",
+      tsType: "(boolean | number)",
+    },
+    variant: {
+      kind: "stringLiteral",
+      tsType: "'wireframe' | 'filled'",
+      options: ["wireframe", "filled"],
+    },
+    scale: {
+      kind: "default",
+      tsType: "(number | [number, number, number])",
+    },
+    thickness_units: {
+      kind: "stringLiteral",
+      tsType: "'screen' | 'world'",
+      options: ["screen", "world"],
+    },
+  },
+  GlbMessage: {
+    glb_data: {
+      kind: "default",
+      tsType: "Uint8Array<ArrayBuffer>",
+    },
+    cast_shadow: {
+      kind: "boolean",
+      tsType: "boolean",
+    },
+    receive_shadow: {
+      kind: "default",
+      tsType: "(boolean | number)",
+    },
+    smooth_shading: {
+      kind: "boolean",
+      tsType: "boolean",
+    },
+    scale: {
+      kind: "default",
+      tsType: "(number | [number, number, number])",
+    },
+  },
+  FrameMessage: {
+    show_axes: {
+      kind: "boolean",
+      tsType: "boolean",
+    },
+    axes_length: {
+      kind: "default",
+      tsType: "number",
+    },
+    axes_radius: {
+      kind: "default",
+      tsType: "number",
+    },
+    origin_radius: {
+      kind: "default",
+      tsType: "number",
+    },
+    origin_color: {
+      kind: "color",
+      tsType: "[number, number, number]",
+    },
+    scale: {
+      kind: "default",
+      tsType: "(number | [number, number, number])",
+    },
+  },
+  BatchedAxesMessage: {
+    batched_wxyzs: {
+      kind: "default",
+      tsType: "Float32Array",
+    },
+    batched_positions: {
+      kind: "default",
+      tsType: "Float32Array",
+    },
+    batched_scales: {
+      kind: "default",
+      tsType: "(Float32Array | null)",
+    },
+    axes_length: {
+      kind: "default",
+      tsType: "number",
+    },
+    axes_radius: {
+      kind: "default",
+      tsType: "number",
+    },
+    scale: {
+      kind: "default",
+      tsType: "(number | [number, number, number])",
+    },
+  },
+  GridMessage: {
+    width: {
+      kind: "default",
+      tsType: "number",
+    },
+    height: {
+      kind: "default",
+      tsType: "number",
+    },
+    plane: {
+      kind: "stringLiteral",
+      tsType: "'xz' | 'xy' | 'yx' | 'yz' | 'zx' | 'zy'",
+      options: ["xz", "xy", "yx", "yz", "zx", "zy"],
+    },
+    cell_color: {
+      kind: "color",
+      tsType: "[number, number, number]",
+    },
+    cell_thickness: {
+      kind: "default",
+      tsType: "number",
+    },
+    cell_size: {
+      kind: "default",
+      tsType: "number",
+    },
+    section_color: {
+      kind: "color",
+      tsType: "[number, number, number]",
+    },
+    section_thickness: {
+      kind: "default",
+      tsType: "number",
+    },
+    section_size: {
+      kind: "default",
+      tsType: "number",
+    },
+    infinite_grid: {
+      kind: "boolean",
+      tsType: "boolean",
+    },
+    fade_distance: {
+      kind: "default",
+      tsType: "number",
+    },
+    fade_strength: {
+      kind: "default",
+      tsType: "number",
+    },
+    fade_from: {
+      kind: "stringLiteral",
+      tsType: "'camera' | 'origin'",
+      options: ["camera", "origin"],
+    },
+    shadow_opacity: {
+      kind: "default",
+      tsType: "number",
+    },
+    plane_color: {
+      kind: "color",
+      tsType: "[number, number, number]",
+    },
+    plane_opacity: {
+      kind: "default",
+      tsType: "number",
+    },
+    scale: {
+      kind: "default",
+      tsType: "(number | [number, number, number])",
+    },
+  },
+  LabelMessage: {
+    text: {
+      kind: "default",
+      tsType: "string",
+    },
+    font_size_mode: {
+      kind: "stringLiteral",
+      tsType: "'screen' | 'scene'",
+      options: ["screen", "scene"],
+    },
+    font_screen_scale: {
+      kind: "default",
+      tsType: "number",
+    },
+    font_scene_height: {
+      kind: "default",
+      tsType: "number",
+    },
+    depth_test: {
+      kind: "boolean",
+      tsType: "boolean",
+    },
+    anchor: {
+      kind: "stringLiteral",
+      tsType:
+        "'top-left' | 'top-center' | 'top-right' | 'center-left' | 'center-center' | 'center-right' | 'bottom-left' | 'bottom-center' | 'bottom-right'",
+      options: [
+        "top-left",
+        "top-center",
+        "top-right",
+        "center-left",
+        "center-center",
+        "center-right",
+        "bottom-left",
+        "bottom-center",
+        "bottom-right",
+      ],
+    },
+  },
+  Gui3DMessage: {
+    order: {
+      kind: "default",
+      tsType: "number",
+    },
+    container_uuid: {
+      kind: "default",
+      tsType: "string",
+    },
+  },
+  PointCloudMessage: {
+    points: {
+      kind: "default",
+      tsType: "(Uint16Array | Float32Array)",
+    },
+    colors: {
+      kind: "default",
+      tsType: "Uint8Array<ArrayBuffer>",
+    },
+    point_size: {
+      kind: "default",
+      tsType: "number",
+    },
+    point_shape: {
+      kind: "stringLiteral",
+      tsType: "'square' | 'diamond' | 'circle' | 'rounded' | 'sparkle'",
+      options: ["square", "diamond", "circle", "rounded", "sparkle"],
+    },
+    precision: {
+      kind: "stringLiteral",
+      tsType: "'float16' | 'float32'",
+      editorHidden: true,
+      options: ["float16", "float32"],
+    },
+    scale: {
+      kind: "default",
+      tsType: "(number | [number, number, number])",
+    },
+    point_shading: {
+      kind: "stringLiteral",
+      tsType: "'flat' | 'gradient'",
+      options: ["flat", "gradient"],
+    },
+  },
+  DirectionalLightMessage: {
+    color: {
+      kind: "color",
+      tsType: "[number, number, number]",
+    },
+    intensity: {
+      kind: "default",
+      tsType: "number",
+    },
+    cast_shadow: {
+      kind: "boolean",
+      tsType: "boolean",
+    },
+  },
+  AmbientLightMessage: {
+    color: {
+      kind: "color",
+      tsType: "[number, number, number]",
+    },
+    intensity: {
+      kind: "default",
+      tsType: "number",
+    },
+  },
+  HemisphereLightMessage: {
+    sky_color: {
+      kind: "color",
+      tsType: "[number, number, number]",
+    },
+    ground_color: {
+      kind: "color",
+      tsType: "[number, number, number]",
+    },
+    intensity: {
+      kind: "default",
+      tsType: "number",
+    },
+  },
+  PointLightMessage: {
+    color: {
+      kind: "color",
+      tsType: "[number, number, number]",
+    },
+    intensity: {
+      kind: "default",
+      tsType: "number",
+    },
+    distance: {
+      kind: "default",
+      tsType: "number",
+    },
+    decay: {
+      kind: "default",
+      tsType: "number",
+    },
+    cast_shadow: {
+      kind: "boolean",
+      tsType: "boolean",
+    },
+  },
+  RectAreaLightMessage: {
+    color: {
+      kind: "color",
+      tsType: "[number, number, number]",
+    },
+    intensity: {
+      kind: "default",
+      tsType: "number",
+    },
+    width: {
+      kind: "default",
+      tsType: "number",
+    },
+    height: {
+      kind: "default",
+      tsType: "number",
+    },
+  },
+  SpotLightMessage: {
+    color: {
+      kind: "color",
+      tsType: "[number, number, number]",
+    },
+    intensity: {
+      kind: "default",
+      tsType: "number",
+    },
+    distance: {
+      kind: "default",
+      tsType: "number",
+    },
+    angle: {
+      kind: "default",
+      tsType: "number",
+    },
+    penumbra: {
+      kind: "default",
+      tsType: "number",
+    },
+    decay: {
+      kind: "default",
+      tsType: "number",
+    },
+    cast_shadow: {
+      kind: "boolean",
+      tsType: "boolean",
+    },
+    direction: {
+      kind: "default",
+      tsType: "[number, number, number]",
+    },
+  },
+  MeshMessage: {
+    vertices: {
+      kind: "default",
+      tsType: "Float32Array",
+    },
+    faces: {
+      kind: "default",
+      tsType: "Uint32Array",
+    },
+    color: {
+      kind: "color",
+      tsType: "[number, number, number]",
+    },
+    wireframe: {
+      kind: "boolean",
+      tsType: "boolean",
+    },
+    opacity: {
+      kind: "default",
+      tsType: "(number | null)",
+    },
+    flat_shading: {
+      kind: "boolean",
+      tsType: "boolean",
+    },
+    side: {
+      kind: "stringLiteral",
+      tsType: "'front' | 'back' | 'double'",
+      options: ["front", "back", "double"],
+    },
+    material: {
+      kind: "stringLiteral",
+      tsType: "'standard' | 'toon3' | 'toon5'",
+      options: ["standard", "toon3", "toon5"],
+    },
+    scale: {
+      kind: "default",
+      tsType: "(number | [number, number, number])",
+    },
+    cast_shadow: {
+      kind: "boolean",
+      tsType: "boolean",
+    },
+    receive_shadow: {
+      kind: "default",
+      tsType: "(boolean | number)",
+    },
+  },
+  BoxMessage: {
+    dimensions: {
+      kind: "default",
+      tsType: "[number, number, number]",
+    },
+    color: {
+      kind: "color",
+      tsType: "[number, number, number]",
+    },
+    wireframe: {
+      kind: "boolean",
+      tsType: "boolean",
+    },
+    opacity: {
+      kind: "default",
+      tsType: "(number | null)",
+    },
+    flat_shading: {
+      kind: "boolean",
+      tsType: "boolean",
+    },
+    side: {
+      kind: "stringLiteral",
+      tsType: "'front' | 'back' | 'double'",
+      options: ["front", "back", "double"],
+    },
+    material: {
+      kind: "stringLiteral",
+      tsType: "'standard' | 'toon3' | 'toon5'",
+      options: ["standard", "toon3", "toon5"],
+    },
+    cast_shadow: {
+      kind: "boolean",
+      tsType: "boolean",
+    },
+    receive_shadow: {
+      kind: "default",
+      tsType: "(boolean | number)",
+    },
+    scale: {
+      kind: "default",
+      tsType: "(number | [number, number, number])",
+    },
+  },
+  IcosphereMessage: {
+    radius: {
+      kind: "default",
+      tsType: "number",
+    },
+    subdivisions: {
+      kind: "default",
+      tsType: "number",
+    },
+    color: {
+      kind: "color",
+      tsType: "[number, number, number]",
+    },
+    wireframe: {
+      kind: "boolean",
+      tsType: "boolean",
+    },
+    opacity: {
+      kind: "default",
+      tsType: "(number | null)",
+    },
+    flat_shading: {
+      kind: "boolean",
+      tsType: "boolean",
+    },
+    side: {
+      kind: "stringLiteral",
+      tsType: "'front' | 'back' | 'double'",
+      options: ["front", "back", "double"],
+    },
+    material: {
+      kind: "stringLiteral",
+      tsType: "'standard' | 'toon3' | 'toon5'",
+      options: ["standard", "toon3", "toon5"],
+    },
+    cast_shadow: {
+      kind: "boolean",
+      tsType: "boolean",
+    },
+    receive_shadow: {
+      kind: "default",
+      tsType: "(boolean | number)",
+    },
+    scale: {
+      kind: "default",
+      tsType: "(number | [number, number, number])",
+    },
+  },
+  CylinderMessage: {
+    radius: {
+      kind: "default",
+      tsType: "number",
+    },
+    height: {
+      kind: "default",
+      tsType: "number",
+    },
+    color: {
+      kind: "color",
+      tsType: "[number, number, number]",
+    },
+    radial_segments: {
+      kind: "default",
+      tsType: "number",
+    },
+    wireframe: {
+      kind: "boolean",
+      tsType: "boolean",
+    },
+    opacity: {
+      kind: "default",
+      tsType: "(number | null)",
+    },
+    flat_shading: {
+      kind: "boolean",
+      tsType: "boolean",
+    },
+    side: {
+      kind: "stringLiteral",
+      tsType: "'front' | 'back' | 'double'",
+      options: ["front", "back", "double"],
+    },
+    material: {
+      kind: "stringLiteral",
+      tsType: "'standard' | 'toon3' | 'toon5'",
+      options: ["standard", "toon3", "toon5"],
+    },
+    cast_shadow: {
+      kind: "boolean",
+      tsType: "boolean",
+    },
+    receive_shadow: {
+      kind: "default",
+      tsType: "(boolean | number)",
+    },
+    scale: {
+      kind: "default",
+      tsType: "(number | [number, number, number])",
+    },
+  },
+  SkinnedMeshMessage: {
+    vertices: {
+      kind: "default",
+      tsType: "Float32Array",
+    },
+    faces: {
+      kind: "default",
+      tsType: "Uint32Array",
+    },
+    color: {
+      kind: "color",
+      tsType: "[number, number, number]",
+    },
+    wireframe: {
+      kind: "boolean",
+      tsType: "boolean",
+    },
+    opacity: {
+      kind: "default",
+      tsType: "(number | null)",
+    },
+    flat_shading: {
+      kind: "boolean",
+      tsType: "boolean",
+    },
+    side: {
+      kind: "stringLiteral",
+      tsType: "'front' | 'back' | 'double'",
+      options: ["front", "back", "double"],
+    },
+    material: {
+      kind: "stringLiteral",
+      tsType: "'standard' | 'toon3' | 'toon5'",
+      options: ["standard", "toon3", "toon5"],
+    },
+    scale: {
+      kind: "default",
+      tsType: "(number | [number, number, number])",
+    },
+    cast_shadow: {
+      kind: "boolean",
+      tsType: "boolean",
+    },
+    receive_shadow: {
+      kind: "default",
+      tsType: "(boolean | number)",
+    },
+    bone_wxyzs: {
+      kind: "default",
+      tsType: "Float32Array",
+    },
+    bone_positions: {
+      kind: "default",
+      tsType: "Float32Array",
+    },
+    skin_indices: {
+      kind: "default",
+      tsType: "Uint16Array",
+    },
+    skin_weights: {
+      kind: "default",
+      tsType: "Float32Array",
+    },
+  },
+  BatchedMeshesMessage: {
+    batched_wxyzs: {
+      kind: "default",
+      tsType: "Float32Array",
+    },
+    batched_positions: {
+      kind: "default",
+      tsType: "Float32Array",
+    },
+    batched_scales: {
+      kind: "default",
+      tsType: "(Float32Array | null)",
+    },
+    lod: {
+      kind: "default",
+      tsType: "('auto' | 'off' | ([number, number])[])",
+    },
+    vertices: {
+      kind: "default",
+      tsType: "Float32Array",
+    },
+    faces: {
+      kind: "default",
+      tsType: "Uint32Array",
+    },
+    batched_colors: {
+      kind: "default",
+      tsType: "Uint8Array<ArrayBuffer>",
+    },
+    wireframe: {
+      kind: "boolean",
+      tsType: "boolean",
+    },
+    opacity: {
+      kind: "default",
+      tsType: "(number | null)",
+    },
+    flat_shading: {
+      kind: "boolean",
+      tsType: "boolean",
+    },
+    side: {
+      kind: "stringLiteral",
+      tsType: "'front' | 'back' | 'double'",
+      options: ["front", "back", "double"],
+    },
+    material: {
+      kind: "stringLiteral",
+      tsType: "'standard' | 'toon3' | 'toon5'",
+      options: ["standard", "toon3", "toon5"],
+    },
+    cast_shadow: {
+      kind: "boolean",
+      tsType: "boolean",
+    },
+    receive_shadow: {
+      kind: "boolean",
+      tsType: "boolean",
+    },
+    batched_opacities: {
+      kind: "default",
+      tsType: "(Float32Array | null)",
+    },
+    scale: {
+      kind: "default",
+      tsType: "(number | [number, number, number])",
+    },
+  },
+  BatchedGlbMessage: {
+    batched_wxyzs: {
+      kind: "default",
+      tsType: "Float32Array",
+    },
+    batched_positions: {
+      kind: "default",
+      tsType: "Float32Array",
+    },
+    batched_scales: {
+      kind: "default",
+      tsType: "(Float32Array | null)",
+    },
+    lod: {
+      kind: "default",
+      tsType: "('auto' | 'off' | ([number, number])[])",
+    },
+    glb_data: {
+      kind: "default",
+      tsType: "Uint8Array<ArrayBuffer>",
+    },
+    cast_shadow: {
+      kind: "boolean",
+      tsType: "boolean",
+    },
+    receive_shadow: {
+      kind: "boolean",
+      tsType: "boolean",
+    },
+    smooth_shading: {
+      kind: "boolean",
+      tsType: "boolean",
+    },
+    scale: {
+      kind: "default",
+      tsType: "(number | [number, number, number])",
+    },
+  },
+  TransformControlsMessage: {
+    scale: {
+      kind: "default",
+      tsType: "number",
+    },
+    line_width: {
+      kind: "default",
+      tsType: "number",
+    },
+    fixed: {
+      kind: "boolean",
+      tsType: "boolean",
+    },
+    active_axes: {
+      kind: "default",
+      tsType: "[boolean, boolean, boolean]",
+    },
+    disable_axes: {
+      kind: "boolean",
+      tsType: "boolean",
+    },
+    disable_sliders: {
+      kind: "boolean",
+      tsType: "boolean",
+    },
+    disable_rotations: {
+      kind: "boolean",
+      tsType: "boolean",
+    },
+    translation_limits: {
+      kind: "default",
+      tsType: "[[number, number], [number, number], [number, number]]",
+    },
+    rotation_limits: {
+      kind: "default",
+      tsType: "[[number, number], [number, number], [number, number]]",
+    },
+    depth_test: {
+      kind: "boolean",
+      tsType: "boolean",
+    },
+    opacity: {
+      kind: "default",
+      tsType: "number",
+    },
+  },
+  ImageMessage: {
+    _format: {
+      kind: "stringLiteral",
+      tsType: "'jpeg' | 'png'",
+      options: ["jpeg", "png"],
+    },
+    _data: {
+      kind: "default",
+      tsType: "Uint8Array<ArrayBuffer>",
+    },
+    render_width: {
+      kind: "default",
+      tsType: "number",
+    },
+    render_height: {
+      kind: "default",
+      tsType: "number",
+    },
+    cast_shadow: {
+      kind: "boolean",
+      tsType: "boolean",
+    },
+    receive_shadow: {
+      kind: "default",
+      tsType: "(boolean | number)",
+    },
+    scale: {
+      kind: "default",
+      tsType: "(number | [number, number, number])",
+    },
+  },
+  LineSegmentsMessage: {
+    points: {
+      kind: "default",
+      tsType: "Float32Array",
+    },
+    thickness: {
+      kind: "default",
+      tsType: "number",
+    },
+    colors: {
+      kind: "default",
+      tsType: "Uint8Array<ArrayBuffer>",
+    },
+    scale: {
+      kind: "default",
+      tsType: "(number | [number, number, number])",
+    },
+    thickness_units: {
+      kind: "stringLiteral",
+      tsType: "'screen' | 'world'",
+      options: ["screen", "world"],
+    },
+  },
+  ArrowMessage: {
+    points: {
+      kind: "default",
+      tsType: "Float32Array",
+    },
+    colors: {
+      kind: "default",
+      tsType: "Uint8Array<ArrayBuffer>",
+    },
+    shaft_radius: {
+      kind: "default",
+      tsType: "number",
+    },
+    head_radius: {
+      kind: "default",
+      tsType: "number",
+    },
+    head_length: {
+      kind: "default",
+      tsType: "number",
+    },
+    scale: {
+      kind: "default",
+      tsType: "(number | [number, number, number])",
+    },
+  },
+  CatmullRomSplineMessage: {
+    points: {
+      kind: "default",
+      tsType: "Float32Array",
+    },
+    curve_type: {
+      kind: "stringLiteral",
+      tsType: "'centripetal' | 'chordal' | 'catmullrom'",
+      options: ["centripetal", "chordal", "catmullrom"],
+    },
+    tension: {
+      kind: "default",
+      tsType: "number",
+    },
+    closed: {
+      kind: "boolean",
+      tsType: "boolean",
+    },
+    thickness: {
+      kind: "default",
+      tsType: "number",
+    },
+    color: {
+      kind: "color",
+      tsType: "[number, number, number]",
+    },
+    segments: {
+      kind: "default",
+      tsType: "(number | null)",
+    },
+    scale: {
+      kind: "default",
+      tsType: "(number | [number, number, number])",
+    },
+    thickness_units: {
+      kind: "stringLiteral",
+      tsType: "'screen' | 'world'",
+      options: ["screen", "world"],
+    },
+  },
+  CubicBezierSplineMessage: {
+    points: {
+      kind: "default",
+      tsType: "Float32Array",
+    },
+    control_points: {
+      kind: "default",
+      tsType: "Float32Array",
+    },
+    thickness: {
+      kind: "default",
+      tsType: "number",
+    },
+    color: {
+      kind: "color",
+      tsType: "[number, number, number]",
+    },
+    segments: {
+      kind: "default",
+      tsType: "(number | null)",
+    },
+    scale: {
+      kind: "default",
+      tsType: "(number | [number, number, number])",
+    },
+    thickness_units: {
+      kind: "stringLiteral",
+      tsType: "'screen' | 'world'",
+      options: ["screen", "world"],
+    },
+  },
+  GaussianSplatsMessage: {
+    buffer: {
+      kind: "default",
+      tsType: "Uint32Array",
+    },
+    scale: {
+      kind: "default",
+      tsType: "(number | [number, number, number])",
+    },
+  },
+};

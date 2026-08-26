@@ -14,7 +14,7 @@ Parse and stream Record3D captures. To get demo data, see `../assets/download_as
 
     .. code-block:: bash
 
-        git clone https://github.com/nerfstudio-project/viser.git
+        git clone https://github.com/viser-project/viser.git
         cd viser/examples
         ./assets/download_assets.sh
         python 04_demos/00_record3d_visualizer.py  # With viser installed.
@@ -39,6 +39,7 @@ def main(
     share: bool = False,
 ) -> None:
     server = viser.ViserServer()
+    server.initial_camera.position = (1.2, 1.2, 1.2)
     if share:
         server.request_share_url()
 
@@ -78,6 +79,13 @@ def main(
         gui_framerate_options = server.gui.add_button_group(
             "FPS options", ("10", "20", "30", "60")
         )
+
+    # Use spacebar to toggle play/pause.
+    play_pause = server.gui.add_command(label="Toggle Play / Pause", hotkey="space")
+
+    @play_pause.on_trigger
+    def _(_) -> None:
+        gui_playing.value = not gui_playing.value
 
     # Frame step buttons.
     @gui_next_frame.on_click

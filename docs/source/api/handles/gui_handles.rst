@@ -4,15 +4,23 @@
 GUI Handles
 ===========
 
+.. autoclass:: viser.CommandHandle
+
 .. autoclass:: viser.GuiButtonGroupHandle
 
 .. autoclass:: viser.GuiButtonHandle
 
 .. autoclass:: viser.GuiCheckboxHandle
 
+.. autoclass:: viser.GuiDividerHandle
+
 .. autoclass:: viser.GuiDropdownHandle
 
 .. autoclass:: viser.GuiFolderHandle
+
+.. autoclass:: viser.GuiFolderSelectButtonHandle
+
+.. autoclass:: viser.GuiFormHandle
 
 .. autoclass:: viser.GuiHtmlHandle
 
@@ -47,6 +55,12 @@ GUI Handles
 .. autoclass:: viser.GuiVector2Handle
 
 .. autoclass:: viser.GuiVector3Handle
+
+.. autoclass:: viser.MainPanelHandle
+
+.. autoclass:: viser.PanelHandle
+
+.. autodata:: viser.PlaceableHandle
 
 .. autoclass:: viser.UploadedFile
 

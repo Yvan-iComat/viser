@@ -78,12 +78,13 @@ def deprecated_positional_shim(
                     converted_params = list(extra_kwargs.keys())
                     import rich
 
+                    func_name = getattr(func, "__name__", "<unknown>")
                     rich.print(
-                        f"[bold](viser)[/bold] Passing {converted_params} as positional arguments to {func.__name__} "
+                        f"[bold](viser)[/bold] Passing {converted_params} as positional arguments to {func_name} "
                         f"is deprecated. Please use keyword arguments instead: {', '.join(f'{k}={v}' for k, v in extra_kwargs.items())}",
                     )
                     warnings.warn(
-                        f"Passing {converted_params} as positional arguments to {func.__name__} "
+                        f"Passing {converted_params} as positional arguments to {func_name} "
                         f"is deprecated. Please use keyword arguments instead: {', '.join(f'{k}={v}' for k, v in extra_kwargs.items())}",
                         category=DeprecationWarning,
                         stacklevel=2,
@@ -102,6 +103,19 @@ class DeprecatedAttributeShim:
     `<=0.1.30`."""
 
     def __getattr__(self, name: str) -> Any:
+        # During partial construction (or an attribute miss on a
+        # partially-torn-down object), `self.scene` / `self.gui` don't exist
+        # yet -- and looking them up would land back in THIS __getattr__,
+        # recursing until RecursionError. Bail out to a plain AttributeError
+        # instead, so init-ordering mistakes fail legibly. (Both attributes
+        # are plain instance attributes on ViserServer and ClientHandle, so
+        # __dict__ is the right place to check.)
+        if "scene" not in self.__dict__ or "gui" not in self.__dict__:
+            raise AttributeError(
+                f"'{type(self).__name__}' object has no attribute '{name}' "
+                "(object is partially constructed: scene/gui APIs not set up "
+                "yet)"
+            )
         fixed_name = {
             # Map from old method names (viser v0.1.*) to new methods names.
             "reset_scene": "reset",

@@ -18,7 +18,7 @@ See here for download instructions:
 
     .. code-block:: bash
 
-        git clone https://github.com/nerfstudio-project/viser.git
+        git clone https://github.com/viser-project/viser.git
         cd viser/examples
         ./assets/download_assets.sh
         python 04_demos/04_smpl_skinned.py  # With viser installed.
@@ -110,6 +110,7 @@ Code
    ) -> None:
        server = viser.ViserServer()
        server.scene.set_up_direction("+y")
+       server.initial_camera.position = (2.5, 1.0, 2.5)
    
        # Main loop. We'll read pose/shape from the GUI elements, compute the mesh,
        # and then send the updated mesh in a loop.

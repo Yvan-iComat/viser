@@ -1,5 +1,6 @@
 {
   "compilerOptions": {
+    "noUnusedParameters": true,
     "target": "ESNext",
     "lib": ["dom", "dom.iterable", "esnext"],
     "types": [
@@ -16,7 +17,7 @@
     "forceConsistentCasingInFileNames": true,
     "noFallthroughCasesInSwitch": true,
     "module": "esnext",
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,

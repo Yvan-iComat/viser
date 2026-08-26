@@ -22,20 +22,29 @@
  * between multiple splat objects.
  */
 
-import MakeSorterModulePromise from "./WasmSorter/Sorter.mjs";
+import MakeSorterModuleFactory from "./WasmSorter/Sorter.mjs";
+// Import WASM as base64 URL for inlining - avoids import.meta.url issues with blob URLs.
+import SorterWasmUrl from "./WasmSorter/Sorter.wasm?url";
+
+// Fetch WASM binary and pass to Emscripten module to avoid import.meta.url issues.
+const SorterModulePromise = fetch(SorterWasmUrl)
+  .then((response) => response.arrayBuffer())
+  .then((wasmBinary) => MakeSorterModuleFactory({ wasmBinary }));
 
 import React from "react";
 import * as THREE from "three";
-import SplatSortWorker from "./SplatSortWorker?worker";
-import { useFrame } from "@react-three/fiber";
+import SplatSortWorker from "./SplatSortWorker?worker&inline";
+import { useFrame, useThree } from "@react-three/fiber";
 import { SorterWorkerIncoming } from "./SplatSortWorker";
 import { v4 as uuidv4 } from "uuid";
 
 import {
   GaussianSplatsContext,
-  useGaussianMeshProps,
+  createGaussianMeshProps,
   useGaussianSplatStore,
+  type GaussianMeshProps,
 } from "./GaussianSplatsHelpers";
+import { ViewerContext } from "../ViewerContext";
 
 /**Provider for creating splat rendering context.*/
 export function SplatRenderContext({
@@ -43,11 +52,11 @@ export function SplatRenderContext({
 }: {
   children: React.ReactNode;
 }) {
-  const store = useGaussianSplatStore();
+  const splatState = useGaussianSplatStore();
   return (
     <GaussianSplatsContext.Provider
       value={{
-        useGaussianSplatStore: store,
+        gaussianSplatState: splatState,
         updateCamera: React.useRef(null),
         meshPropsRef: React.useRef(null),
       }}
@@ -61,28 +70,34 @@ export const SplatObject = React.forwardRef<
   THREE.Group,
   {
     buffer: Uint32Array;
+    sceneNodeName?: string;
     children?: React.ReactNode;
   }
->(function SplatObject({ buffer, children }, ref) {
+>(function SplatObject({ buffer, sceneNodeName, children }, ref) {
   const splatContext = React.useContext(GaussianSplatsContext)!;
-  const setBuffer = splatContext.useGaussianSplatStore(
-    (state) => state.setBuffer,
-  );
-  const removeBuffer = splatContext.useGaussianSplatStore(
-    (state) => state.removeBuffer,
-  );
-  const nodeRefFromId = splatContext.useGaussianSplatStore(
+  const { setBuffer, removeBuffer } = splatContext.gaussianSplatState.actions;
+  const nodeRefFromId = splatContext.gaussianSplatState.store(
     (state) => state.nodeRefFromId,
   );
-  const name = React.useMemo(() => uuidv4(), [buffer]);
+  const sceneNodeNameFromId = splatContext.gaussianSplatState.store(
+    (state) => state.sceneNodeNameFromId,
+  );
+  // Use stable ID per component instance (not dependent on buffer).
+  const name = React.useMemo(() => uuidv4(), []);
 
+  // Cleanup only on unmount.
   React.useEffect(() => {
-    setBuffer(name, buffer);
     return () => {
       removeBuffer(name);
       delete nodeRefFromId.current[name];
+      delete sceneNodeNameFromId.current[name];
     };
-  }, [buffer]);
+  }, [name, removeBuffer, nodeRefFromId, sceneNodeNameFromId]);
+
+  // Update buffer when it changes.
+  React.useEffect(() => {
+    setBuffer(name, buffer);
+  }, [name, buffer, setBuffer]);
 
   return (
     <group
@@ -98,6 +113,9 @@ export const SplatObject = React.forwardRef<
           }
         }
         nodeRefFromId.current[name] = obj;
+        if (sceneNodeName !== undefined) {
+          sceneNodeNameFromId.current[name] = sceneNodeName;
+        }
       }}
     >
       {children}
@@ -108,7 +126,7 @@ export const SplatObject = React.forwardRef<
 /** External interface. Component should be added to the root of canvas.  */
 function SplatRenderer() {
   const splatContext = React.useContext(GaussianSplatsContext)!;
-  const groupBufferFromId = splatContext.useGaussianSplatStore(
+  const groupBufferFromId = splatContext.gaussianSplatState.store(
     (state) => state.groupBufferFromId,
   );
 
@@ -121,66 +139,219 @@ function SplatRenderer() {
 
 function SplatRendererImpl() {
   const splatContext = React.useContext(GaussianSplatsContext)!;
-  const groupBufferFromId = splatContext.useGaussianSplatStore(
+  const viewer = React.useContext(ViewerContext)!;
+  const groupBufferFromId = splatContext.gaussianSplatState.store(
     (state) => state.groupBufferFromId,
   );
-  const nodeRefFromId = splatContext.useGaussianSplatStore(
+  const nodeRefFromId = splatContext.gaussianSplatState.store(
     (state) => state.nodeRefFromId,
   );
+  const sceneNodeNameFromId = splatContext.gaussianSplatState.store(
+    (state) => state.sceneNodeNameFromId,
+  );
+  const maxTextureSize = useThree((state) => state.gl).capabilities
+    .maxTextureSize;
+
+  // Refs to persist resources across re-renders.
+  const sortWorkerRef = React.useRef<Worker | null>(null);
+  const meshPropsRef = React.useRef<GaussianMeshProps | null>(null);
+  const prevMergedRef = React.useRef<{
+    gaussianBuffer: Uint32Array;
+    numGaussians: number;
+    numGroups: number;
+    groupIndices: Uint32Array;
+  } | null>(null);
+  const isFirstRenderRef = React.useRef(true);
+  // Raw (pre-mask) transform baseline for per-frame change detection.
+  // Declared HERE, above the buffer-update block, so a size-changing update
+  // can invalidate it directly (length 0 never matches, forcing the next
+  // frame to re-write, re-mask hidden groups to 1e10, and re-upload -- the
+  // fresh transform texture starts unmasked).
+  const prevRowMajorT_camera_groupsRef = React.useRef<Float32Array>(
+    new Float32Array(0),
+  );
+  const initializedBufferTextureRef = React.useRef(false);
+
+  // Force component to re-render when mesh props change.
+  const [, forceUpdate] = React.useReducer((x) => x + 1, 0);
 
   // Consolidate Gaussian groups into a single buffer.
-  const merged = mergeGaussianGroups(groupBufferFromId);
-  const meshProps = useGaussianMeshProps(
-    merged.gaussianBuffer,
-    merged.numGroups,
+  // Memoized on groupBufferFromId reference -- the store returns the same
+  // reference when state hasn't changed, so this avoids re-merging every render.
+  const merged = React.useMemo(
+    () => mergeGaussianGroups(groupBufferFromId),
+    [groupBufferFromId],
   );
-  splatContext.meshPropsRef.current = meshProps;
 
-  // Create sorting worker.
-  const sortWorker = new SplatSortWorker();
-  let initializedBufferTexture = false;
-  sortWorker.onmessage = (e) => {
-    // Update rendering order.
-    const sortedIndices = e.data.sortedIndices as Uint32Array;
-    meshProps.sortedIndexAttribute.set(sortedIndices);
-    meshProps.sortedIndexAttribute.needsUpdate = true;
-
-    // Trigger initial render.
-    if (!initializedBufferTexture) {
-      meshProps.material.uniforms.numGaussians.value = merged.numGaussians;
-      meshProps.textureBuffer.needsUpdate = true;
-      initializedBufferTexture = true;
+  // Helper function to post messages to worker.
+  const postToWorker = React.useCallback((message: SorterWorkerIncoming) => {
+    if (sortWorkerRef.current) {
+      sortWorkerRef.current.postMessage(message);
     }
-  };
-  function postToWorker(message: SorterWorkerIncoming) {
-    sortWorker.postMessage(message);
-  }
-  postToWorker({
-    setBuffer: merged.gaussianBuffer,
-    setGroupIndices: merged.groupIndices,
-  });
+  }, []);
 
-  // Cleanup.
+  // Check if buffer content has changed (reference equality, since merged is memoized).
+  const bufferChanged =
+    !prevMergedRef.current ||
+    merged.gaussianBuffer !== prevMergedRef.current.gaussianBuffer;
+
+  // Check if number of Gaussians or groups changed (requires texture resize).
+  const sizeChanged =
+    prevMergedRef.current &&
+    (merged.numGaussians !== prevMergedRef.current.numGaussians ||
+      merged.numGroups !== prevMergedRef.current.numGroups);
+
+  // Initialize resources on first render.
+  if (isFirstRenderRef.current) {
+    // Create mesh props.
+    meshPropsRef.current = createGaussianMeshProps(
+      merged.gaussianBuffer,
+      merged.numGroups,
+      maxTextureSize,
+    );
+
+    // Show splats immediately with identity sort order. This makes splats
+    // visible before the WASM sorter finishes compiling + first sort, at the
+    // cost of incorrect back-to-front ordering until the sort completes.
+    const numGaussians = meshPropsRef.current.numGaussians;
+    const identityIndices = meshPropsRef.current.sortedIndexAttribute
+      .array as Uint32Array;
+    for (let i = 0; i < numGaussians; i++) {
+      identityIndices[i] = i;
+    }
+    meshPropsRef.current.sortedIndexAttribute.needsUpdate = true;
+    meshPropsRef.current.material.uniforms.numGaussians.value = numGaussians;
+    meshPropsRef.current.textureBuffer.needsUpdate = true;
+    initializedBufferTextureRef.current = true;
+
+    // Create sorting worker.
+    sortWorkerRef.current = new SplatSortWorker();
+    sortWorkerRef.current.onmessage = (e) => {
+      const sortedIndices = e.data.sortedIndices as Uint32Array;
+      if (meshPropsRef.current) {
+        // Handle case where sorted indices might be from a previous buffer size.
+        if (sortedIndices.length === meshPropsRef.current.numGaussians) {
+          meshPropsRef.current.sortedIndexAttribute.set(sortedIndices);
+          meshPropsRef.current.sortedIndexAttribute.needsUpdate = true;
+        }
+      }
+    };
+
+    // Send initial buffer to worker.
+    postToWorker({
+      setBuffer: merged.gaussianBuffer,
+      setGroupIndices: merged.groupIndices,
+    });
+
+    prevMergedRef.current = merged;
+    isFirstRenderRef.current = false;
+  } else if (bufferChanged && meshPropsRef.current) {
+    // Handle buffer updates.
+    if (sizeChanged) {
+      // Size changed - need to recreate mesh props.
+      const oldProps = meshPropsRef.current;
+
+      // Create new mesh props with new size.
+      meshPropsRef.current = createGaussianMeshProps(
+        merged.gaussianBuffer,
+        merged.numGroups,
+        maxTextureSize,
+      );
+
+      // Dispose old resources.
+      oldProps.textureBuffer.dispose();
+      oldProps.geometry.dispose();
+      oldProps.material.dispose();
+      oldProps.textureT_camera_groups.dispose();
+
+      // The fresh transform texture starts UNMASKED: invalidate the raw
+      // change-detection baseline so the next frame re-writes, re-masks
+      // (hidden groups to 1e10), and re-uploads. With an unchanged group
+      // count and a stationary camera, a stale baseline matched the raw
+      // transforms exactly -- nothing fired, and hidden splat groups became
+      // visible after the buffer update.
+      prevRowMajorT_camera_groupsRef.current = new Float32Array(0);
+
+      // Update worker with new buffer. numGroups lets the worker detect a
+      // group-count change and drop a now-wrong-sized transform array
+      // before it sorts against it (OOB).
+      postToWorker({
+        updateBuffer: merged.gaussianBuffer,
+        updateGroupIndices: merged.groupIndices,
+        updateNumGroups: merged.numGroups,
+      });
+
+      // Skip fade-in animation on updates, set numGaussians immediately.
+      meshPropsRef.current.material.uniforms.transitionInState.value = 1.0;
+      meshPropsRef.current.material.uniforms.numGaussians.value =
+        merged.numGaussians;
+      meshPropsRef.current.textureBuffer.needsUpdate = true;
+
+      // Force re-render to update the mesh component.
+      forceUpdate();
+    } else {
+      // Same size - update texture data in place.
+      const textureData = meshPropsRef.current.textureBuffer.image
+        .data as Uint32Array;
+      textureData.fill(0);
+      textureData.set(merged.gaussianBuffer);
+      meshPropsRef.current.textureBuffer.needsUpdate = true;
+
+      // Update worker with new buffer. numGroups lets the worker detect a
+      // group-count change and drop a now-wrong-sized transform array
+      // before it sorts against it (OOB).
+      postToWorker({
+        updateBuffer: merged.gaussianBuffer,
+        updateGroupIndices: merged.groupIndices,
+        updateNumGroups: merged.numGroups,
+      });
+
+      // Skip fade-in animation on updates.
+      meshPropsRef.current.material.uniforms.transitionInState.value = 1.0;
+    }
+
+    prevMergedRef.current = merged;
+  }
+
+  // Keep context meshPropsRef in sync.
+  splatContext.meshPropsRef.current = meshPropsRef.current;
+
+  // Cleanup on unmount only.
   React.useEffect(() => {
     return () => {
-      meshProps.textureBuffer.dispose();
-      meshProps.geometry.dispose();
-      meshProps.material.dispose();
-      postToWorker({ close: true });
+      if (meshPropsRef.current) {
+        meshPropsRef.current.textureBuffer.dispose();
+        meshPropsRef.current.geometry.dispose();
+        meshPropsRef.current.material.dispose();
+        meshPropsRef.current.textureT_camera_groups.dispose();
+      }
+      if (sortWorkerRef.current) {
+        sortWorkerRef.current.postMessage({ close: true });
+      }
+      // Free the main-thread WASM Sorter (embind object; not GC'd).
+      sorterDisposedRef.current = true;
+      if (SorterRef.current) {
+        SorterRef.current.delete();
+        SorterRef.current = null;
+      }
     };
-  });
+  }, []);
 
   // Per-frame updates. This is in charge of synchronizing transforms and
   // triggering sorting.
   //
   // We pre-allocate matrices to make life easier for the garbage collector.
   const meshRef = React.useRef<THREE.Mesh>(null);
-  const tmpT_camera_group = new THREE.Matrix4();
-  const Tz_camera_groups = new Float32Array(merged.numGroups * 4);
-  const prevRowMajorT_camera_groups = meshProps.rowMajorT_camera_groups
-    .slice()
-    .fill(0);
-  const prevVisibles: boolean[] = [];
+  const tmpT_camera_group = React.useMemo(() => new THREE.Matrix4(), []);
+  const Tz_camera_groupsRef = React.useRef<Float32Array>(
+    new Float32Array(merged.numGroups * 4),
+  );
+  const prevVisiblesRef = React.useRef<boolean[]>([]);
+
+  // Update Tz_camera_groups size if numGroups changed.
+  if (Tz_camera_groupsRef.current.length !== merged.numGroups * 4) {
+    Tz_camera_groupsRef.current = new Float32Array(merged.numGroups * 4);
+  }
 
   // Track previous camera parameters to avoid redundant updates.
   const prevCameraParams = React.useRef({
@@ -191,21 +362,61 @@ function SplatRendererImpl() {
   });
 
   // Store projection matrix for 1-frame delay to match texture upload timing.
-  // Initialize with a reasonable default.
   const pendingProjectionMatrix = React.useRef(
     new THREE.Matrix4().makePerspective(-1, 1, 1, -1, 0.1, 1000),
   );
 
-  // Make local sorter. This will be used for blocking sorts, eg for rendering
-  // from virtual cameras.
+  // Make local sorter for blocking sorts (e.g., rendering from virtual cameras).
+  // `SorterRef` is an Emscripten embind object that owns WASM-heap allocations;
+  // it is only released by an explicit `.delete()` (GC does not reclaim it), so
+  // it must be deleted on unmount. `sorterDisposedRef` guards the async
+  // creation below from instantiating a Sorter after the component unmounts.
   const SorterRef = React.useRef<any>(null);
+  const sorterDisposedRef = React.useRef(false);
+  const sorterBufferVersionRef = React.useRef<number>(0);
+  const currentBufferVersionRef = React.useRef<number>(0);
+
+  // Update buffer version when buffer changes.
+  if (bufferChanged) {
+    currentBufferVersionRef.current += 1;
+  }
+
+  // Update local sorter when buffer changes.
   React.useEffect(() => {
-    (async () => {
-      SorterRef.current = new (await MakeSorterModulePromise()).Sorter(
-        merged.gaussianBuffer,
-        merged.groupIndices,
-      );
-    })();
+    if (sorterBufferVersionRef.current !== currentBufferVersionRef.current) {
+      sorterBufferVersionRef.current = currentBufferVersionRef.current;
+      (async () => {
+        if (SorterRef.current) {
+          SorterRef.current.setBuffer(
+            merged.gaussianBuffer,
+            merged.groupIndices,
+          );
+          return;
+        }
+        // Await the module BEFORE constructing, so bailing out below never
+        // orphans a live Sorter (embind objects are only freed by an explicit
+        // .delete(); GC does not reclaim their WASM-heap allocations).
+        const module = await SorterModulePromise;
+        // The component may have unmounted while the module was loading.
+        if (sorterDisposedRef.current) return;
+        if (SorterRef.current) {
+          // Multiple buffer updates raced past the await; an earlier
+          // continuation already constructed the Sorter. Same-promise
+          // continuations resume in registration order, so we're the newer
+          // buffer version: push our data into the live instance instead of
+          // constructing (and leaking) a second one.
+          SorterRef.current.setBuffer(
+            merged.gaussianBuffer,
+            merged.groupIndices,
+          );
+          return;
+        }
+        SorterRef.current = new module.Sorter(
+          merged.gaussianBuffer,
+          merged.groupIndices,
+        );
+      })();
+    }
   }, [merged.gaussianBuffer, merged.groupIndices]);
 
   const updateCamera = React.useCallback(
@@ -215,7 +426,10 @@ function SplatRendererImpl() {
       height: number,
       blockingSort: boolean,
     ) {
-      // Force immediate camera matrix updates to avoid lag
+      const meshProps = meshPropsRef.current;
+      if (meshProps === null) return;
+
+      // Force immediate camera matrix updates to avoid lag.
       camera.updateMatrixWorld(true);
       camera.updateProjectionMatrix();
 
@@ -229,6 +443,20 @@ function SplatRendererImpl() {
       uniforms.near.value = camera.near;
       uniforms.far.value = camera.far;
       uniforms.viewport.value = [width, height];
+
+      const Tz_camera_groups = Tz_camera_groupsRef.current;
+      const prevVisibles = prevVisiblesRef.current;
+
+      // Ensure prevRowMajorT_camera_groups has correct size.
+      if (
+        prevRowMajorT_camera_groupsRef.current.length !==
+        meshProps.rowMajorT_camera_groups.length
+      ) {
+        prevRowMajorT_camera_groupsRef.current =
+          meshProps.rowMajorT_camera_groups.slice().fill(0);
+      }
+      const prevRowMajorT_camera_groups =
+        prevRowMajorT_camera_groupsRef.current;
 
       // Update group transforms.
       const T_camera_world = camera.matrixWorldInverse;
@@ -256,13 +484,15 @@ function SplatRendererImpl() {
           groupIndex * 12,
         );
 
-        // Determine visibility. The node.visible is set by SceneTree based on
-        // effectiveVisibility which includes the parent chain. If the parent has
-        // unmountWhenInvisible=true, the first frame after showing a hidden parent
-        // can have visible=true with an incorrect matrixWorld transform. There
-        // might be a better fix, but `prevVisible` is an easy workaround for this.
-        const visibleNow = node.visible && node.parent !== null;
-        groupVisibles.push(visibleNow && prevVisibles[groupIndex] === true);
+        // Determine visibility from the scene tree's precomputed
+        // effectiveVisibility, which accounts for the full parent chain.
+        const sceneNodeName = sceneNodeNameFromId.current[name];
+        const sceneNode = sceneNodeName
+          ? viewer.useSceneTree.get(sceneNodeName)
+          : undefined;
+        const visibleNow =
+          node.parent !== null && (sceneNode?.effectiveVisibility ?? true);
+        groupVisibles.push(visibleNow);
         if (prevVisibles[groupIndex] !== visibleNow) {
           prevVisibles[groupIndex] = visibleNow;
           visibilitiesChanged = true;
@@ -272,6 +502,14 @@ function SplatRendererImpl() {
       const groupsMovedWrtCam = !meshProps.rowMajorT_camera_groups.every(
         (v, i) => v === prevRowMajorT_camera_groups[i],
       );
+      // Snapshot the RAW transforms as the change-detection baseline BEFORE
+      // the visibility mask below overwrites hidden groups with 1e10:
+      // saving the MASKED array made the freshly-written real transform
+      // differ from prev on every frame while any group was hidden -- a
+      // full O(N) re-sort plus a GPU texture upload at refresh rate with a
+      // stationary camera.
+      if (groupsMovedWrtCam)
+        prevRowMajorT_camera_groups.set(meshProps.rowMajorT_camera_groups);
 
       if (groupsMovedWrtCam) {
         // Gaussians need to be re-sorted.
@@ -288,10 +526,7 @@ function SplatRendererImpl() {
         }
       }
       if (groupsMovedWrtCam || visibilitiesChanged) {
-        // If a group is not visible, we'll throw it off the screen with some Big
-        // Numbers. It's important that this only impacts the coordinates used
-        // for the shader and not for the sorter; that way when we "show" a group
-        // of Gaussians the correct rendering order is immediately available.
+        // If a group is not visible, throw it off the screen.
         for (const [i, visible] of groupVisibles.entries()) {
           if (!visible) {
             meshProps.rowMajorT_camera_groups[i * 12 + 3] = 1e10;
@@ -299,7 +534,6 @@ function SplatRendererImpl() {
             meshProps.rowMajorT_camera_groups[i * 12 + 11] = 1e10;
           }
         }
-        prevRowMajorT_camera_groups.set(meshProps.rowMajorT_camera_groups);
         meshProps.textureT_camera_groups.needsUpdate = true;
       }
 
@@ -319,14 +553,12 @@ function SplatRendererImpl() {
         near !== params.near ||
         far !== params.far
       ) {
-        // Cache the expensive trig calculation.
         const tanHalfFovY = Math.tan(fovY / 2);
         const top = near * tanHalfFovY;
         const bottom = -top;
         const right = top * aspect;
         const left = -right;
 
-        // Store for next frame (1-frame delay to match texture upload timing).
         pendingProjectionMatrix.current.makePerspective(
           left,
           right,
@@ -334,24 +566,34 @@ function SplatRendererImpl() {
           bottom,
           near,
           far,
+          THREE.WebGLCoordinateSystem,
+          camera.reversedDepth,
         );
 
-        // Store current parameters.
         params.fovY = fovY;
         params.aspect = aspect;
         params.near = near;
         params.far = far;
       }
     },
-    [meshProps],
+    [
+      groupBufferFromId,
+      nodeRefFromId,
+      sceneNodeNameFromId,
+      viewer,
+      tmpT_camera_group,
+      postToWorker,
+    ],
   );
   splatContext.updateCamera.current = updateCamera;
 
   useFrame((state, delta) => {
     const mesh = meshRef.current;
+    const meshProps = meshPropsRef.current;
     if (
       mesh === null ||
-      sortWorker === null ||
+      meshProps === null ||
+      sortWorkerRef.current === null ||
       meshProps.rowMajorT_camera_groups.length === 0
     )
       return;
@@ -370,6 +612,7 @@ function SplatRendererImpl() {
     );
   }, -100 /* This should be called early to reduce group transform artifacts. */);
 
+  const meshProps = meshPropsRef.current!;
   return (
     <mesh
       ref={meshRef}

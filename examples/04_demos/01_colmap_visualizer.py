@@ -14,7 +14,7 @@ Visualize COLMAP sparse reconstruction outputs. To get demo data, see `../assets
 
     .. code-block:: bash
 
-        git clone https://github.com/nerfstudio-project/viser.git
+        git clone https://github.com/viser-project/viser.git
         cd viser/examples
         ./assets/download_assets.sh
         python 04_demos/01_colmap_visualizer.py  # With viser installed.
@@ -53,7 +53,8 @@ def main(
         downsample_factor: Downsample factor for the images.
     """
     server = viser.ViserServer()
-    server.gui.configure_theme(titlebar_content=None, control_layout="collapsible")
+    server.gui.configure_theme(titlebar_content=None)
+    server.gui.main_panel.dock_right()
 
     # Load the colmap info.
     cameras = read_cameras_binary(colmap_path / "cameras.bin")
@@ -62,11 +63,6 @@ def main(
 
     points = np.array([points3d[p_id].xyz for p_id in points3d])
     colors = np.array([points3d[p_id].rgb for p_id in points3d])
-
-    gui_reset_up = server.gui.add_button(
-        "Reset up direction",
-        hint="Set the camera control 'up' direction to the current camera's 'up'.",
-    )
 
     # Let's rotate the scene so the average camera direction is pointing up.
     if reorient_scene:
@@ -77,14 +73,6 @@ def main(
         ).mean(axis=0)
         average_up /= np.linalg.norm(average_up)
         server.scene.set_up_direction((average_up[0], average_up[1], average_up[2]))
-
-    @gui_reset_up.on_click
-    def _(event: viser.GuiEvent) -> None:
-        client = event.client
-        assert client is not None
-        client.camera.up_direction = vtf.SO3(client.camera.wxyz) @ np.array(
-            [0.0, -1.0, 0.0]
-        )
 
     gui_points = server.gui.add_slider(
         "Max points",

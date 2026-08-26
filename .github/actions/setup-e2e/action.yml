@@ -1,0 +1,67 @@
+name: Setup E2E Python environment
+description: >
+  Install Python, uv, project dependencies, and the Playwright browser (all
+  cached). The client build is NOT handled here -- use the separate cached
+  `build-client` action so the build is shared across workflows.
+
+inputs:
+  python-version:
+    description: Python version to install.
+    required: false
+    default: "3.12"
+
+runs:
+  using: composite
+  steps:
+    # Python is provisioned by uv (like every other Python workflow in this
+    # repo: pytest/pyright pass --python to uv). actions/setup-python@v4
+    # broke for 3.9 when the runner image dropped EOL versions from its tool
+    # cache (its fallback download returns an HTML error page); uv's managed
+    # Python downloads are independent of the runner's tool cache.
+    - name: Install uv
+      uses: astral-sh/setup-uv@v5
+      with:
+        enable-cache: true
+        cache-suffix: ${{ inputs.python-version }}
+
+    # Pin the interpreter for EVERY uv invocation in this job (this step and
+    # the calling workflow's test steps): a lone `uv run` without --python
+    # would otherwise resolve its own default interpreter, silently REBUILD
+    # .venv against it, and drop the dev extras installed below.
+    - name: Pin uv's Python for the whole job
+      shell: bash
+      run: echo "UV_PYTHON=${{ inputs.python-version }}" >> "$GITHUB_ENV"
+
+    - name: Install Python dependencies
+      shell: bash
+      run: uv sync --extra dev
+
+    # Cache the downloaded Playwright browser binaries (keyed on the resolved
+    # dependency set, which pins the Playwright version). On a hit, the install
+    # below skips the ~90MB download and only installs the apt system libs.
+    - name: Cache Playwright browsers
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/ms-playwright
+        key: playwright-${{ runner.os }}-${{ hashFiles('uv.lock') }}
+
+    - name: Install Playwright browsers
+      shell: bash
+      run: uv run playwright install chromium --with-deps
+
+    # The dock playground e2e tests (test_dock_playground_*) serve the client
+    # SOURCE through a Vite dev server, so they need the client's node_modules
+    # regardless of whether the cached client BUILD was restored. Without this
+    # they skip silently on client-build cache hits. Cheap on a warm npm cache.
+    - name: Use Node.js
+      uses: actions/setup-node@v6
+      with:
+        node-version: 24
+        cache: npm
+        cache-dependency-path: src/viser/client/package-lock.json
+
+    - name: Install client dependencies (for Vite-served dock tests)
+      shell: bash
+      run: |
+        cd src/viser/client
+        npm ci

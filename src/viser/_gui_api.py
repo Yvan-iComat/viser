@@ -7,8 +7,12 @@ import dataclasses
 import functools
 import threading
 import time
+import uuid
+import warnings
 from asyncio import AbstractEventLoop
+from collections.abc import Mapping
 from concurrent.futures import ThreadPoolExecutor
+from contextvars import ContextVar
 from pathlib import Path
 from typing import (
     TYPE_CHECKING,
@@ -27,6 +31,7 @@ from typing_extensions import (
     LiteralString,
     TypeAlias,
     TypedDict,
+    assert_never,
     get_type_hints,
 )
 
@@ -35,13 +40,19 @@ from viser._backwards_compat_shims import deprecated_positional_shim
 
 from . import _messages, uplot
 from ._gui_handles import (
+    CONTROL_PANEL_ID,
+    CommandEvent,
+    CommandHandle,
     GuiButtonGroupHandle,
     GuiButtonHandle,
     GuiCheckboxHandle,
     GuiContainerProtocol,
+    GuiDividerHandle,
     GuiDropdownHandle,
     GuiEvent,
     GuiFolderHandle,
+    GuiFolderSelectButtonHandle,
+    GuiFormHandle,
     GuiHtmlHandle,
     GuiImageHandle,
     GuiMarkdownHandle,
@@ -54,16 +65,22 @@ from ._gui_handles import (
     GuiRgbHandle,
     GuiSliderHandle,
     GuiTabGroupHandle,
+    GuiTabHandle,
     GuiTableDataHandle,
     GuiTextHandle,
     GuiUploadButtonHandle,
-    GuiFolderSelectButtonHandle,
     GuiUplotHandle,
     GuiVector2Handle,
     GuiVector3Handle,
-    TimelineHandle,
+    MainPanelHandle,
+    PanelHandle,
     SupportsRemoveProtocol,
+    TimelineHandle,
     UploadedFile,
+    _colors_to_int_tuple,
+    _CommandHandleState,
+    _GuiButtonHandleState,
+    _GuiHandle,
     _GuiHandleState,
     _GuiInputHandle,
     _make_uuid,
@@ -127,6 +144,41 @@ def _compute_step(x: float | None) -> float:  # type: ignore
     return 1 if x is None else 10 ** (-_compute_precision_digits(x))
 
 
+def _build_slider_marks(
+    marks: tuple[float | tuple[float, str], ...] | None,
+) -> tuple[GuiSliderMark, ...] | None:
+    """Normalize a slider's ``marks`` argument into ``GuiSliderMark`` tuples.
+    Shared by add_slider and add_multi_slider so the two can't diverge."""
+    if marks is None:
+        return None
+    return tuple(
+        GuiSliderMark(value=float(x[0]), label=x[1])
+        if isinstance(x, tuple)
+        else GuiSliderMark(value=x, label=None)
+        for x in marks
+    )
+
+
+def _infer_vector_step(
+    value: tuple[float, ...],
+    min: tuple[float, ...] | None,
+    max: tuple[float, ...] | None,
+    step: float | None,
+) -> float:
+    """Pick a default step for a vector input from its value/min/max components
+    when the caller didn't pass one. Shared by add_vector2 and add_vector3 so
+    the inference can't drift between the two."""
+    if step is not None:
+        return step
+    possible_steps: list[float] = []
+    possible_steps.extend([_compute_step(x) for x in value])
+    if min is not None:
+        possible_steps.extend([_compute_step(x) for x in min])
+    if max is not None:
+        possible_steps.extend([_compute_step(x) for x in max])
+    return float(np.min(possible_steps))
+
+
 def _compute_precision_digits(x: float) -> int:
     """For number inputs: compute digits of precision from some number.
 
@@ -143,9 +195,44 @@ def _compute_precision_digits(x: float) -> int:
     return digits
 
 
+def _compute_precision_digits_covering(
+    *values: float | tuple[float, ...] | np.ndarray | None,
+) -> int:
+    """Display digits covering every provided value (Nones skipped, tuples /
+    arrays elementwise). Numeric widgets limit displayed AND typed decimals
+    to their ``precision`` via ``decimalScale``, so precision derived from
+    ``step`` alone rounded away legitimate values: a slider's legal values
+    are ``min + k * step`` clamped to ``max`` (with ``min=0.5, step=1.0``
+    the box displayed 2.5 as "3" and rejected typed decimals), and a number
+    input's creation-time value/bounds may be finer than an explicit step
+    (``initial_value=0.25, step=0.5`` displayed as "0.2")."""
+    digits = 0
+    for value in values:
+        if value is None:
+            continue
+        for x in np.atleast_1d(np.asarray(value, dtype=np.float64)):
+            if np.isfinite(x):
+                digits = builtins.max(digits, _compute_precision_digits(float(x)))
+    return digits
+
+
 @dataclasses.dataclass
 class _RootGuiContainer:
     _children: dict[str, SupportsRemoveProtocol]
+
+
+_context_owner_by_server: ContextVar[dict[int, GuiApi]] = ContextVar(
+    "viser_gui_context_owner_by_server", default={}
+)
+"""Which GuiApi owns the active (non-root) container context, keyed by
+``id()`` of the owning server's GuiApi. A ContextVar rather than
+thread-keyed state: asyncio callbacks interleave on one event-loop thread,
+and a ``with`` block suspended at an ``await`` must not leak its container
+context into unrelated callbacks -- each asyncio task runs in a copied
+Context, so only code inside the block sees the marker. Sync code keeps
+working like before (a thread has its own implicit Context). Values are
+treated as IMMUTABLE -- every update installs a fresh dict -- because
+copied Contexts share the mapping object itself."""
 
 
 _global_order_counter = 0
@@ -171,6 +258,7 @@ def get_type_hints_cached(cls: type[Any]) -> dict[str, Any]:
 
 
 class _FileUploadState(TypedDict):
+    client_id: ClientId
     filename: str
     mime_type: str
     part_count: int
@@ -186,8 +274,13 @@ class GuiApi:
     Used by both our global server object, for sharing the same GUI elements
     with all clients, and by individual client handles."""
 
-    _target_container_from_thread_id: dict[int, str] = {}
-    """ID of container to put GUI elements into."""
+    _target_container_from_thread_id: dict[int, str]
+    """ID of container to put GUI elements into. Per-instance (NOT a shared
+    class attribute). Cross-instance nesting is DIRECTIONAL, resolved by
+    _get_container_uuid's thread-context check: a ``client.gui`` add inside
+    a ``with server.gui.add_folder()`` block nests in the server container
+    (the element's audience is a subset of the container's), while the
+    reverse raises instead of silently landing at the other scope's root."""
 
     def __init__(
         self,
@@ -199,6 +292,7 @@ class GuiApi:
 
         self._owner = owner
         """Entity that owns this API."""
+        self._target_container_from_thread_id = {}
         self._thread_executor = thread_executor
         self._event_loop = event_loop
 
@@ -215,6 +309,38 @@ class GuiApi:
         }
         self._modal_handle_from_uuid: dict[str, GuiModalHandle] = {}
         self._timeline_handle: TimelineHandle | None = None
+        # Elements of THIS scope that were nested inside another scope's
+        # container (client elements inside server containers -- the only
+        # allowed direction). They are parented in the server GuiApi's
+        # container tree, so this scope's reset() and disconnect teardown
+        # can't reach them through the root container walk; track them here.
+        self._handles_in_foreign_containers: dict[str, _GuiHandle[Any]] = {}
+        self._panel_handle_from_uuid: dict[str, PanelHandle] = {}
+        # Layout-update counter, bumped on every placement command (any panel)
+        # and stamped onto the placement message (see
+        # _PlacementMixin._queue_placement / GuiSetPanelPositionMessage.counter).
+        # Lets the client ignore replayed placement for a panel the user has
+        # rearranged. GLOBAL across panels within this GuiApi (D50): collapse
+        # is container-scoped, so when stacked panels' collapse axes conflict,
+        # a late joiner must replay them in COMMAND order -- per-panel counters
+        # cannot order commands across panels that share a container.
+        self._layout_counter: int = 0
+        # Guards the counter's read-modify-write so concurrent placement calls
+        # from different threads can't stamp duplicate counters.
+        self._layout_update_lock = threading.Lock()
+        # Serializes placement commands against panel removal: the removed
+        # check + placement enqueue and remove()'s tombstone + purge must not
+        # interleave, or a racing dock_left() could re-enqueue a placement
+        # update for a just-removed panel (immortal buffer residue).
+        self._panel_lifecycle_lock = threading.Lock()
+        # Random id identifying THIS GuiApi instance (fresh per server process,
+        # and distinct for each client-scoped `client.gui`). Stamped on every
+        # placement message alongside the counter: counters are only comparable
+        # within one run/scope, so the client treats a placement whose run_id
+        # differs from the last applied as a fresh, deliberate command (a
+        # restarted server's counter restart would otherwise read as stale).
+        self._layout_run_id = uuid.uuid4().hex[:8]
+        self._command_handle_from_uuid: dict[str, CommandHandle] = {}
         self._current_file_upload_states: dict[str, _FileUploadState] = {}
 
         # Set to True when plotly.min.js has been sent to client.
@@ -222,6 +348,15 @@ class GuiApi:
 
         self._websock_interface.register_handler(
             _messages.GuiUpdateMessage, self._handle_gui_updates
+        )
+        self._websock_interface.register_handler(
+            _messages.GuiButtonHoldMessage, self._handle_gui_button_hold
+        )
+        self._websock_interface.register_handler(
+            _messages.GuiFormSubmitMessage, self._handle_gui_form_submit
+        )
+        self._websock_interface.register_handler(
+            _messages.GuiFormDirtyMessage, self._handle_gui_form_dirty
         )
         self._websock_interface.register_handler(
             _messages.FileTransferStartUpload, self._handle_file_transfer_start
@@ -234,6 +369,22 @@ class GuiApi:
             _messages.FolderSelectMessage,
             self._handle_folder_select,
         )
+        self._websock_interface.register_handler(
+            _messages.CommandTriggerMessage, self._handle_command_trigger
+        )
+
+    def _resolve_client(self, client_id: ClientId) -> ClientHandle | None:
+        """Resolve the ClientHandle for a given client_id. Returns None when
+        the client has disconnected between queuing and dispatch -- callers
+        should early-return."""
+        # Runtime import to break the circular edge with `_viser`.
+        from ._viser import ClientHandle, ViserServer
+
+        if isinstance(self._owner, ClientHandle):
+            return self._owner
+        if isinstance(self._owner, ViserServer):
+            return self._owner._connected_clients.get(client_id, None)
+        assert_never(self._owner)
 
     async def _handle_gui_updates(
         self, client_id: ClientId, message: _messages.GuiUpdateMessage
@@ -293,7 +444,7 @@ class GuiApi:
 
         # Existing logic for regular GUI inputs
         handle = self._gui_input_handle_from_uuid.get(message.uuid, None)
-        if handle is None:
+        if handle is None or handle._impl.removed:
             return
         handle_state = handle._impl
 
@@ -334,19 +485,23 @@ class GuiApi:
 
         # GUI element has been updated!
         handle_state.update_timestamp = time.time()
+
+        # Broadcast to the other clients BEFORE awaiting update callbacks, so
+        # the mutation above and its broadcast are adjacent on the event loop:
+        # with the broadcast after the awaits, (a) two near-simultaneous
+        # updates could interleave at a callback's await point and leave the
+        # buffer coalesced to a different value than the server state, and
+        # (b) a callback that writes back (e.g. clamps handle.value) had its
+        # own broadcast clobbered by the stale echo of the pre-clamp value --
+        # every OTHER client (and every late joiner) kept the un-clamped
+        # value while the server and the acting client held the clamped one.
+        if handle_state.sync_cb is not None:
+            handle_state.sync_cb(client_id, updates_cast)
+
+        client = self._resolve_client(client_id)
+        if client is None:
+            return
         for cb in handle_state.update_cb:
-            from ._viser import ClientHandle, ViserServer
-
-            # Get the handle of the client that triggered this event.
-            if isinstance(self._owner, ClientHandle):
-                client = self._owner
-            elif isinstance(self._owner, ViserServer):
-                client = self._owner._connected_clients.get(client_id, None)
-                if client is None:
-                    return
-            else:
-                assert False
-
             if asyncio.iscoroutinefunction(cb):
                 await cb(GuiEvent(client, client_id, handle))
             else:
@@ -354,8 +509,71 @@ class GuiApi:
                     cb, GuiEvent(client, client_id, handle)
                 ).add_done_callback(print_threadpool_errors)
 
-        if handle_state.sync_cb is not None:
-            handle_state.sync_cb(client_id, updates_cast)
+    async def _handle_gui_button_hold(
+        self, client_id: ClientId, message: _messages.GuiButtonHoldMessage
+    ) -> None:
+        """Callback for handling button hold messages."""
+        handle = self._gui_input_handle_from_uuid.get(message.uuid, None)
+        if handle is None or handle._impl.removed:
+            return
+
+        # Ensure this is a button handle with hold callbacks.
+        if not isinstance(handle, GuiButtonHandle):
+            return
+
+        # Get callbacks registered for this frequency.
+        callbacks = handle._button_impl.hold_cbs_from_freq.get(message.frequency, [])
+        if not callbacks:
+            return
+
+        client = self._resolve_client(client_id)
+        if client is None:
+            return
+
+        # Call all callbacks for this frequency.
+        for cb in callbacks:
+            if asyncio.iscoroutinefunction(cb):
+                await cb(GuiEvent(client, client_id, handle))
+            else:
+                self._thread_executor.submit(
+                    cb, GuiEvent(client, client_id, handle)
+                ).add_done_callback(print_threadpool_errors)
+
+    async def _handle_gui_form_submit(
+        self, client_id: ClientId, message: _messages.GuiFormSubmitMessage
+    ) -> None:
+        """Callback for client-initiated form submits (Cmd/Ctrl+Enter).
+
+        Fires the form's on_submit callbacks and broadcasts the message back
+        to all clients so they reset their dirty indicators.
+        """
+        handle = self._container_handle_from_uuid.get(message.uuid, None)
+        if not isinstance(handle, GuiFormHandle):
+            return
+
+        client = self._resolve_client(client_id)
+        if client is None:
+            return
+
+        for cb in handle._submit_cb:
+            if asyncio.iscoroutinefunction(cb):
+                await cb(GuiEvent(client, client_id, handle))
+            else:
+                self._thread_executor.submit(
+                    cb, GuiEvent(client, client_id, handle)
+                ).add_done_callback(print_threadpool_errors)
+
+        # Broadcast to clients so they clear their dirty indicators.
+        self._websock_interface.queue_message(
+            _messages.GuiFormSubmitMessage(uuid=message.uuid)
+        )
+
+    async def _handle_gui_form_dirty(
+        self, client_id: ClientId, message: _messages.GuiFormDirtyMessage
+    ) -> None:
+        """Broadcast form dirty signal to all other clients."""
+        message.excluded_self_client = client_id
+        self._websock_interface.queue_message(message)
 
     def _handle_file_transfer_start(
         self, client_id: ClientId, message: _messages.FileTransferStartUpload
@@ -363,6 +581,10 @@ class GuiApi:
         if message.source_component_uuid not in self._gui_input_handle_from_uuid:
             return
         self._current_file_upload_states[message.transfer_uuid] = {
+            # Owner, so a disconnect can purge this client's in-flight
+            # transfers -- entries are otherwise only removed on completion,
+            # and a tab closed mid-upload leaked its buffered parts forever.
+            "client_id": client_id,
             "filename": message.filename,
             "mime_type": message.mime_type,
             "part_count": message.part_count,
@@ -372,18 +594,119 @@ class GuiApi:
             "lock": threading.Lock(),
         }
 
+        # A zero-byte file is sent with part_count == 0, so no FileTransferPart
+        # messages ever arrive to drive completion. Finish it here -- otherwise
+        # on_upload never fires and the transfer state leaks forever.
+        if message.part_count == 0:
+            self._websock_interface.queue_message(
+                FileTransferPartAck(
+                    source_component_uuid=message.source_component_uuid,
+                    transfer_uuid=message.transfer_uuid,
+                    transferred_bytes=0,
+                    total_bytes=0,
+                )
+            )
+            self._finish_file_upload(
+                client_id, message.transfer_uuid, message.source_component_uuid
+            )
+
+    def _drop_uploads_from_client(self, client_id: ClientId) -> None:
+        """Purge in-flight upload buffers owned by a disconnected client.
+        Entries are otherwise only removed on completion, so a tab closed
+        mid-upload would leak its accumulated parts forever (and a hostile
+        client could grow that leak without bound)."""
+        for transfer_uuid in [
+            tid
+            for tid, state in self._current_file_upload_states.items()
+            if state["client_id"] == client_id
+        ]:
+            self._current_file_upload_states.pop(transfer_uuid, None)
+
+    def _finish_file_upload(
+        self,
+        client_id: ClientId,
+        transfer_uuid: str,
+        # None on the wire for server->client downloads; upload transfers carry
+        # the upload button's uuid, but that handle may have been removed
+        # mid-transfer -- both degrade to the same no-op below.
+        source_component_uuid: str | None,
+    ) -> None:
+        """Finalize a completed upload by assembling the file contents and
+        firing the handle's update callbacks. Shared by the normal multi-part
+        path and the zero-byte path (which has no parts)."""
+        state = self._current_file_upload_states.pop(transfer_uuid, None)
+        if state is None:
+            return
+        if source_component_uuid is None:
+            return
+
+        handle = self._gui_input_handle_from_uuid.get(source_component_uuid, None)
+        if handle is None or handle._impl.removed:
+            return
+        handle_state = handle._impl
+
+        content = b"".join(state["parts"][i] for i in range(state["part_count"]))
+        if len(content) != state["total_bytes"]:
+            # All part slots filled but the bytes don't match the declared
+            # size: a buggy/hostile client. Discard rather than surface a
+            # file that lies about its length (state is already popped above,
+            # so nothing leaks).
+            warnings.warn(
+                f"[viser] Dropping upload {state['filename']!r}: received "
+                f"{len(content)} bytes but the client declared "
+                f"{state['total_bytes']}."
+            )
+            return
+
+        value = UploadedFile(
+            name=state["filename"],
+            content=content,
+        )
+
+        # Update state.
+        handle_state.value = value
+        handle_state.update_timestamp = time.time()
+
+        # Trigger callbacks.
+        client = self._resolve_client(client_id)
+        if client is None:
+            return
+        for cb in handle_state.update_cb:
+            if asyncio.iscoroutinefunction(cb):
+                self._event_loop.create_task(cb(GuiEvent(client, client_id, handle)))
+            else:
+                self._thread_executor.submit(
+                    cb, GuiEvent(client, client_id, handle)
+                ).add_done_callback(print_threadpool_errors)
+
     def _handle_file_transfer_part(
         self, client_id: ClientId, message: _messages.FileTransferPart
     ) -> None:
         if message.transfer_uuid not in self._current_file_upload_states:
             return
-        assert message.source_component_uuid in self._gui_input_handle_from_uuid
+        # NOTE: the source component may legitimately be gone from
+        # `_gui_input_handle_from_uuid` here -- `button.remove()` during a
+        # multi-part upload pops it. Keep buffering and acking parts anyway
+        # (asserting would raise in an asyncio task: no ack, and the
+        # `_current_file_upload_states` entry would leak forever); completion
+        # degrades cleanly in `_finish_file_upload`, which pops the transfer
+        # state and then no-ops on the removed/missing handle.
 
         state = self._current_file_upload_states[message.transfer_uuid]
-        state["parts"][message.part_index] = message.content
+        part_count = state["part_count"]
         total_bytes = state["total_bytes"]
 
         with state["lock"]:
+            # Drop duplicate or out-of-range parts instead of letting them
+            # corrupt the transfer: a repeated part_index used to inflate the
+            # byte-count completion gate, so assembly ran with missing part
+            # slots (KeyError) or overshot the declared size (assert) -- both
+            # crashing the handler task and leaking the transfer state.
+            if message.part_index in state["parts"] or not (
+                0 <= message.part_index < part_count
+            ):
+                return
+            state["parts"][message.part_index] = message.content
             state["transferred_bytes"] += len(message.content)
 
             # Send ack to the server.
@@ -396,49 +719,38 @@ class GuiApi:
                 )
             )
 
-            if state["transferred_bytes"] < total_bytes:
+            # Complete only when every part slot is filled: the byte count
+            # alone can't distinguish "all parts arrived" from a client whose
+            # parts don't add up to its declared size.
+            if len(state["parts"]) < part_count:
                 return
 
         # Finish the upload.
-        assert state["transferred_bytes"] == total_bytes
-        state = self._current_file_upload_states.pop(message.transfer_uuid)
-
-        handle = self._gui_input_handle_from_uuid.get(
-            message.source_component_uuid, None
+        self._finish_file_upload(
+            client_id, message.transfer_uuid, message.source_component_uuid
         )
-        if handle is None:
+
+    async def _handle_command_trigger(
+        self, client_id: ClientId, message: _messages.CommandTriggerMessage
+    ) -> None:
+        """Callback for handling command trigger messages from the command palette."""
+        handle = self._command_handle_from_uuid.get(message.uuid, None)
+        if handle is None or handle._impl.removed:
+            return
+        handle_state = handle._impl
+        if handle_state.props.disabled:
             return
 
-        handle_state = handle._impl
+        client = self._resolve_client(client_id)
+        if client is None:
+            return
 
-        value = UploadedFile(
-            name=state["filename"],
-            content=b"".join(state["parts"][i] for i in range(state["part_count"])),
-        )
-
-        # Update state.
-        handle_state.value = value
-        handle_state.update_timestamp = time.time()
-
-        # Trigger callbacks.
-        for cb in handle_state.update_cb:
-            from ._viser import ClientHandle, ViserServer
-
-            # Get the handle of the client that triggered this event.
-            if isinstance(self._owner, ClientHandle):
-                client = self._owner
-            elif isinstance(self._owner, ViserServer):
-                client = self._owner._connected_clients.get(client_id, None)
-                if client is None:
-                    return
-            else:
-                assert False
-
+        for cb in handle_state.trigger_cb:
             if asyncio.iscoroutinefunction(cb):
-                self._event_loop.create_task(cb(GuiEvent(client, client_id, handle)))
+                await cb(CommandEvent(client, client_id, handle))
             else:
                 self._thread_executor.submit(
-                    cb, GuiEvent(client, client_id, handle)
+                    cb, CommandEvent(client, client_id, handle)
                 ).add_done_callback(print_threadpool_errors)
 
     def _handle_folder_select(
@@ -480,20 +792,262 @@ class GuiApi:
                 ).add_done_callback(print_threadpool_errors)
 
     def _get_container_uuid(self) -> str:
-        """Get container ID associated with the current thread."""
+        """Get container ID associated with the current thread.
+
+        When a container context from a DIFFERENT GuiApi of the same server
+        is active in the current Context, nesting is directional: a
+        client-scope add inside a server-scope container targets the
+        server's container, while the reverse raises -- silently placing the
+        element at this scope's root (the historical behavior) hid the
+        mistake."""
+        owner_api = self._context_owner()
+        if owner_api is not None and owner_api is not self:
+            from ._viser import ViserServer
+
+            if isinstance(owner_api._owner, ViserServer) and not isinstance(
+                self._owner, ViserServer
+            ):
+                # Client element into a server container: allowed (the
+                # element's audience is a subset of the container's). The
+                # element nests under the SERVER scope's active container.
+                # This is the one deliberate exception to scope-local
+                # removal: the server container's teardown cascades into
+                # cross-nested client elements, because an orphaned widget
+                # -- unlike a scene node, which keeps its pose -- has
+                # nowhere coherent to go.
+                return owner_api._target_container_from_thread_id.get(
+                    threading.get_ident(), "root"
+                )
+            # Server (or other-client) element into a client container:
+            # every viewer outside that client scope couldn't see the
+            # container, so the element would dangle. Fail loudly.
+            raise RuntimeError(
+                "A GUI container context from a client scope is active on "
+                "this thread, and elements with a broader audience cannot "
+                "nest inside it (they would dangle for every other client). "
+                "Client elements may nest inside server containers, but not "
+                "vice versa."
+            )
         return self._target_container_from_thread_id.get(threading.get_ident(), "root")
 
+    def _resolve_container_handle(self, container_uuid: str) -> GuiContainerProtocol:
+        """Resolve a container uuid to its handle, tolerating client
+        elements nested inside SERVER containers: the parent then lives in
+        the server GuiApi's registry rather than this one's."""
+        handle = self._container_handle_from_uuid.get(container_uuid)
+        if handle is not None:
+            return handle
+        server_gui = self._root_server().gui
+        if server_gui is not self:
+            handle = server_gui._container_handle_from_uuid.get(container_uuid)
+            if handle is not None:
+                return handle
+        raise KeyError(container_uuid)
+
+    def _release_cross_scope_nesting(self) -> None:
+        """Bookkeeping-only detach of this (client-scoped) GuiApi's elements
+        from the server containers they were nested in. Called on
+        disconnect: the connection's buffer is already closed, so no removal
+        messages are sent -- we just unhook the handles from the server's
+        container tree so a later server-side container removal doesn't
+        cascade a remove into a dead connection."""
+        while self._handles_in_foreign_containers:
+            uuid, handle = self._handles_in_foreign_containers.popitem()
+            # Tombstone BEFORE detaching from the server parent: a user
+            # thread racing us with handle.remove() then bails at the
+            # already-removed check instead of finding a half-detached
+            # tree (its registry pops are tolerant of ours regardless).
+            self._tombstone_subtree(handle)
+            parent = self._root_server().gui._container_handle_from_uuid.get(
+                handle._impl.parent_container_id
+            )
+            if parent is not None:
+                parent._children.pop(uuid, None)
+
+    def _tombstone_subtree(self, handle: Any) -> None:
+        """Recursively mark a cross-nested subtree removed and purge it from
+        this scope's registries WITHOUT queuing messages (the connection is
+        closed). Descendants must be tombstoned too: a surviving user
+        reference calling ``.remove()`` on one should get the ordinary
+        already-removed warning, not a KeyError from a parent that no
+        longer resolves. Mirrors the per-type drains in the remove()
+        implementations."""
+        from ._gui_handles import GuiTabHandle
+
+        # Tabs keep their tombstone/uuid on the handle itself; everything
+        # else keeps them on `_impl`.
+        is_tab = isinstance(handle, GuiTabHandle)
+        state = handle if is_tab else handle._impl
+        if state.removed:
+            return
+        state.removed = True
+        uuid = handle._id if is_tab else handle._impl.uuid
+        self._gui_input_handle_from_uuid.pop(uuid, None)
+        self._container_handle_from_uuid.pop(uuid, None)
+        for child in (
+            *getattr(handle, "_tab_handles", ()),
+            *tuple(getattr(handle, "_children", {}).values()),
+        ):
+            self._tombstone_subtree(child)
+
+    def _root_server(self):
+        """The ViserServer this GuiApi ultimately belongs to (itself for the
+        broadcast scope, the owning server for a client scope)."""
+        from ._viser import ViserServer
+
+        return (
+            self._owner
+            if isinstance(self._owner, ViserServer)
+            else self._owner._viser_server
+        )
+
+    def _context_owner(self) -> GuiApi | None:
+        """The GuiApi owning the current Context's active (non-root)
+        container context on this API's server, if any."""
+        return _context_owner_by_server.get().get(id(self._root_server().gui))
+
+    def _set_context_owner(self, owner: GuiApi | None) -> None:
+        """Install (or clear, with None) this server's context-owner marker
+        in the current Context. Copy-on-write: copied Contexts (sibling
+        asyncio tasks) share the mapping object, so it is never mutated."""
+        key = id(self._root_server().gui)
+        current = _context_owner_by_server.get()
+        if owner is None:
+            if key in current:
+                updated = dict(current)
+                del updated[key]
+                _context_owner_by_server.set(updated)
+        else:
+            _context_owner_by_server.set({**current, key: owner})
+
     def _set_container_uuid(self, container_uuid: str) -> None:
-        """Set container ID associated with the current thread."""
-        self._target_container_from_thread_id[threading.get_ident()] = container_uuid
+        """Set container ID associated with the current thread, tracking
+        which GuiApi currently owns an active (non-root) container context
+        so cross-scope nesting stays directional (see _get_container_uuid)."""
+        thread_id = threading.get_ident()
+        self._target_container_from_thread_id[thread_id] = container_uuid
+        if container_uuid == "root":
+            if self._context_owner() is self:
+                self._set_context_owner(None)
+        else:
+            self._set_context_owner(self)
+
+    def _snapshot_container_context(self) -> tuple[GuiApi, str]:
+        """Snapshot the active container context for a `with` block to
+        restore on exit: the OWNING GuiApi and its current target uuid.
+        Carrying the owner explicitly -- instead of re-deriving it from a
+        bare uuid at exit time -- keeps the restore correct even when the
+        snapshot container has been removed while the block was open (a
+        dangling uuid restores into the scope that owned it, exactly like a
+        removed-while-open container always has within a single scope).
+        Raises for disallowed nesting directions, via _get_container_uuid."""
+        container_uuid = self._get_container_uuid()
+        owner_api = self._context_owner()
+        return (owner_api if owner_api is not None else self, container_uuid)
+
+    def _restore_container_context(self, snapshot: tuple[GuiApi, str]) -> None:
+        """Restore an `__enter__`-time snapshot on `__exit__`. When the
+        snapshot belongs to another scope (a client container context nested
+        inside a server one), our own thread target -- set for the block
+        that is now exiting -- is dropped so later adds can't resolve
+        against it once the owning scope's context also exits."""
+        owner_api, container_uuid = snapshot
+        if owner_api is not self:
+            self._target_container_from_thread_id.pop(threading.get_ident(), None)
+        owner_api._set_container_uuid(container_uuid)
+
+    def _next_layout_counter(self) -> int:
+        """Bump and return the layout-update counter. THE single home of the
+        lock-guarded read-modify-write (used by every placement command and by
+        reset), so concurrent calls can't stamp duplicate counters. Global
+        across panels (D50): the client replays conflicting container-scoped
+        collapse axes in counter order."""
+        with self._layout_update_lock:
+            self._layout_counter += 1
+            return self._layout_counter
 
     def reset(self) -> None:
         """Reset the GUI."""
+        from ._viser import ViserServer
+
         root_container = self._container_handle_from_uuid["root"]
-        while len(root_container._children) > 0:
+        while root_container._children:
             next(iter(root_container._children.values())).remove()
-        while len(self._modal_handle_from_uuid) > 0:
+        # This scope's elements nested inside ANOTHER scope's containers
+        # (client elements in server containers) aren't reachable from this
+        # root; drain them explicitly.
+        while self._handles_in_foreign_containers:
+            next(iter(self._handles_in_foreign_containers.values())).remove()
+        while self._modal_handle_from_uuid:
             next(iter(self._modal_handle_from_uuid.values())).close()
+        # Panels are top-level entities (not under `root`), so drain them
+        # explicitly -- otherwise they leak and replay to late joiners.
+        while self._panel_handle_from_uuid:
+            next(iter(self._panel_handle_from_uuid.values())).remove()
+        while self._command_handle_from_uuid:
+            next(iter(self._command_handle_from_uuid.values())).remove()
+
+        # Reset any server-authored main-panel placement (from `main_panel`
+        # commands or the deprecated `control_layout`) back to the default. The
+        # per-axis placement messages persist in the broadcast buffer and replay
+        # to clients that connect after the reset; sending the defaults here
+        # coalesces over the stale ones (same redundancy key per message type) so
+        # late joiners -- and connected clients -- get the default control panel
+        # (a top-right float) instead of a layout the user never asked
+        # for. Placement is write-only, so we just send; there's no state to read.
+        # Bump the main panel's layout counter once and stamp it on all four
+        # reset messages, so a connected client that had rearranged the control
+        # panel still sees this deliberate reset (counter increment beats its
+        # last-applied), while a normal reconnect replay -- same counter -- is
+        # ignored. (None width/height clears any override -> default/theme.)
+        #
+        # SERVER-SCOPED ONLY: a client-scoped `client.gui.reset()` resets the
+        # GUI elements it owns but must NOT touch the main panel's placement.
+        # A client-scoped GuiApi mints its own `_layout_run_id`, so the four
+        # default CONTROL_PANEL_ID messages below would reach the client's
+        # placement gate with an unseen run_id -- which the gate treats as a
+        # fresh, deliberate command -- clobbering server-authored placement
+        # (e.g. undocking a `main_panel.dock_left()` control panel to the
+        # default top-right float, for that one client).
+        if not isinstance(self._owner, ViserServer):
+            return
+        reset_counter = self._next_layout_counter()
+        self._websock_interface.queue_message(
+            _messages.GuiSetPanelPositionMessage(
+                CONTROL_PANEL_ID,
+                {"kind": "float", "x": None, "y": None},
+                counter=reset_counter,
+                run_id=self._layout_run_id,
+            )
+        )
+        self._websock_interface.queue_message(
+            _messages.GuiSetPanelWidthMessage(
+                CONTROL_PANEL_ID,
+                None,
+                counter=reset_counter,
+                run_id=self._layout_run_id,
+            )
+        )
+        self._websock_interface.queue_message(
+            _messages.GuiSetPanelHeightMessage(
+                CONTROL_PANEL_ID,
+                None,
+                counter=reset_counter,
+                run_id=self._layout_run_id,
+            )
+        )
+        # Collapsed is the fourth independent axis with its own redundancy
+        # slot: without this, a prior `main_panel.minimize()` survives the
+        # reset in the buffer and late joiners replay a minimized "default"
+        # control panel.
+        self._websock_interface.queue_message(
+            _messages.GuiSetPanelCollapsedMessage(
+                CONTROL_PANEL_ID,
+                False,
+                counter=reset_counter,
+                run_id=self._layout_run_id,
+            )
+        )
 
     def set_panel_label(self, label: str | None) -> None:
         """Set the main label that appears in the GUI panel.
@@ -527,6 +1081,23 @@ class GuiApi:
             show_share_button: A boolean indicating if the share button should be displayed.
             brand_color: An optional tuple of integers (RGB) representing the brand color.
         """
+
+        # `control_layout` is soft-deprecated in favor of `main_panel` placement.
+        # "collapsible"/"fixed" both map to docking the control panel to the
+        # right edge; the dock system makes every docked panel user-collapsible,
+        # so the old fixed/collapsible distinction no longer applies. We send
+        # "floating" to the client (the dock surface) and issue the dock command.
+        if control_layout != "floating":
+            warnings.warn(
+                "`control_layout` is deprecated; use `main_panel` placement"
+                " instead, e.g. `server.gui.main_panel.dock_right()`. Both"
+                ' "collapsible" and "fixed" now dock the control panel to the'
+                " right edge.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            self.main_panel.dock_right()
+            control_layout = "floating"
 
         colors_cast: LengthTenStrTuple | None = None
 
@@ -643,27 +1214,109 @@ class GuiApi:
             ),
         )
 
+    def add_command(
+        self,
+        label: str,
+        *,
+        description: str | None = None,
+        hotkey: _messages.HotkeyKey | None = None,
+        modifier: _messages.KeyModifier | None = None,
+        icon: IconName | None = None,
+        disabled: bool = False,
+    ) -> CommandHandle:
+        """Register a command for the command palette.
+
+        Scope follows the owner of this :class:`GuiApi`, matching the
+        rest of the GUI API: ``server.gui.add_command(...)`` registers
+        the command for every connected client (and any that connect
+        later), while ``client.gui.add_command(...)`` registers it only
+        for that client.
+
+        (Experimental) The command palette API may change in future
+        releases.
+
+        Args:
+            label: Label displayed in the command palette.
+            description: Optional description displayed below the label.
+            hotkey: Optional hotkey key, e.g. ``"K"`` or ``"R"``. ``None``
+                disables the hotkey.
+            modifier: Modifier-combo to require with the hotkey, as a
+                canonically ordered ``"+"``-separated string like
+                ``"cmd/ctrl"``, ``"shift"``, or ``"cmd/ctrl+shift"``.
+                ``None`` matches "no modifiers held". ``cmd/ctrl``
+                matches whenever either Cmd or Ctrl is held. Must be
+                ``None`` when ``hotkey`` is ``None``; passing a
+                modifier without a hotkey raises ``ValueError``.
+            icon: Optional icon to display next to the command label.
+            disabled: If True, the command is visible but not triggerable.
+
+        Returns:
+            A handle that can be used to attach callbacks via
+            :meth:`CommandHandle.on_trigger`, update properties, or remove the
+            command.
+        """
+        if hotkey is None and modifier is not None:
+            raise ValueError(
+                "add_command(modifier=...) requires hotkey= to also be set."
+            )
+        # Validate + canonicalize the modifier string. Raises on bad input.
+        normalized_modifier = _messages._normalize_key_modifier(modifier)
+        command_uuid = _make_uuid()
+        props = _messages.CommandProps(
+            label=label,
+            description=description,
+            hotkey=hotkey,
+            modifier=normalized_modifier,
+            disabled=disabled,
+            _icon_html=None if icon is None else svg_from_icon(icon),
+        )
+        # Register in the local map before publishing, so an immediate
+        # trigger from the client can be resolved here.
+        handle_state = _CommandHandleState(
+            uuid=command_uuid,
+            gui_api=self,
+            props=props,
+            icon=icon,
+        )
+        handle = CommandHandle(handle_state)
+        self._command_handle_from_uuid[command_uuid] = handle
+        self._websock_interface.queue_message(
+            _messages.RegisterCommandMessage(
+                uuid=command_uuid,
+                props=props,
+            )
+        )
+        return handle
+
     @deprecated_positional_shim
     def add_folder(
         self,
-        label: str,
+        label: str | None,
         *,
         order: float | None = None,
         expand_by_default: bool = True,
         visible: bool = True,
     ) -> GuiFolderHandle:
-        """Add a folder, and return a handle that can be used to populate it.
+        """Add a folder: a single **inline** collapsible section. Return a handle
+        that can be used to populate it.
+
+        For inline *tabs* use :meth:`add_tab_group`; for content in a *movable*
+        window (dockable / floating) use :meth:`add_panel`.
 
         Args:
-            label: Label to display on the folder.
+            label: Label to display on the folder. If ``None``, the folder is
+                rendered without a header or border, which is useful for pure
+                layout grouping.
             order: Optional ordering, smallest values will be displayed first.
             expand_by_default: Open the folder by default. Set to False to collapse it by
-                default.
+                default. Ignored when ``label`` is ``None``.
             visible: Whether the component is visible.
 
         Returns:
             A handle that can be used as a context to populate the folder.
         """
+        # TODO: consider an imperative collapse/expand method on the folder
+        # handle; today only the `expand_by_default` creation kwarg exists.
         folder_container_id = _make_uuid()
         order = _apply_default_order(order)
         props = _messages.GuiFolderProps(
@@ -682,6 +1335,83 @@ class GuiApi:
         return GuiFolderHandle(
             _GuiHandleState(
                 folder_container_id,
+                self,
+                None,
+                props=props,
+                parent_container_id=self._get_container_uuid(),
+            )
+        )
+
+    @deprecated_positional_shim
+    def add_form(
+        self,
+        label: str | None,
+        *,
+        order: float | None = None,
+        expand_by_default: bool = True,
+        visible: bool = True,
+    ) -> GuiFormHandle:
+        """Add a form, and return a handle that can be used to populate it.
+
+        See :class:`GuiFormHandle` for usage and semantics.
+
+        Args:
+            label: Label to display on the form. If ``None``, the form is
+                rendered without a header or border.
+            order: Optional ordering, smallest values will be displayed first.
+            expand_by_default: Open the form by default. Set to False to
+                collapse it by default. Ignored when ``label`` is ``None``.
+            visible: Whether the component is visible.
+
+        Returns:
+            A handle that can be used as a context to populate the form.
+        """
+        # Nested forms would produce invalid HTML on the client (nested
+        # <form> elements are not allowed and the browser flattens
+        # them). Walk through folders, tabs, and tab groups -- they
+        # share a DOM context with their ancestors. Stop at modals,
+        # which render into a separate React portal where a fresh
+        # <form> is well-formed.
+        container = self._get_container_uuid()
+        while container != "root":
+            # Resolve across scopes: a client-scope add_form() inside a
+            # server-scope form is just as invalid as a same-scope nesting.
+            try:
+                parent = self._resolve_container_handle(container)
+            except KeyError:
+                break
+            if isinstance(parent, GuiFormHandle):
+                raise ValueError(
+                    "Nested forms are not supported: add_form() was called "
+                    "inside an existing form's context."
+                )
+            if isinstance(parent, GuiModalHandle):
+                break
+            if isinstance(parent, GuiTabHandle):
+                container = parent._parent._impl.parent_container_id
+            elif isinstance(parent, (GuiFolderHandle, GuiTabGroupHandle)):
+                container = parent._impl.parent_container_id
+            else:
+                break
+
+        form_container_id = _make_uuid()
+        order = _apply_default_order(order)
+        props = _messages.GuiFolderProps(
+            order=order,
+            label=label,
+            expand_by_default=expand_by_default,
+            visible=visible,
+        )
+        self._websock_interface.queue_message(
+            _messages.GuiFormMessage(
+                uuid=form_container_id,
+                container_uuid=self._get_container_uuid(),
+                props=props,
+            )
+        )
+        return GuiFormHandle(
+            _GuiHandleState(
+                form_container_id,
                 self,
                 None,
                 props=props,
@@ -739,7 +1469,12 @@ class GuiApi:
         order: float | None = None,
         visible: bool = True,
     ) -> GuiTabGroupHandle:
-        """Add a tab group.
+        """Add a tab group: **inline** tabs that stay put where they are added
+        (in the control panel or a folder).
+
+        For tabs in a *movable* window the user can dock or float, use
+        :meth:`add_panel` instead; for a single inline collapsible section, use
+        :meth:`add_folder`.
 
         Args:
             order: Optional ordering, smallest values will be displayed first.
@@ -772,6 +1507,93 @@ class GuiApi:
                 parent_container_id=message.container_uuid,
             )
         )
+
+    def add_panel(
+        self,
+        *,
+        order: float | None = None,
+        visible: bool = True,
+    ) -> PanelHandle:
+        """Add a standalone panel: a **movable** window (dockable / floating)
+        that lives outside the main control panel. A panel is the *container*;
+        its tabs (added with :meth:`PanelHandle.add_tab`) hold the content.
+
+        Choosing a container: use :meth:`add_folder` for an inline collapsible
+        section, :meth:`add_tab_group` for inline tabs that stay put inside the
+        control panel, and ``add_panel`` for tabs in a window the user can move,
+        dock, or float. (A panel is essentially a tab group you can place.)
+
+        A panel is a top-level entity (like :meth:`add_modal`): it is not placed
+        in the current container context. Add content with
+        :meth:`PanelHandle.add_tab`, place it with the imperative ``dock_*`` /
+        :meth:`PanelHandle.float` commands, and remove it with
+        :meth:`PanelHandle.remove` (there is no UI close button). See also
+        :attr:`main_panel` to place the main control panel.
+
+        Panels start expanded -- except on the mobile bottom sheet, where
+        panels render as sections that start collapsed (one tap opens the
+        panel; the sheet is wayfinding chrome). :meth:`PanelHandle.minimize` /
+        :meth:`PanelHandle.expand` collapse or reveal them imperatively,
+        applied to the panel's containing window or docked column like the
+        on-screen minimize control.
+
+        Args:
+            order: Optional ordering, smallest values will be displayed first.
+                Used for the mobile bottom sheet's section order;
+                docked/floating placement is set with the ``dock_*`` /
+                ``float`` commands, not ``order``.
+            visible: Whether the panel is visible.
+
+        Returns:
+            A handle used to add tabs to and place the panel.
+
+        Example::
+
+            panel = server.gui.add_panel()
+            with panel.add_tab("Stats", viser.Icon.CHART_BAR):
+                server.gui.add_number("Counter", 0, disabled=True)
+            panel.dock_right()
+            panel.set_width(320)
+        """
+        panel_id = _make_uuid()
+        message = _messages.GuiPanelMessage(
+            uuid=panel_id,
+            props=_messages.GuiPanelProps(
+                order=_apply_default_order(order),
+                _tab_labels=(),
+                visible=visible,
+                _tab_icons_html=(),
+                _tab_container_ids=(),
+            ),
+        )
+        self._websock_interface.queue_message(message)
+        return PanelHandle(
+            _GuiHandleState(
+                message.uuid,
+                self,
+                value=None,
+                props=message.props,
+                # A panel is a top-level entity (not nested in a container); it
+                # registers itself in `_panel_handle_from_uuid`. The
+                # parent_container_id is unused for panels, but the handle state
+                # requires one -- "root" is a harmless placeholder.
+                parent_container_id="root",
+            )
+        )
+
+    @property
+    def main_panel(self) -> MainPanelHandle:
+        """Handle for the main control panel.
+
+        Supports the same placement / sizing / minimize commands as a standalone
+        panel (see :class:`MainPanelHandle` and :meth:`add_panel`). It can be a
+        dock anchor for :meth:`PanelHandle.dock_above` / :meth:`dock_below` from
+        any scope, but ONLY while it is itself docked (e.g. after
+        ``main_panel.dock_left()``); the control panel floats by default, and
+        splitting against a floating anchor falls back to a right-edge dock. A
+        fresh handle is returned on each access. This is the supported replacement
+        for the deprecated ``configure_theme(control_layout=...)``."""
+        return MainPanelHandle(self)
 
     @deprecated_positional_shim
     def add_markdown(
@@ -862,6 +1684,43 @@ class GuiApi:
         return handle
 
     @deprecated_positional_shim
+    def add_divider(
+        self,
+        *,
+        order: float | None = None,
+        visible: bool = True,
+    ) -> GuiDividerHandle:
+        """Add a horizontal divider line to the GUI.
+
+        Args:
+            order: Optional ordering, smallest values will be displayed first.
+            visible: Whether the component is visible.
+
+        Returns:
+            A handle that can be used to interact with the GUI element.
+        """
+        message = _messages.GuiDividerMessage(
+            uuid=_make_uuid(),
+            container_uuid=self._get_container_uuid(),
+            props=_messages.GuiDividerProps(
+                order=_apply_default_order(order),
+                visible=visible,
+            ),
+        )
+        self._websock_interface.queue_message(message)
+
+        handle = GuiDividerHandle(
+            _GuiHandleState(
+                message.uuid,
+                self,
+                None,
+                props=message.props,
+                parent_container_id=message.container_uuid,
+            ),
+        )
+        return handle
+
+    @deprecated_positional_shim
     def add_image(
         self,
         image: np.ndarray,
@@ -924,6 +1783,7 @@ class GuiApi:
         self,
         figure: go.Figure,
         *,
+        config: Mapping[str, Any] | None = None,
         aspect: float = 1.0,
         order: float | None = None,
         visible: bool = True,
@@ -937,6 +1797,10 @@ class GuiApi:
 
         Args:
             figure: Plotly figure to display.
+            config: Plotly config dict merged into the figure JSON. Controls
+                display options like ``{"displayModeBar": False}``. Values
+                must be JSON-serializable. See
+                https://plotly.com/javascript/configuration-options/
             aspect: Aspect ratio of the plot in the control panel (width/height).
             order: Optional ordering, smallest values will be displayed first.
             visible: Whether the component is visible.
@@ -996,6 +1860,7 @@ class GuiApi:
                 parent_container_id=message.container_uuid,
             ),
             _figure=figure,
+            _config=config,
         )
 
         # Set the plotly handle properties.
@@ -1018,6 +1883,8 @@ class GuiApi:
         cursor: uplot.Cursor | None = None,
         focus: uplot.Focus | None = None,
         aspect: float = 1.0,
+        height: int | None = None,
+        padding: tuple[int, int, int, int] | None = None,
         order: float | None = None,
         visible: bool = True,
     ) -> GuiUplotHandle:
@@ -1062,6 +1929,10 @@ class GuiApi:
                 transparency of non-focused series to emphasize the active one.
             aspect: Width-to-height ratio for the chart display in the control panel.
                 1.0 creates a square chart, values > 1.0 create wider charts.
+                Used when height is None.
+            height: Fixed height in pixels. Overrides aspect ratio when set.
+            padding: Chart padding (top, right, bottom, left) in pixels. Defaults
+                to (0, 24, 0, 0) when omitted.
             order: Display ordering relative to other GUI elements (lower values first).
             visible: Whether the chart is visible in the interface.
 
@@ -1069,7 +1940,7 @@ class GuiApi:
             A handle for programmatically updating chart properties and data.
         """
 
-        # Validate data structure
+        # Validate data structure.
         assert len(data) >= 2, (
             "data must have at least 2 arrays (x-data + at least one y-data series)"
         )
@@ -1077,18 +1948,18 @@ class GuiApi:
             "all data elements must be numpy arrays"
         )
 
-        # Validate data dimensions and shapes
+        # Validate data dimensions and shapes.
         for i, arr in enumerate(data):
             assert arr.ndim == 1, f"data[{i}] must be a 1D array, got shape {arr.shape}"
 
-        # Check that all arrays have the same length
+        # Check that all arrays have the same length.
         lengths = [len(arr) for arr in data]
         if not all(length == lengths[0] for length in lengths):
             raise ValueError(
                 f"All data arrays must have the same length. Got lengths: {lengths}"
             )
 
-        # Validate series configuration
+        # Validate series configuration.
         assert len(series) > 0, "series must not be empty"
         if len(series) != len(data):
             raise ValueError(
@@ -1096,7 +1967,7 @@ class GuiApi:
                 f"Each array in data needs a corresponding series configuration."
             )
 
-        # Convert arrays to float64 as expected by GuiUplotProps
+        # Convert arrays to float64 as expected by GuiUplotProps.
         data_float64 = tuple(arr.astype(np.float64) for arr in data)
 
         message = _messages.GuiUplotMessage(
@@ -1115,6 +1986,8 @@ class GuiApi:
                 cursor=cursor,
                 focus=focus,
                 aspect=aspect,
+                height=height,
+                padding=padding,
                 visible=visible,
             ),
         )
@@ -1161,27 +2034,41 @@ class GuiApi:
         # Re-wrap the GUI handle with a button interface.
         uuid = _make_uuid()
         order = _apply_default_order(order)
-        return GuiButtonHandle(
-            self._create_gui_input(
-                value=False,
-                message=_messages.GuiButtonMessage(
-                    value=False,
-                    uuid=uuid,
-                    container_uuid=self._get_container_uuid(),
-                    props=_messages.GuiButtonProps(
-                        order=order,
-                        label=label,
-                        hint=hint,
-                        color=color,
-                        _icon_html=None if icon is None else svg_from_icon(icon),
-                        disabled=disabled,
-                        visible=visible,
-                    ),
-                ),
-                is_button=True,
-            ),
-            _icon=icon,
+        props = _messages.GuiButtonProps(
+            order=order,
+            label=label,
+            hint=hint,
+            color=color,
+            _icon_html=None if icon is None else svg_from_icon(icon),
+            _hold_callback_freqs=(),
+            disabled=disabled,
+            visible=visible,
         )
+        message = _messages.GuiButtonMessage(
+            value=False,
+            uuid=uuid,
+            container_uuid=self._get_container_uuid(),
+            props=props,
+        )
+
+        # Send the message.
+        self._websock_interface.queue_message(message)
+
+        # Construct button-specific handle state with hold callback support.
+        handle_state = _GuiButtonHandleState(
+            props=props,
+            gui_api=self,
+            value=False,
+            update_timestamp=time.time(),
+            parent_container_id=self._get_container_uuid(),
+            update_cb=[],
+            is_button=True,
+            sync_cb=None,
+            uuid=uuid,
+            hold_cbs_from_freq={},
+        )
+
+        return GuiButtonHandle(handle_state, _icon=icon)
 
     @deprecated_positional_shim
     def add_upload_button(
@@ -1333,6 +2220,8 @@ class GuiApi:
         Returns:
             A handle that can be used to interact with the GUI element.
         """
+        if len(options) == 0:
+            raise ValueError("add_button_group requires at least one option.")
         value = options[0]
         uuid = _make_uuid()
         order = _apply_default_order(order)
@@ -1361,7 +2250,8 @@ class GuiApi:
         self,
         label: str | None = None,
         *,
-        columns: Sequence[str] | Sequence[tuple[str, Literal["string", "number"], bool]],
+        columns: Sequence[str]
+        | Sequence[tuple[str, Literal["string", "number"], bool]],
         initial_rows: Sequence[Sequence[str | float | int]] | None = None,
         selection_mode: Literal["none", "single"] = "none",
         disabled: bool = False,
@@ -1410,12 +2300,16 @@ class GuiApi:
         for col in columns:
             if isinstance(col, str):
                 parsed_columns.append(
-                    _messages.GuiTableColumn(title=col, cell_type="string", editable=True)
+                    _messages.GuiTableColumn(
+                        title=col, cell_type="string", editable=True
+                    )
                 )
             else:
                 title, cell_type, editable = col
                 parsed_columns.append(
-                    _messages.GuiTableColumn(title=title, cell_type=cell_type, editable=editable)
+                    _messages.GuiTableColumn(
+                        title=title, cell_type=cell_type, editable=editable
+                    )
                 )
 
         # Initialize data
@@ -1586,6 +2480,20 @@ class GuiApi:
         value = initial_value
 
         assert isinstance(value, (int, float))
+        if min is not None and max is not None and max < min:
+            raise ValueError(f"add_number: max ({max}) must be >= min ({min}).")
+        # `not (value >= min)` (rather than `value < min`) so a NaN initial
+        # value is rejected too -- matching add_slider, whose `not (max >=
+        # value >= min)` already does. A bare `<`/`>` is False for NaN.
+        if (min is not None and not (value >= min)) or (
+            max is not None and not (value <= max)
+        ):
+            raise ValueError(
+                f"add_number: initial_value ({value}) is outside of "
+                f"[min, max] = [{min}, {max}]."
+            )
+        if step is not None and step <= 0:
+            raise ValueError(f"add_number: step ({step}) must be > 0.")
 
         if step is None:
             # It's ok that `step` is always a float, even if the value is an integer,
@@ -1617,7 +2525,9 @@ class GuiApi:
                         hint=hint,
                         min=min,
                         max=max,
-                        precision=_compute_precision_digits(step),
+                        precision=_compute_precision_digits_covering(
+                            value, min, max, step
+                        ),
                         step=step,
                         disabled=disabled,
                         visible=visible,
@@ -1661,17 +2571,25 @@ class GuiApi:
         value = cast_vector(value, 2)
         min = cast_vector(min, 2) if min is not None else None
         max = cast_vector(max, 2) if max is not None else None
+        if (
+            min is not None
+            and max is not None
+            and any(mn > mx for mn, mx in zip(min, max))
+        ):
+            raise ValueError(
+                f"add_vector2: min {min} must be component-wise <= max {max}."
+            )
+        if (min is not None and any(not (v >= mn) for v, mn in zip(value, min))) or (
+            max is not None and any(not (v <= mx) for v, mx in zip(value, max))
+        ):
+            raise ValueError(
+                f"add_vector2: initial_value {value} has components outside "
+                f"[min, max] = [{min}, {max}]."
+            )
         uuid = _make_uuid()
         order = _apply_default_order(order)
 
-        if step is None:
-            possible_steps: list[float] = []
-            possible_steps.extend([_compute_step(x) for x in value])
-            if min is not None:
-                possible_steps.extend([_compute_step(x) for x in min])
-            if max is not None:
-                possible_steps.extend([_compute_step(x) for x in max])
-            step = float(np.min(possible_steps))
+        step = _infer_vector_step(value, min, max, step)
 
         return GuiVector2Handle(
             self._create_gui_input(
@@ -1687,7 +2605,9 @@ class GuiApi:
                         min=min,
                         max=max,
                         step=step,
-                        precision=_compute_precision_digits(step),
+                        precision=_compute_precision_digits_covering(
+                            initial_value, min, max, step
+                        ),
                         disabled=disabled,
                         visible=visible,
                     ),
@@ -1729,17 +2649,25 @@ class GuiApi:
         value = cast_vector(value, 3)
         min = cast_vector(min, 3) if min is not None else None
         max = cast_vector(max, 3) if max is not None else None
+        if (
+            min is not None
+            and max is not None
+            and any(mn > mx for mn, mx in zip(min, max))
+        ):
+            raise ValueError(
+                f"add_vector3: min {min} must be component-wise <= max {max}."
+            )
+        if (min is not None and any(not (v >= mn) for v, mn in zip(value, min))) or (
+            max is not None and any(not (v <= mx) for v, mx in zip(value, max))
+        ):
+            raise ValueError(
+                f"add_vector3: initial_value {value} has components outside "
+                f"[min, max] = [{min}, {max}]."
+            )
         uuid = _make_uuid()
         order = _apply_default_order(order)
 
-        if step is None:
-            possible_steps: list[float] = []
-            possible_steps.extend([_compute_step(x) for x in value])
-            if min is not None:
-                possible_steps.extend([_compute_step(x) for x in min])
-            if max is not None:
-                possible_steps.extend([_compute_step(x) for x in max])
-            step = float(np.min(possible_steps))
+        step = _infer_vector_step(value, min, max, step)
 
         return GuiVector3Handle(
             self._create_gui_input(
@@ -1755,7 +2683,9 @@ class GuiApi:
                         min=min,
                         max=max,
                         step=step,
-                        precision=_compute_precision_digits(step),
+                        precision=_compute_precision_digits_covering(
+                            initial_value, min, max, step
+                        ),
                         disabled=disabled,
                         visible=visible,
                     ),
@@ -1816,9 +2746,19 @@ class GuiApi:
         Returns:
             A handle that can be used to interact with the GUI element.
         """
+        # Materialize once so a one-shot iterable isn't consumed by the checks
+        # below and again by the message construction.
+        options_tuple = tuple(options)
+        if len(options_tuple) == 0:
+            raise ValueError("add_dropdown requires at least one option.")
         value = initial_value
         if value is None:
-            value = options[0]
+            value = options_tuple[0]
+        elif value not in options_tuple:
+            raise ValueError(
+                f"Dropdown initial_value {value!r} is not one of the options "
+                f"{options_tuple!r}."
+            )
         uuid = _make_uuid()
         order = _apply_default_order(order)
         return GuiDropdownHandle(
@@ -1832,7 +2772,7 @@ class GuiApi:
                         order=order,
                         label=label,
                         hint=hint,
-                        options=tuple(options),
+                        options=options_tuple,
                         disabled=disabled,
                         visible=visible,
                     ),
@@ -1921,9 +2861,20 @@ class GuiApi:
             A handle that can be used to interact with the GUI element.
         """
         value: IntOrFloat = initial_value
-        assert max >= min
-        step = builtins.min(step, max - min)
-        assert max >= value >= min
+        if max < min:
+            raise ValueError(f"add_slider: max ({max}) must be >= min ({min}).")
+        if step <= 0:
+            raise ValueError(f"add_slider: step ({step}) must be > 0.")
+        if max > min:
+            # Clamped only for a non-degenerate range: min == max is allowed
+            # (an inert slider), but a clamped step of 0 must never reach the
+            # client.
+            step = builtins.min(step, max - min)
+        if not (max >= value >= min):
+            raise ValueError(
+                f"add_slider: initial_value ({value}) is outside of "
+                f"[min, max] = [{min}, {max}]."
+            )
 
         # GUI callbacks cast incoming values to match the type of the initial value. If
         # the min, max, or step is a float, we should cast to a float.
@@ -1955,17 +2906,12 @@ class GuiApi:
                         min=min,
                         max=max,
                         step=step,
-                        precision=_compute_precision_digits(step),
+                        precision=_compute_precision_digits_covering(
+                            value, min, max, step
+                        ),
                         visible=visible,
                         disabled=disabled,
-                        _marks=tuple(
-                            GuiSliderMark(value=float(x[0]), label=x[1])
-                            if isinstance(x, tuple)
-                            else GuiSliderMark(value=x, label=None)
-                            for x in marks
-                        )
-                        if marks is not None
-                        else None,
+                        _marks=_build_slider_marks(marks),
                     ),
                 ),
                 is_button=False,
@@ -2010,9 +2956,30 @@ class GuiApi:
         Returns:
             A handle that can be used to interact with the GUI element.
         """
-        assert max >= min
-        step = builtins.min(step, max - min)
-        assert all(max >= x >= min for x in initial_value)
+        if max < min:
+            raise ValueError(f"add_multi_slider: max ({max}) must be >= min ({min}).")
+        if step <= 0:
+            raise ValueError(f"add_multi_slider: step ({step}) must be > 0.")
+        if min_range is not None and min_range > max - min:
+            raise ValueError(
+                f"add_multi_slider: min_range ({min_range}) exceeds the value "
+                f"range ({max - min}); the handle spacing would be unsatisfiable."
+            )
+        if max > min:
+            step = builtins.min(step, max - min)
+        if not all(max >= x >= min for x in initial_value):
+            raise ValueError(
+                f"add_multi_slider: initial_value {initial_value} has entries "
+                f"outside of [min, max] = [{min}, {max}]."
+            )
+        if any(b < a for a, b in zip(initial_value, initial_value[1:])):
+            # The client constrains each handle against its neighbors assuming
+            # sorted order; unsorted values made the first drag snap handles to
+            # surprising positions.
+            raise ValueError(
+                f"add_multi_slider: initial_value {initial_value} must be "
+                "sorted in non-decreasing order."
+            )
 
         # GUI callbacks cast incoming values to match the type of the initial value. If
         # any of the arguments are floats, we should always use a float value.
@@ -2046,15 +3013,10 @@ class GuiApi:
                         visible=visible,
                         disabled=disabled,
                         fixed_endpoints=fixed_endpoints,
-                        precision=_compute_precision_digits(step),
-                        _marks=tuple(
-                            GuiSliderMark(value=float(x[0]), label=x[1])
-                            if isinstance(x, tuple)
-                            else GuiSliderMark(value=x, label=None)
-                            for x in marks
-                        )
-                        if marks is not None
-                        else None,
+                        precision=_compute_precision_digits_covering(
+                            initial_value, min, max, step
+                        ),
+                        _marks=_build_slider_marks(marks),
                     ),
                 ),
                 is_button=False,
@@ -2072,7 +3034,10 @@ class GuiApi:
         hint: str | None = None,
         order: float | None = None,
     ) -> GuiRgbHandle:
-        """Add an RGB picker to the GUI. All values should be in [0, 255].
+        """Add an RGB picker to the GUI.
+
+        Integer channels are in [0, 255]; float channels in [0, 1] are scaled to
+        match (matplotlib convention), so ``1.0`` is white.
 
         Args:
             label: Label to display on the RGB picker.
@@ -2086,7 +3051,12 @@ class GuiApi:
             A handle that can be used to interact with the GUI element.
         """
 
-        value = initial_value
+        value = cast(
+            "tuple[int, int, int]",
+            # warn_stacklevel: user -> deprecated_positional_shim wrapper ->
+            # add_rgb -> _colors_to_int_tuple.
+            _colors_to_int_tuple(initial_value, warn_stacklevel=4),
+        )
         uuid = _make_uuid()
         order = _apply_default_order(order)
         return GuiRgbHandle(
@@ -2118,7 +3088,10 @@ class GuiApi:
         hint: str | None = None,
         order: float | None = None,
     ) -> GuiRgbaHandle:
-        """Add an RGBA picker to the GUI. All values should be in [0, 255].
+        """Add an RGBA picker to the GUI.
+
+        Integer channels are in [0, 255]; float channels in [0, 1] are scaled to
+        match (matplotlib convention), so ``1.0`` is white/opaque.
 
         Args:
             label: Label to display on the RGBA picker.
@@ -2131,7 +3104,12 @@ class GuiApi:
         Returns:
             A handle that can be used to interact with the GUI element.
         """
-        value = initial_value
+        value = cast(
+            "tuple[int, int, int, int]",
+            # warn_stacklevel: user -> deprecated_positional_shim wrapper ->
+            # add_rgba -> _colors_to_int_tuple.
+            _colors_to_int_tuple(initial_value, warn_stacklevel=4),
+        )
         uuid = _make_uuid()
         order = _apply_default_order(order)
         return GuiRgbaHandle(

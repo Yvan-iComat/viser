@@ -5,8 +5,18 @@ import subprocess
 import sys
 from pathlib import Path
 
-client_dir = Path(__file__).absolute().parent / "client"
+client_dir = Path(__file__).resolve().parent / "client"
 build_dir = client_dir / "build"
+
+
+def _is_editable_install() -> bool:
+    """Check if viser is installed in editable mode.
+
+    In editable installs, __file__ is in src/viser/ within the source tree.
+    In regular installs, __file__ is in site-packages/viser/.
+    """
+    viser_dir = Path(__file__).parent
+    return viser_dir.name == "viser" and viser_dir.parent.name == "src"
 
 
 def _check_viser_dev_running() -> bool:
@@ -21,14 +31,14 @@ def _check_viser_dev_running() -> bool:
     for process in psutil.process_iter():
         try:
             # Check if the process is running from the correct viser client directory
-            # and is actually a vite dev server (not just any vite command)
+            # and is actually a vite dev server (not just any vite command).
             cwd = Path(process.cwd()).resolve()
             expected_cwd = client_dir.resolve()
 
             if cwd == expected_cwd:
                 cmdline = process.cmdline()
                 # Check for vite with --host flag (which is our dev command)
-                # Make sure it's not a build command
+                # Make sure it's not a build command.
                 has_vite = any("vite" in part for part in cmdline)
                 has_host = any("--host" in part for part in cmdline)
                 not_build = not any("build" in part for part in cmdline)
@@ -42,6 +52,11 @@ def _check_viser_dev_running() -> bool:
 
 def ensure_client_is_built() -> None:
     """Ensure that the client is built or already running."""
+
+    # For non-editable installs, just verify the build exists.
+    # Skip timestamp checks and dev server detection.
+    if not _is_editable_install() and (build_dir / "index.html").exists():
+        return
 
     if not (client_dir / "src").exists():
         # Can't build client.
@@ -105,13 +120,7 @@ def _build_viser_client(out_dir: Path, cached: bool = True) -> None:
         return
 
     node_bin_dir = _install_sandboxed_node()
-    
-    # On Windows, use .cmd extension for npm and npx
-    npm_name = "npm.cmd" if sys.platform == "win32" else "npm"
-    npx_name = "npx.cmd" if sys.platform == "win32" else "npx"
-    
-    npx_path = node_bin_dir / npx_name
-    npm_path = node_bin_dir / npm_name
+    npx_path = node_bin_dir / "npx"
 
     subprocess_env = os.environ.copy()
     subprocess_env["NODE_VIRTUAL_ENV"] = str(node_bin_dir.parent)
@@ -120,6 +129,12 @@ def _build_viser_client(out_dir: Path, cached: bool = True) -> None:
         + (";" if sys.platform == "win32" else ":")
         + subprocess_env["PATH"]
     )
+    npm_path = node_bin_dir / "npm"
+
+    if sys.platform == "win32":
+        npx_path = npx_path.with_suffix(".cmd")
+        npm_path = npm_path.with_suffix(".cmd")
+
     subprocess.run(
         args=[str(npm_path), "install"],
         env=subprocess_env,
@@ -182,7 +197,7 @@ def _install_sandboxed_node() -> Path:
 
     env_dir = client_dir / ".nodeenv"
     result = subprocess.run(
-        [sys.executable, "-m", "nodeenv", "--node=20.4.0", env_dir], check=False
+        [sys.executable, "-m", "nodeenv", "--node=24.12.0", env_dir], check=False
     )
 
     if result.returncode != 0:

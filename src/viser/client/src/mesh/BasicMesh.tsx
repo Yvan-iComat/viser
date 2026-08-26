@@ -1,71 +1,47 @@
-/** @jsxImportSource react */
 import React from "react";
 import * as THREE from "three";
-import * as BufferGeometryUtils from "three/examples/jsm/utils/BufferGeometryUtils.js";
-import { createStandardMaterial } from "./MeshUtils";
+import { ViserStandardMeshMaterial, ShadowMesh } from "./MeshUtils";
 import { MeshMessage } from "../WebsocketMessages";
 import { OutlinesIfHovered } from "../OutlinesIfHovered";
+import { normalizeScale } from "../utils/normalizeScale";
+import { syncBufferGeometry } from "../utils/bufferGeometrySync";
 
 /**
  * Component for rendering basic THREE.js meshes
  */
 export const BasicMesh = React.forwardRef<
-  THREE.Mesh,
+  THREE.Group,
   MeshMessage & { children?: React.ReactNode }
 >(function BasicMesh(
   { children, ...message },
-  ref: React.ForwardedRef<THREE.Mesh>,
+  ref: React.ForwardedRef<THREE.Group>,
 ) {
-  // Create material based on props.
-  const material = React.useMemo(() => {
-    const mat = createStandardMaterial(message.props);
-    // Force smooth shading on materials (ensure flatShading matches the prop)
-    if (mat instanceof THREE.MeshStandardMaterial) {
-      mat.flatShading = message.props.flat_shading && !message.props.wireframe;
-      mat.needsUpdate = true;
+  // Persistent geometry, synced in place: a streaming/deforming mesh reuses the
+  // existing GL buffers via bufferSubData instead of allocating a new
+  // BufferGeometry on every vertex/face update. Kept imperative (run during
+  // render via useMemo) because the geometry is read synchronously below for
+  // OutlinesIfHovered heuristics and the shadow mesh.
+  const geometryRef = React.useRef<THREE.BufferGeometry | null>(null);
+  if (geometryRef.current === null) {
+    geometryRef.current = new THREE.BufferGeometry();
+  }
+  const geometry = geometryRef.current;
+  React.useMemo(() => {
+    // Vertices and faces arrive as Float32Array / Uint32Array views.
+    const reallocated = syncBufferGeometry(
+      geometry,
+      { position: { array: message.props.vertices, itemSize: 3 } },
+      message.props.faces,
+    );
+    // On realloc (e.g. vertex-count change), drop the stale 'normal' attribute:
+    // computeVertexNormals reuses an existing attribute without a size check,
+    // which would leave normals mismatched with the new position count.
+    if (reallocated) {
+      geometry.deleteAttribute("normal");
     }
-    return mat;
-  }, [
-    message.props.material,
-    message.props.color,
-    message.props.wireframe,
-    message.props.opacity,
-    message.props.flat_shading,
-    message.props.side,
-  ]);
-
-  // Setup geometry using memoization.
-  const geometry = React.useMemo(() => {
-    let geometry = new THREE.BufferGeometry();
-    geometry.setAttribute(
-      "position",
-      new THREE.BufferAttribute(
-        new Float32Array(
-          message.props.vertices.buffer.slice(
-            message.props.vertices.byteOffset,
-            message.props.vertices.byteOffset +
-              message.props.vertices.byteLength,
-          ),
-        ),
-        3,
-      ),
-    );
-    geometry.setIndex(
-      new THREE.BufferAttribute(
-        new Uint32Array(
-          message.props.faces.buffer.slice(
-            message.props.faces.byteOffset,
-            message.props.faces.byteOffset + message.props.faces.byteLength,
-          ),
-        ),
-        1,
-      ),
-    );
-    geometry = BufferGeometryUtils.mergeVertices(geometry);
     geometry.computeVertexNormals();
     geometry.computeBoundingSphere();
-    return geometry;
-  }, [message.props.vertices.buffer, message.props.faces.buffer]);
+  }, [geometry, message.props.vertices, message.props.faces]);
 
   // Clean up geometry when it changes.
   React.useEffect(() => {
@@ -74,50 +50,34 @@ export const BasicMesh = React.forwardRef<
     };
   }, [geometry]);
 
-  // Clean up material when it changes.
-  React.useEffect(() => {
-    return () => {
-      if (material) material.dispose();
-    };
-  }, [material]);
-
   // Check if we should render a shadow mesh.
   const shadowOpacity =
     typeof message.props.receive_shadow === "number"
       ? message.props.receive_shadow
       : 0.0;
 
-  // Create shadow material for shadow mesh.
-  const shadowMaterial = React.useMemo(() => {
-    if (shadowOpacity === 0.0) return null;
-    return new THREE.ShadowMaterial({
-      opacity: shadowOpacity,
-      color: 0x000000,
-      depthWrite: false,
-    });
-  }, [shadowOpacity]);
-
   return (
-    // @ts-ignore - react-three-fiber JSX elements not recognized by TypeScript
-    <mesh
-      ref={ref}
-      geometry={geometry}
-      material={material}
-      castShadow={message.props.cast_shadow}
-      receiveShadow={message.props.receive_shadow === true}
-    >
-      <OutlinesIfHovered
-        enableCreaseAngle={
-          geometry.attributes.position.count < 1024 &&
-          geometry.boundingSphere!.radius > 0.1
-        }
+    <group ref={ref}>
+      <mesh
+        geometry={geometry}
+        scale={normalizeScale(message.props.scale)}
+        castShadow={message.props.cast_shadow}
+        receiveShadow={message.props.receive_shadow === true}
+      >
+        <ViserStandardMeshMaterial {...message.props} />
+        <OutlinesIfHovered
+          enableCreaseAngle={
+            geometry.attributes.position.count < 1024 &&
+            geometry.boundingSphere!.radius > 0.1
+          }
+        />
+      </mesh>
+      <ShadowMesh
+        opacity={shadowOpacity}
+        geometry={geometry}
+        scale={normalizeScale(message.props.scale)}
       />
-      {shadowMaterial && shadowOpacity > 0 ? (
-        // @ts-ignore
-        <mesh geometry={geometry} material={shadowMaterial} receiveShadow />
-      ) : null}
       {children}
-      {/* @ts-ignore */}
-    </mesh>
+    </group>
   );
 });

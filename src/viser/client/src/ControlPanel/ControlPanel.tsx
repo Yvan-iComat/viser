@@ -1,9 +1,17 @@
-import { useDisclosure, useMediaQuery } from "@mantine/hooks";
-import GeneratedGuiContainer from "./Generated";
+import { useDisclosure } from "@mantine/hooks";
+import GeneratedGuiContainer, {
+  GuiComponentContextProvider,
+} from "./Generated";
 import { ViewerContext } from "../ViewerContext";
 
 import QRCode from "react-qr-code";
 import ServerControls from "./ServerControls";
+import { useStableTabSelection } from "../components/TabGroup";
+import { GuiComponentContext } from "./GuiComponentContext";
+import { htmlIconWrapper } from "../components/ComponentStyles.css";
+import { GuiDockContext } from "./GuiDockContext";
+import { DockContext } from "../dock/DockContext";
+import { panelsSelectorEquality } from "./panelsEquality";
 import {
   ActionIcon,
   Anchor,
@@ -15,67 +23,340 @@ import {
   Loader,
   Modal,
   Stack,
+  Tabs,
   Text,
   TextInput,
   Tooltip,
   Transition,
   useMantineColorScheme,
-  useMantineTheme,
 } from "@mantine/core";
 import {
   IconAdjustments,
+  IconPlayerPause,
   IconCloudCheck,
   IconArrowBack,
   IconShare,
   IconCopy,
   IconCheck,
+  IconChevronRight,
   IconPlugConnectedX,
   IconQrcode,
   IconQrcodeOff,
+  IconListSearch,
 } from "@tabler/icons-react";
+import { spotlight } from "@mantine/spotlight";
+import { isMac } from "../utils/platform";
 import React from "react";
 import BottomPanel from "./BottomPanel";
-import FloatingPanel from "./FloatingPanel";
-import { ThemeConfigurationMessage } from "../WebsocketMessages";
-import SidebarPanel from "./SidebarPanel";
+import type { GuiPanelMessage } from "../WebsocketMessages";
 
 // Must match constant in Python.
 const ROOT_CONTAINER_ID = "root";
 
 const MemoizedGeneratedGuiContainer = React.memo(GeneratedGuiContainer);
 
-export default function ControlPanel(props: {
-  control_layout: ThemeConfigurationMessage["control_layout"];
-}) {
-  const theme = useMantineTheme();
-  const useMobileView = useMediaQuery(`(max-width: ${theme.breakpoints.xs})`);
-
-  // TODO: will result in unnecessary re-renders.
+/** True when the root container has any inline generated GUI to show. Standalone
+ * panels are a separate top-level entity (never in the root set), so they don't
+ * affect this. */
+function useShowGenerated(): boolean {
   const viewer = React.useContext(ViewerContext)!;
-  const showGenerated = viewer.useGui(
+  return viewer.useGui(
     (state) =>
       Object.keys(state.guiUuidSetFromContainerUuid["root"] ?? {}).length > 0,
   );
-  const [showSettings, { toggle }] = useDisclosure(false);
+}
 
-  const controlWidthString = viewer.useGui(
-    (state) => state.theme.control_width,
+/** One standalone panel as a collapsible SECTION of the mobile bottom sheet
+ * (D45): ONE identity row, two states (P13: the bar is the header with the
+ * body removed; P9: identity never renders twice). Collapsed: dimmed tab
+ * labels + first icon, chevron at the right end, the whole row a tap target.
+ * Expanded, single-tab panel: the header stays as-is and the tab's content
+ * renders below WITHOUT a tab strip (the header is the identity). Expanded,
+ * multi-tab panel: the REAL tab strip takes over the header row (tabs
+ * activate on tap; the chevron at the right end is the collapse control).
+ * Panels start COLLAPSED: on a small screen the sheet is wayfinding chrome,
+ * and one tap opens the panel you came for. */
+function MobilePanelSection({ panel }: { panel: GuiPanelMessage }) {
+  const { GuiContainer } = React.useContext(GuiComponentContext)!;
+  const viewer = React.useContext(ViewerContext)!;
+  // The section's collapse state and command watermark BOTH live in the gui
+  // store (MobilePanelSection): a watermark is only valid while the state its
+  // application produced survives, so component-local state (which dies on a
+  // reconnect remount or a breakpoint flip) can't carry either half. The
+  // watermark is SURFACE-SPECIFIC -- deliberately NOT the dock's
+  // panelLayoutTracking: desktop and mobile are independent representations
+  // of collapse, so an `expand()` consumed by the desktop dock must still
+  // apply here when the viewport shrinks (a shared mark starved the sheet and
+  // left it collapsed against the latest imperative command). The mobile
+  // DEFAULT stays collapsed (deliberate: the sheet is wayfinding chrome); the
+  // axis is honored as a COMMAND, once above the section's own per-run mark,
+  // so a user's tap wins afterwards until a genuinely newer command arrives.
+  const expanded = viewer.useGui(
+    (state) => state.mobilePanelSections[panel.uuid]?.expanded ?? false,
   );
-  const controlWidth = (
-    controlWidthString == "small"
-      ? "16em"
-      : controlWidthString == "medium"
-        ? "20em"
-        : controlWidthString == "large"
-          ? "24em"
-          : controlWidthString
-  )!;
+  const setExpanded = React.useCallback(
+    (next: boolean) =>
+      viewer.guiActions.setMobileSectionExpanded(panel.uuid, next),
+    [viewer, panel.uuid],
+  );
+  const collapsedAxis = viewer.useGui(
+    (state) => state.panelPlacement[panel.uuid]?.collapsed,
+  );
+  React.useEffect(() => {
+    if (collapsedAxis === undefined) return;
+    viewer.guiActions.applyMobileCollapsedAxis(panel.uuid, collapsedAxis);
+  }, [collapsedAxis, panel.uuid, viewer]);
+  const labels = panel.props._tab_labels;
+  const icons = panel.props._tab_icons_html;
+  const ids = panel.props._tab_container_ids;
+  const [activeTab, setActiveTab] = useStableTabSelection(ids);
+  const multiTab = ids.length > 1;
+  const stripInHeader = expanded && multiTab;
 
-  const generatedServerToggleButton = (
+  const chevron = (
+    <Box
+      onClick={
+        // While the strip owns the header, tab taps must not toggle the
+        // section -- the chevron alone collapses (its own click target).
+        stripInHeader
+          ? (ev) => {
+              ev.stopPropagation();
+              setExpanded(false);
+            }
+          : undefined
+      }
+      role={stripInHeader ? "button" : undefined}
+      aria-label={
+        stripInHeader ? `Collapse panel ${labels[0] ?? ""}` : undefined
+      }
+      style={{
+        display: "flex",
+        alignItems: "center",
+        alignSelf: "center",
+        padding: stripInHeader ? "0.5em" : 0,
+        cursor: "pointer",
+        flexShrink: 0,
+      }}
+    >
+      <IconChevronRight
+        size="1em"
+        aria-hidden
+        style={{
+          opacity: 0.55,
+          transform: expanded ? "rotate(90deg)" : "none",
+          transition: "transform 160ms",
+        }}
+      />
+    </Box>
+  );
+
+  return (
+    <Tabs
+      radius="xs"
+      value={activeTab}
+      onChange={setActiveTab}
+      style={{ borderTop: "1px solid var(--mantine-color-default-border)" }}
+    >
+      {stripInHeader ? (
+        <Box style={{ display: "flex", alignItems: "stretch" }}>
+          <Tabs.List style={{ flexGrow: 1 }}>
+            {labels.map((label, index) => (
+              <Tabs.Tab
+                value={ids[index]}
+                key={ids[index]}
+                styles={{
+                  tabSection: { marginRight: "0.5em" },
+                  tab: { padding: "0.75em" },
+                }}
+                leftSection={
+                  icons[index] === null ? undefined : (
+                    <Box
+                      // Shared icon wrapper: centers the sanitized svg in its
+                      // 1em box (a raw svg sits on the text baseline).
+                      className={htmlIconWrapper}
+                      dangerouslySetInnerHTML={{ __html: icons[index]! }}
+                    />
+                  )
+                }
+              >
+                {label}
+              </Tabs.Tab>
+            ))}
+          </Tabs.List>
+          {chevron}
+        </Box>
+      ) : (
+        <Box
+          onClick={() => setExpanded(!expanded)}
+          role="button"
+          aria-expanded={expanded}
+          aria-label={`${expanded ? "Collapse" : "Expand"} panel ${
+            labels[0] ?? ""
+          }`}
+          tabIndex={0}
+          onKeyDown={(ev) => {
+            if (ev.key === "Enter" || ev.key === " ") {
+              ev.preventDefault();
+              setExpanded(!expanded);
+            }
+          }}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "0.5em",
+            minHeight: "2em",
+            padding: "0 0.75em",
+            cursor: "pointer",
+          }}
+        >
+          {icons.find((h) => h !== null) != null && (
+            <Box
+              // Tab icons arrive as sanitized SVG html (same source the tab
+              // strip renders); the shared wrapper centers the svg in its
+              // 1em box (a raw svg sits on the text baseline).
+              className={htmlIconWrapper}
+              style={{ opacity: expanded ? 1 : 0.55, flexShrink: 0 }}
+              dangerouslySetInnerHTML={{
+                __html: icons.find((h) => h !== null)!,
+              }}
+            />
+          )}
+          <Text
+            size="sm"
+            style={{
+              flexGrow: 1,
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+              opacity: expanded ? 1 : 0.55,
+            }}
+          >
+            {labels.join(" · ")}
+          </Text>
+          {chevron}
+        </Box>
+      )}
+      <Collapse expanded={expanded}>
+        {multiTab ? (
+          ids.map((containerUuid) => (
+            <Tabs.Panel value={containerUuid} key={containerUuid}>
+              <GuiContainer containerUuid={containerUuid} />
+            </Tabs.Panel>
+          ))
+        ) : ids.length === 1 ? (
+          // Single tab: the header IS the identity -- no tab strip (P9).
+          <GuiContainer containerUuid={ids[0]} />
+        ) : null}
+      </Collapse>
+    </Tabs>
+  );
+}
+
+/** Standalone panels rendered as an ACCORDION of bar-like sections, for
+ * chromes with no dock surface (the mobile bottom sheet, D45). On the desktop
+ * dock surface, panels are placed as their own dock groups by
+ * StandalonePanelSync instead; here they would otherwise be invisible (they
+ * are not part of the root GUI tree). Hidden panels are skipped (visible is
+ * honored on this path too); sections sort by the server-side order. */
+function PanelsFallback() {
+  const viewer = React.useContext(ViewerContext)!;
+  // Value-level equality, NOT key-set equality -- see panelsEquality.ts,
+  // which panelUpdates.test.ts pins.
+  const panels = viewer.useGui((state) => state.panels, panelsSelectorEquality);
+  // On the dock surface, StandalonePanelSync places panels as dock groups -- so
+  // this inline fallback must NOT also render them (that would double-render).
+  const dockCtx = React.useContext(DockContext);
+  const guiDockCtx = React.useContext(GuiDockContext);
+  if (dockCtx !== null && guiDockCtx !== null) return null;
+  const shown = Object.values(panels)
+    .filter((p) => p.props.visible)
+    .sort((a, b) => a.props.order - b.props.order);
+  if (shown.length === 0) return null;
+  return (
+    <GuiComponentContextProvider>
+      {shown.map((panel) => (
+        <MobilePanelSection key={panel.uuid} panel={panel} />
+      ))}
+    </GuiComponentContextProvider>
+  );
+}
+
+/** Collapse that keeps its children laid out (not just mounted) while
+ * collapsed: the wrapper clips to zero height, but content keeps its natural
+ * size and is never `display: none`, so children can measure themselves at
+ * any time. This reproduces Mantine 8's `Collapse keepMounted` behavior,
+ * which prevented intermittent problems with the initial GUI height being
+ * set to 0 under high CPU load. Mantine 9 can't express this: both of its
+ * keepMounted modes (React Activity and display:none) take collapsed content
+ * out of layout. */
+function LayoutKeptCollapse({
+  expanded,
+  children,
+}: {
+  expanded: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <Box
+      style={{
+        display: "grid",
+        gridTemplateRows: expanded ? "1fr" : "0fr",
+        transition: "grid-template-rows 200ms ease",
+      }}
+    >
+      <Box
+        style={{
+          overflow: "hidden",
+          minHeight: 0,
+          opacity: expanded ? 1 : 0,
+          transition: "opacity 200ms ease",
+        }}
+      >
+        {children}
+      </Box>
+    </Box>
+  );
+}
+
+/** The control panel's body: server controls / generated GUI, toggled by the
+ * settings button in the handle. Shared by every panel chrome (bottom sheet,
+ * sidebar, and the dock-library floating panel). */
+export function ControlPanelContents({
+  showSettings,
+}: {
+  showSettings: boolean;
+}) {
+  const showGenerated = useShowGenerated();
+  return (
+    <>
+      <Collapse expanded={!showGenerated || showSettings}>
+        <Box p="xs" pt="0.375em">
+          <ServerControls />
+        </Box>
+      </Collapse>
+      <LayoutKeptCollapse expanded={showGenerated && !showSettings}>
+        <MemoizedGeneratedGuiContainer containerUuid={ROOT_CONTAINER_ID} />
+      </LayoutKeptCollapse>
+      {!showSettings && <PanelsFallback />}
+    </>
+  );
+}
+
+/** Handle button toggling between the generated GUI and the configuration /
+ * diagnostics view. Hidden until there is generated GUI to return to. */
+export function SettingsToggleIcon({
+  showSettings,
+  onToggle,
+}: {
+  showSettings: boolean;
+  onToggle: () => void;
+}) {
+  const showGenerated = useShowGenerated();
+  return (
     <ActionIcon
       onClick={(evt) => {
         evt.stopPropagation();
-        toggle();
+        onToggle();
       }}
       style={{
         display: showGenerated ? undefined : "none",
@@ -95,79 +376,53 @@ export default function ControlPanel(props: {
       </Tooltip>
     </ActionIcon>
   );
+}
 
-  const panelContents = (
-    <>
-      <Collapse in={!showGenerated || showSettings}>
-        <Box p="xs" pt="0.375em">
-          <ServerControls />
-        </Box>
-      </Collapse>
-      {/*As of Mantine 8.3.3, this `keepMounted` is necessary to prevent some
-      intermittent problems with the initial GUI height being set to 0 when
-      we're under high CPU load.*/}
-      <Collapse in={showGenerated && !showSettings} keepMounted>
-        <MemoizedGeneratedGuiContainer containerUuid={ROOT_CONTAINER_ID} />
-      </Collapse>
-    </>
+export default function ControlPanel() {
+  const [showSettings, { toggle }] = useDisclosure(false);
+
+  const generatedServerToggleButton = (
+    <SettingsToggleIcon showSettings={showSettings} onToggle={toggle} />
   );
 
-  if (useMobileView) {
-    /* Mobile layout. */
-    return (
-      <BottomPanel>
-        <BottomPanel.Handle>
-          <ConnectionStatus />
-          <BottomPanel.HideWhenCollapsed>
-            <ShareButton />
-            {generatedServerToggleButton}
-          </BottomPanel.HideWhenCollapsed>
-        </BottomPanel.Handle>
-        <BottomPanel.Contents>{panelContents}</BottomPanel.Contents>
-      </BottomPanel>
-    );
-  } else if (props.control_layout === "floating") {
-    /* Floating layout. */
-    return (
-      <FloatingPanel width={controlWidth}>
-        <FloatingPanel.Handle>
-          <ConnectionStatus />
-          <FloatingPanel.HideWhenCollapsed>
-            <ShareButton />
-            {generatedServerToggleButton}
-          </FloatingPanel.HideWhenCollapsed>
-        </FloatingPanel.Handle>
-        <FloatingPanel.Contents>{panelContents}</FloatingPanel.Contents>
-      </FloatingPanel>
-    );
-  } else {
-    /* Sidebar view. */
-    return (
-      <SidebarPanel
-        width={controlWidth}
-        collapsible={props.control_layout === "collapsible"}
-      >
-        <SidebarPanel.Handle>
-          <ConnectionStatus />
+  const panelContents = <ControlPanelContents showSettings={showSettings} />;
+
+  // The "floating" control layout never reaches this component -- App renders it
+  // on the docking surface (see ControlPanelDock.tsx). This component is now the
+  // mobile bottom sheet only: App only mounts it when not in the floating dock
+  // layout, which (since `control_layout` always resolves to "floating") happens
+  // exclusively on the mobile breakpoint. The old desktop sidebar layouts
+  // (`collapsible`/`fixed`) were removed when `control_layout` was deprecated in
+  // favor of `main_panel` placement.
+  return (
+    <BottomPanel>
+      <BottomPanel.Handle>
+        <ConnectionStatus />
+        <BottomPanel.HideWhenCollapsed>
+          <CommandsButton />
           <ShareButton />
           {generatedServerToggleButton}
-        </SidebarPanel.Handle>
-        <SidebarPanel.Contents>{panelContents}</SidebarPanel.Contents>
-      </SidebarPanel>
-    );
-  }
+        </BottomPanel.HideWhenCollapsed>
+      </BottomPanel.Handle>
+      <BottomPanel.Contents>{panelContents}</BottomPanel.Contents>
+    </BottomPanel>
+  );
 }
 
 /* Icon and label telling us the current status of the websocket connection. */
-function ConnectionStatus() {
+export function ConnectionStatus() {
   const { useGui } = React.useContext(ViewerContext)!;
-  const connected = useGui((state) => state.websocketConnected);
+  const websocketState = useGui((state) => state.websocketState);
   const label = useGui((state) => state.label);
 
   return (
     <>
-      <div style={{ width: "1.1em" }} /> {/* Spacer. */}
-      <Transition transition="skew-down" mounted={connected}>
+      {/* Spacer reserving room for the absolutely-positioned status icon (which
+      crossfades between the connected/reconnecting/inactive variants in this
+      spot), plus a small gap before the label. */}
+      <div style={{ width: "1.25em", flexShrink: 0 }} />
+      <div style={{ width: "0.4em", flexShrink: 0 }} />
+      <Transition transition="fade" mounted={websocketState === "connected"}>
         {(styles) => (
           <IconCloudCheck
             color={"#0b0"}
@@ -180,7 +435,10 @@ function ConnectionStatus() {
           />
         )}
       </Transition>
-      <Transition transition="skew-down" mounted={!connected}>
+      <Transition
+        transition="skew-down"
+        mounted={websocketState === "reconnecting"}
+      >
         {(styles) => (
           <Loader
             size="xs"
@@ -190,19 +448,86 @@ function ConnectionStatus() {
           />
         )}
       </Transition>
-      <Box px="xs" style={{ flexGrow: 1, letterSpacing: "-0.5px" }} pt="0.1em">
-        {label !== "" ? label : connected ? "Connected" : "Connecting..."}
+      <Transition
+        transition="skew-down"
+        mounted={websocketState === "inactive"}
+      >
+        {(styles) => (
+          <IconPlayerPause
+            color={"var(--mantine-color-red-filled)"}
+            style={{
+              position: "absolute",
+              width: "1.25em",
+              height: "1.25em",
+              ...styles,
+            }}
+          />
+        )}
+      </Transition>
+      <Box
+        pr="xs"
+        pt="0.1em"
+        style={{
+          flexGrow: 1,
+          letterSpacing: "-0.5px",
+          // Truncate instead of wrapping/pushing the action icons off the edge
+          // when the panel is narrow. minWidth:0 lets the flex item shrink below
+          // its content width.
+          minWidth: 0,
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+          whiteSpace: "nowrap",
+        }}
+      >
+        {label !== ""
+          ? label
+          : websocketState === "connected"
+            ? "Connected"
+            : websocketState === "reconnecting"
+              ? "Connecting..."
+              : "Inactive"}
       </Box>
     </>
   );
 }
 
-function ShareButton() {
+export function CommandsButton() {
   const viewer = React.useContext(ViewerContext)!;
-  const viewerMutable = viewer.mutable.current; // Get mutable once
-  const connected = viewer.useGui((state) => state.websocketConnected);
+  const hasCommands = viewer.useGui(
+    (state) => Object.keys(state.commands).length > 0,
+  );
+
+  if (!hasCommands) return null;
+
+  return (
+    <Tooltip
+      zIndex={100}
+      label={`Commands (${isMac ? "Cmd" : "Ctrl"}+K)`}
+      withinPortal
+    >
+      <ActionIcon
+        onClick={(evt) => {
+          evt.stopPropagation();
+          spotlight.open();
+        }}
+        style={{
+          transform: "translateY(0.05em)",
+        }}
+      >
+        <IconListSearch stroke={2} height="1.3em" width="1.3em" />
+      </ActionIcon>
+    </Tooltip>
+  );
+}
+
+export function ShareButton() {
+  const viewer = React.useContext(ViewerContext)!;
+  const viewerMutable = viewer.mutable.current; // Get mutable once.
+  const connected = viewer.useGui(
+    (state) => state.websocketState === "connected",
+  );
   const shareUrl = viewer.useGui((state) => state.shareUrl);
-  const setShareUrl = viewer.useGui((state) => state.setShareUrl);
+  const setShareUrl = viewer.guiActions.setShareUrl;
 
   const [doingSomething, setDoingSomething] = React.useState(false);
 
@@ -219,7 +544,7 @@ function ShareButton() {
   }, [shareUrl]);
   React.useEffect(() => {
     if (!connected && shareModalOpened) closeShareModal();
-  }, [connected, shareModalOpened]);
+  }, [connected, shareModalOpened, closeShareModal]);
 
   const colorScheme = useMantineColorScheme().colorScheme;
 
@@ -243,7 +568,7 @@ function ShareButton() {
           }}
           disabled={!connected}
         >
-          <IconShare stroke={2} height="1.125em" width="1.125em" />
+          <IconShare stroke={2.25} height="1.125em" width="1.125em" />
         </ActionIcon>
       </Tooltip>
       <Modal
@@ -335,7 +660,7 @@ function ShareButton() {
                   </Button>
                 </Tooltip>
               </Flex>
-              <Collapse in={showQrCode}>
+              <Collapse expanded={showQrCode}>
                 <QRCode
                   value={shareUrl}
                   fgColor={colorScheme === "dark" ? "#ffffff" : "#000000"}
@@ -353,7 +678,7 @@ function ShareButton() {
         )}
         <Text size="xs">
           Share links are experimental and bandwidth-limited. Problems? Consider{" "}
-          <Anchor href="https://github.com/nerfstudio-project/viser/issues">
+          <Anchor href="https://github.com/viser-project/viser/issues">
             reporting on GitHub
           </Anchor>
           .

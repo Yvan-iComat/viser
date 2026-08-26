@@ -1,7 +1,7 @@
 import { ViewerContext } from "../ViewerContext";
 import { useThrottledMessageSender } from "../WebsocketUtils";
 import { GuiComponentContext } from "./GuiComponentContext";
-import { shallowObjectKeysEqual } from "../utils/shallowObjectKeysEqual";
+import { shallowObjectEqual } from "../utils/shallowObjectKeysEqual";
 
 import { Box } from "@mantine/core";
 import React from "react";
@@ -21,6 +21,7 @@ import PlotlyComponent from "../components/PlotlyComponent";
 import UplotComponent from "../components/UplotComponent";
 import TabGroupComponent from "../components/TabGroup";
 import FolderComponent from "../components/Folder";
+import FormComponent from "../components/Form";
 import MultiSliderComponent from "../components/MultiSlider";
 import UploadButtonComponent from "../components/UploadButton";
 import FolderSelectButtonComponent from "../components/FolderSelectButton";
@@ -28,15 +29,48 @@ import ProgressBarComponent from "../components/ProgressBar";
 import ImageComponent from "../components/Image";
 import HtmlComponent from "../components/Html";
 import TableDataComponent from "../components/TableData";
+import DividerComponent from "../components/Divider";
 
 /** Root of generated inputs. */
-export default function GeneratedGuiContainer({
-  containerUuid,
+/** Dims and freezes its children while the websocket is not connected: the GUI
+ * stays VISIBLE (last-known values) but every input is blocked, so a transient
+ * disconnect isn't jarring and stale clicks can't fire. Applied inside
+ * GuiComponentContextProvider, the single chokepoint all generated GUI funnels
+ * through -- so it covers the control panel, every panel/tab, inline GUI, and the
+ * mobile fallback in one place. The connection status in the panel header conveys
+ * the "Connecting..." state. */
+function DisconnectedGate({ children }: { children: React.ReactNode }) {
+  const viewer = React.useContext(ViewerContext)!;
+  const connected = viewer.useGui(
+    (state) => state.websocketState === "connected",
+  );
+  return (
+    <div
+      // pointer-events:none blocks clicks/drags; opacity signals the frozen
+      // state. (Keyboard focus into a dimmed input is harmless -- edits can't be
+      // committed: the value change is dropped while the socket is closed.)
+      style={{
+        opacity: connected ? 1 : 0.5,
+        pointerEvents: connected ? undefined : "none",
+        transition: "opacity 150ms ease",
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+/** Provides the GuiComponentContext that generated GUI children (folders, tab
+ * groups, inputs) read. Wrap any subtree that renders such children outside the
+ * normal container tree -- e.g. standalone panels in the mobile fallback. Also
+ * gates interaction on connection state (see DisconnectedGate). */
+export function GuiComponentContextProvider({
+  children,
 }: {
-  containerUuid: string;
+  children: React.ReactNode;
 }) {
   const viewer = React.useContext(ViewerContext)!;
-  const updateGuiProps = viewer.useGui((state) => state.updateGuiProps);
+  const updateGuiProps = viewer.guiActions.updateGuiProps;
   const messageSender = useThrottledMessageSender(50).send;
 
   function setValue(uuid: string, value: NonNullable<unknown>) {
@@ -56,57 +90,69 @@ export default function GeneratedGuiContainer({
         setValue: setValue,
       }}
     >
-      <GuiContainer containerUuid={containerUuid} />
+      <DisconnectedGate>{children}</DisconnectedGate>
     </GuiComponentContext.Provider>
   );
 }
 
-function GuiContainer({ containerUuid }: { containerUuid: string }) {
+export default function GeneratedGuiContainer({
+  containerUuid,
+}: {
+  containerUuid: string;
+}) {
+  return (
+    <GuiComponentContextProvider>
+      <GuiContainer containerUuid={containerUuid} />
+    </GuiComponentContextProvider>
+  );
+}
+
+function GuiContainer({
+  containerUuid,
+  unwrapped = false,
+}: {
+  containerUuid: string;
+  /** If true, don't wrap children in a padded Box. Used by label=null
+   * folders and forms, which should be transparent for layout purposes. */
+  unwrapped?: boolean;
+}) {
   const viewer = React.useContext(ViewerContext)!;
 
-  // Ensure that the container exists in state. The goal of this is to prevent a race
-  // condition where `guiIdSet` is undefined on first render, which prevents zustand
-  // from tracking changes to it.
-  if (
-    viewer.useGui.getState().guiUuidSetFromContainerUuid[containerUuid] ===
-    undefined
-  ) {
-    viewer.useGui.setState({
-      ...viewer.useGui.getState(),
-      guiUuidSetFromContainerUuid: {
-        ...viewer.useGui.getState().guiUuidSetFromContainerUuid,
-        [containerUuid]: {},
-      },
-    });
-  }
-  const guiIdSet = viewer.useGui(
-    (state) => state.guiUuidSetFromContainerUuid[containerUuid],
-    shallowObjectKeysEqual,
-  )!;
+  // One subscription covering both THIS container's membership (the keys;
+  // containers are created on demand by addGui, hence the missing-container
+  // fallback to an empty object) and its children's orders (the values).
+  // Deliberately narrowed: guiOrderFromUuid is rebuilt on every GUI
+  // add/remove anywhere, so a whole-map subscription would re-render every
+  // mounted container once per element during streaming loads. (Standalone
+  // panels are a separate top-level entity -- they never appear in any
+  // container set, so there is nothing to filter here.)
+  const guiOrderFromId = viewer.useGui((state) => {
+    const out: Record<string, number> = {};
+    const set = state.guiUuidSetFromContainerUuid[containerUuid];
+    if (set !== undefined)
+      for (const uuid of Object.keys(set))
+        out[uuid] = state.guiOrderFromUuid[uuid];
+    return out;
+  }, shallowObjectEqual);
 
-  // Render each GUI element in this container.
-  const guiIdArray = [...Object.keys(guiIdSet)];
-  const guiOrderFromId = viewer!.useGui((state) => state.guiOrderFromUuid);
-
-  let guiUuidOrderPairArray = guiIdArray.map((uuid) => ({
+  let guiUuidOrderPairArray = Object.keys(guiOrderFromId).map((uuid) => ({
     uuid: uuid,
     order: guiOrderFromId[uuid],
   }));
   guiUuidOrderPairArray = guiUuidOrderPairArray.sort(
     (a, b) => a.order - b.order,
   );
-  const out = (
-    <Box pt="xs">
-      {guiUuidOrderPairArray.map((pair, index) => (
-        <GeneratedInput
-          key={pair.uuid}
-          guiUuid={pair.uuid}
-          nextGuiUuid={guiUuidOrderPairArray[index + 1]?.uuid ?? null}
-        />
-      ))}
-    </Box>
-  );
-  return out;
+  const children = guiUuidOrderPairArray.map((pair, index) => (
+    <GeneratedInput
+      key={pair.uuid}
+      guiUuid={pair.uuid}
+      nextGuiUuid={guiUuidOrderPairArray[index + 1]?.uuid ?? null}
+    />
+  ));
+  if (unwrapped) {
+    return <>{children}</>;
+  }
+  return <Box pt="xs">{children}</Box>;
 }
 
 /** A single generated GUI element. */
@@ -115,7 +161,7 @@ function GeneratedInput(props: {
   nextGuiUuid: string | null;
 }) {
   const viewer = React.useContext(ViewerContext)!;
-  const conf = viewer.useGui((state) => state.guiConfigFromUuid[props.guiUuid]);
+  const conf = viewer.useGuiConfig(props.guiUuid);
   if (conf === undefined) {
     console.error("Tried to render non-existent component", props.guiUuid);
     return null;
@@ -123,12 +169,20 @@ function GeneratedInput(props: {
   switch (conf.type) {
     case "GuiFolderMessage":
       return <FolderComponent {...conf} nextGuiUuid={props.nextGuiUuid} />;
+    case "GuiFormMessage":
+      return <FormComponent {...conf} nextGuiUuid={props.nextGuiUuid} />;
     case "GuiTabGroupMessage":
+      // TabGroupComponent decides how to render: a standalone panel inside the
+      // dock surface is rendered there (StandalonePanelSync) so it renders null
+      // here; outside the dock surface (mobile / static) it falls back to plain
+      // tabs so its content stays visible.
       return <TabGroupComponent {...conf} />;
     case "GuiMarkdownMessage":
       return <MarkdownComponent {...conf} />;
     case "GuiHtmlMessage":
       return <HtmlComponent {...conf} />;
+    case "GuiDividerMessage":
+      return <DividerComponent {...conf} />;
     case "GuiPlotlyMessage":
       return <PlotlyComponent {...conf} />;
     case "GuiUplotMessage":

@@ -1,84 +1,53 @@
 import React from "react";
 import * as THREE from "three";
-import { createStandardMaterial } from "./MeshUtils";
+import { ViserStandardMeshMaterial, ShadowSkinnedMesh } from "./MeshUtils";
 import { SkinnedMeshMessage } from "../WebsocketMessages";
 import { OutlinesIfHovered } from "../OutlinesIfHovered";
-import { ViewerContext } from "../ViewerContext";
+import { ViewerContext, ViewerMutable, variantKey } from "../ViewerContext";
 import { useFrame } from "@react-three/fiber";
+import { normalizeScale } from "../utils/normalizeScale";
 
 /**
  * Component for rendering skinned meshes with animations
  */
 export const SkinnedMesh = React.forwardRef<
-  THREE.SkinnedMesh,
+  THREE.Group,
   SkinnedMeshMessage & { children?: React.ReactNode }
 >(function SkinnedMesh(
   { children, ...message },
-  ref: React.ForwardedRef<THREE.SkinnedMesh>,
+  ref: React.ForwardedRef<THREE.Group>,
 ) {
   const viewer = React.useContext(ViewerContext)!;
 
-  // Create material based on props.
-  const material = React.useMemo(() => {
-    return createStandardMaterial(message.props);
-  }, [
-    message.props.material,
-    message.props.color,
-    message.props.wireframe,
-    message.props.opacity,
-    message.props.flat_shading,
-    message.props.side,
-  ]);
-
   // Reference to bones for animation updates.
-  const bonesRef = React.useRef<THREE.Bone[]>();
+  const bonesRef = React.useRef<THREE.Bone[] | undefined>(undefined);
+  // The exact skinnedMeshState entry this instance has claimed (set by the
+  // init effect below). MessageHandler builds a FRESH entry object per
+  // SkinnedMeshMessage, so on a same-tick delete + re-add of the same name a
+  // pending-unmount instance -- whose effects never re-run -- sees an entry it
+  // never claimed and must not touch it, even when the bone count happens to
+  // match (initializing it with OUR bones would block the replacement
+  // instance's own setup). A live instance re-claims on every prop update.
+  const ownedEntryRef = React.useRef<
+    ViewerMutable["skinnedMeshState"][string] | null
+  >(null);
 
   // Create geometry and skeleton using memoization.
   const { geometry, skeleton } = React.useMemo(() => {
     // Setup geometry.
     const geometry = new THREE.BufferGeometry();
+    // Vertices and faces arrive as Float32Array / Uint32Array views.
     geometry.setAttribute(
       "position",
-      new THREE.BufferAttribute(
-        new Float32Array(
-          message.props.vertices.buffer.slice(
-            message.props.vertices.byteOffset,
-            message.props.vertices.byteOffset +
-              message.props.vertices.byteLength,
-          ),
-        ),
-        3,
-      ),
+      new THREE.BufferAttribute(message.props.vertices, 3),
     );
-    geometry.setIndex(
-      new THREE.BufferAttribute(
-        new Uint32Array(
-          message.props.faces.buffer.slice(
-            message.props.faces.byteOffset,
-            message.props.faces.byteOffset + message.props.faces.byteLength,
-          ),
-        ),
-        1,
-      ),
-    );
+    geometry.setIndex(new THREE.BufferAttribute(message.props.faces, 1));
     geometry.computeVertexNormals();
     geometry.computeBoundingSphere();
 
-    // Setup skinned mesh bones.
-    const bone_wxyzs = new Float32Array(
-      message.props.bone_wxyzs.buffer.slice(
-        message.props.bone_wxyzs.byteOffset,
-        message.props.bone_wxyzs.byteOffset +
-          message.props.bone_wxyzs.byteLength,
-      ),
-    );
-    const bone_positions = new Float32Array(
-      message.props.bone_positions.buffer.slice(
-        message.props.bone_positions.byteOffset,
-        message.props.bone_positions.byteOffset +
-          message.props.bone_positions.byteLength,
-      ),
-    );
+    // Bone data arrives as Float32Array views. Use directly.
+    const bone_wxyzs = message.props.bone_wxyzs;
+    const bone_positions = message.props.bone_positions;
 
     const bones: THREE.Bone[] = [];
     bonesRef.current = bones;
@@ -114,64 +83,73 @@ export const SkinnedMesh = React.forwardRef<
     });
     const skeleton = new THREE.Skeleton(bones, boneInverses);
 
+    // skin_indices (Uint16Array) and skin_weights (Float32Array). Zero copy.
     geometry.setAttribute(
       "skinIndex",
-      new THREE.BufferAttribute(
-        new Uint16Array(
-          message.props.skin_indices.buffer.slice(
-            message.props.skin_indices.byteOffset,
-            message.props.skin_indices.byteOffset +
-              message.props.skin_indices.byteLength,
-          ),
-        ),
-        4,
-      ),
+      new THREE.BufferAttribute(message.props.skin_indices, 4),
     );
     geometry.setAttribute(
       "skinWeight",
-      new THREE.BufferAttribute(
-        new Float32Array(
-          message.props.skin_weights!.buffer.slice(
-            message.props.skin_weights!.byteOffset,
-            message.props.skin_weights!.byteOffset +
-              message.props.skin_weights!.byteLength,
-          ),
-        ),
-        4,
-      ),
+      new THREE.BufferAttribute(message.props.skin_weights!, 4),
     );
 
     skeleton.init();
     return { geometry, skeleton };
+    // Keyed on the VIEWS, not their .buffer (BasicMesh's pattern): in a
+    // playback recording every array is a view on ONE shared ArrayBuffer,
+    // so .buffer identity never changes and a re-add with different
+    // geometry would silently keep rendering the old mesh.
   }, [
-    message.props.vertices.buffer,
-    message.props.faces.buffer,
-    message.props.skin_indices.buffer,
-    message.props.skin_weights?.buffer,
-    message.props.bone_wxyzs.buffer,
-    message.props.bone_positions.buffer,
+    message.props.vertices,
+    message.props.faces,
+    message.props.skin_indices,
+    message.props.skin_weights,
+    message.props.bone_wxyzs,
+    message.props.bone_positions,
   ]);
 
   // Handle initialization and cleanup.
   // Get mutable once.
   const viewerMutable = viewer.mutable.current;
 
+  // Bone state is keyed per VARIANT: this mounted instance renders exactly
+  // one scope's variant, and must never read/claim the entry of a same-name
+  // variant from the other scope.
+  const stateKey = variantKey(message.owner, message.name);
+
   // Clean up geometry and skeleton when they change (they're created together).
   React.useEffect(() => {
-    const state = viewerMutable.skinnedMeshState[message.name];
-    state.initialized = false;
+    // The state entry can be deleted while this component is still mounted
+    // (subtree-prefix removal in MessageHandler, reconnect clearing in
+    // WebsocketInterface), so guard reads like the bone-message handlers do.
+    const state = viewerMutable.skinnedMeshState[stateKey];
+    if (state !== undefined) {
+      state.initialized = false;
+      state.claimed = true;
+    }
+    ownedEntryRef.current = state ?? null;
+    // The bones for this skeleton (added to the parent node imperatively in
+    // useFrame below). Captured here so the cleanup can remove exactly these on
+    // a skeleton change / unmount -- otherwise a re-added skinned mesh leaks its
+    // old bones into the parent (its child count grows by numBones each update).
+    const addedBones = bonesRef.current;
     return () => {
+      const parentNode = viewerMutable.nodeRefFromName[message.name];
+      if (parentNode !== undefined && addedBones !== undefined) {
+        addedBones.forEach((bone) => parentNode.remove(bone));
+      }
+      // Release the claim so a successor (this instance's own next effect
+      // run, or a new mount) can take the entry over.
+      if (
+        ownedEntryRef.current !== null &&
+        viewerMutable.skinnedMeshState[stateKey] === ownedEntryRef.current
+      ) {
+        ownedEntryRef.current.claimed = false;
+      }
       if (skeleton) skeleton.dispose();
       if (geometry) geometry.dispose();
     };
-  }, [skeleton, geometry, message.name, viewerMutable.skinnedMeshState]);
-
-  // Clean up material when it changes.
-  React.useEffect(() => {
-    return () => {
-      if (material) material.dispose();
-    };
-  }, [material]);
+  }, [skeleton, geometry, stateKey, viewerMutable.skinnedMeshState]);
 
   // Check if we should render a shadow mesh.
   const shadowOpacity =
@@ -179,20 +157,32 @@ export const SkinnedMesh = React.forwardRef<
       ? message.props.receive_shadow
       : 0.0;
 
-  // Create shadow material for shadow mesh.
-  const shadowMaterial = React.useMemo(() => {
-    if (shadowOpacity === 0.0) return null;
-    return new THREE.ShadowMaterial({
-      opacity: shadowOpacity,
-      color: 0x000000,
-      depthWrite: false,
-    });
-  }, [shadowOpacity]);
-
   // Update bone transforms for animation.
   useFrame(() => {
-    const state = viewerMutable.skinnedMeshState[message.name];
+    // The state entry can be deleted before our unmount commits: subtree
+    // removal and reconnect clearing both run in the message handler's
+    // useFrame (priority -100000) earlier in the same rAF tick, while this
+    // subscriber is still registered. R3F's subscriber loop has no try/catch,
+    // so throwing here would skip the remaining subscribers and gl.render.
+    const state = viewerMutable.skinnedMeshState[stateKey];
+    if (state === undefined) return;
+    // Only one live instance may drive an entry. Normally the init effect
+    // claims it; but FilePlayback can recreate the entry WITHOUT a remount
+    // (its loop and same-batch remove + re-add replay identical message
+    // refs into a kept-mounted tree), so an unclaimed fresh entry is
+    // adopted here. An entry claimed by a DIFFERENT live instance stays
+    // untouchable (same-name re-add race).
+    if (state !== ownedEntryRef.current) {
+      if (state.claimed) return;
+      state.claimed = true;
+      state.initialized = false;
+      ownedEntryRef.current = state;
+    }
     const bones = bonesRef.current;
+    // Belt over the identity guard: never index poses beyond our bones (a
+    // mismatched entry would crash the R3F subscriber loop and kill
+    // gl.render for the frame).
+    if (state.poses.length !== (bones?.length ?? 0)) return;
     if (skeleton !== undefined && bones !== undefined) {
       if (!state.initialized) {
         const parentNode = viewerMutable.nodeRefFromName[message.name];
@@ -217,28 +207,27 @@ export const SkinnedMesh = React.forwardRef<
   });
 
   return (
-    <skinnedMesh
-      ref={ref}
-      geometry={geometry}
-      material={material}
-      skeleton={skeleton}
-      castShadow={message.props.cast_shadow}
-      receiveShadow={message.props.receive_shadow === true}
-      frustumCulled={false}
-    >
-      <OutlinesIfHovered
-        enableCreaseAngle={geometry.attributes.position.count < 1024}
-      />
-      {shadowMaterial && shadowOpacity > 0 ? (
-        <skinnedMesh
-          geometry={geometry}
-          material={shadowMaterial}
-          skeleton={skeleton}
-          receiveShadow
-          frustumCulled={false}
+    <group ref={ref}>
+      <skinnedMesh
+        geometry={geometry}
+        skeleton={skeleton}
+        scale={normalizeScale(message.props.scale)}
+        castShadow={message.props.cast_shadow}
+        receiveShadow={message.props.receive_shadow === true}
+        frustumCulled={false}
+      >
+        <ViserStandardMeshMaterial {...message.props} />
+        <OutlinesIfHovered
+          enableCreaseAngle={geometry.attributes.position.count < 1024}
         />
-      ) : null}
+      </skinnedMesh>
+      <ShadowSkinnedMesh
+        opacity={shadowOpacity}
+        geometry={geometry}
+        skeleton={skeleton}
+        scale={normalizeScale(message.props.scale)}
+      />
       {children}
-    </skinnedMesh>
+    </group>
   );
 });

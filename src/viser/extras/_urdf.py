@@ -3,17 +3,19 @@ from __future__ import annotations
 import warnings
 from functools import partial
 from pathlib import Path
-from typing import List, Tuple
+from typing import TYPE_CHECKING, List, Tuple
 
 import numpy as np
 import trimesh
-import yourdfpy
 from trimesh.scene import Scene
 from typing_extensions import assert_never
 
 import viser
 
 from .. import transforms as tf
+
+if TYPE_CHECKING:
+    import yourdfpy
 
 
 class ViserUrdf:
@@ -93,9 +95,19 @@ class ViserUrdf:
         assert root_node_name.startswith("/")
         assert len(root_node_name) == 1 or not root_node_name.endswith("/")
 
+        try:
+            import yourdfpy
+        except ImportError as e:
+            raise ImportError(
+                "yourdfpy is required for ViserUrdf but is not installed. "
+                "Install it with `pip install yourdfpy` or `pip install viser[urdf]`."
+            ) from e
+
         if isinstance(urdf_or_path, (Path, str)):
             # Convert string path to Path object for consistent handling
-            path_obj = Path(urdf_or_path) if isinstance(urdf_or_path, str) else urdf_or_path
+            path_obj = (
+                Path(urdf_or_path) if isinstance(urdf_or_path, str) else urdf_or_path
+            )
             urdf = yourdfpy.URDF.load(
                 path_obj,
                 build_scene_graph=load_meshes,
@@ -194,6 +206,8 @@ class ViserUrdf:
 
     def update_cfg(self, configuration: np.ndarray) -> None:
         """Update the joint angles of the visualized URDF."""
+        import yourdfpy
+
         self._urdf.update_cfg(configuration)
         for joint, frame_handle in zip(self._joint_map_values, self._joint_frames):
             assert isinstance(joint, yourdfpy.Joint)
@@ -207,6 +221,8 @@ class ViserUrdf:
         self,
     ) -> dict[str, tuple[float | None, float | None]]:
         """Returns an ordered mapping from actuated joint names to position limits."""
+        import yourdfpy
+
         out: dict[str, tuple[float | None, float | None]] = {}
         for joint_name, joint in zip(
             self._urdf.actuated_joint_names, self._urdf.actuated_joints
@@ -235,6 +251,8 @@ class ViserUrdf:
         """
         Helper function to add joint frames and meshes to the ViserUrdf object.
         """
+        import yourdfpy
+
         prefix = "collision" if collision_geometry else "visual"
         prefixed_root_node_name = (f"{root_node_name}/{prefix}").replace("//", "/")
         root_frame = self._target.scene.add_frame(
@@ -300,7 +318,6 @@ class ViserUrdf:
         smooth_shading = False
 
         for link_name, mesh in scene.geometry.items():
-
             assert isinstance(mesh, trimesh.Trimesh)
             T_parent_child = self._urdf.get_transform(
                 link_name,
@@ -317,7 +334,7 @@ class ViserUrdf:
             mesh = mesh.copy()
             mesh.apply_scale(self._scale)
             mesh.apply_transform(T_parent_child)
-            
+
             # Merge duplicate vertices before exporting for smooth shading
             mesh.merge_vertices()
 
@@ -326,7 +343,11 @@ class ViserUrdf:
             index_mesh += 1
 
             if mesh_color_override is None:
-                self._meshes.append(self._target.scene.add_mesh_trimesh(name, mesh, smooth_shading=smooth_shading))
+                self._meshes.append(
+                    self._target.scene.add_mesh_trimesh(
+                        name, mesh, smooth_shading=smooth_shading
+                    )
+                )
             elif len(mesh_color_override) == 3:
                 self._meshes.append(
                     self._target.scene.add_mesh_simple(
@@ -398,32 +419,34 @@ def _viser_name_from_frame(
         frames.append(root_node_name)
     return "/".join(frames[::-1])
 
+
 def calculate_dihedral_angles(mesh):
     """
     Manually calculate dihedral angles between adjacent faces
     """
     face_adjacency = mesh.face_adjacency
-    
+
     if len(face_adjacency) == 0:
         return np.array([])
-    
+
     # Get face normals
     face_normals = mesh.face_normals
-    
+
     # Calculate angles between adjacent face normals
     face_pairs = face_adjacency
     normal_pairs = face_normals[face_pairs]
-    
+
     # Dot product between normal vectors
     dot_products = np.sum(normal_pairs[:, 0] * normal_pairs[:, 1], axis=1)
-    
+
     # Clamp to avoid numerical errors
     dot_products = np.clip(dot_products, -1.0, 1.0)
-    
+
     # Calculate dihedral angles
     dihedral_angles = np.arccos(np.abs(dot_products))
-    
+
     return dihedral_angles
+
 
 def extract_feature_edges(mesh, angle_tolerance_deg=30):
     """
@@ -431,18 +454,18 @@ def extract_feature_edges(mesh, angle_tolerance_deg=30):
     """
     # Calculate dihedral angles
     dihedral_angles = calculate_dihedral_angles(mesh)
-    
+
     if len(dihedral_angles) == 0:
         return np.array([]), np.array([])
-    
+
     # Convert tolerance
     angle_threshold = np.radians(angle_tolerance_deg)
-    
+
     # Find sharp edges
     feature_mask = dihedral_angles > angle_threshold
-    
+
     # Get edge coordinates
     feature_edges = mesh.face_adjacency_edges[feature_mask]
     edge_coords = mesh.vertices[feature_edges]
-    
+
     return feature_edges, edge_coords

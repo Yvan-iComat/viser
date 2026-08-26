@@ -1,6 +1,6 @@
 import React from "react";
 import * as THREE from "three";
-import { create } from "zustand";
+import { createStore } from "../store";
 import { Object3D } from "three";
 import { useThree } from "@react-three/fiber";
 import { shaderMaterial } from "@react-three/drei";
@@ -18,6 +18,9 @@ const GaussianSplatMaterial = /* @__PURE__ */ shaderMaterial(
     textureT_camera_groups: null as THREE.DataTexture | null,
     transitionInState: 0.0,
     projectionMatrixCustom: new THREE.Matrix4(),
+    fogColor: new THREE.Color(1, 1, 1),
+    fogNear: 0.0,
+    fogFar: 1000.0,
   },
   `precision highp usampler2D; // Most important: ints must be 32-bit.
   precision mediump float;
@@ -45,6 +48,8 @@ const GaussianSplatMaterial = /* @__PURE__ */ shaderMaterial(
 
   out vec4 vRgba;
   out vec2 vPosition;
+
+  #include <fog_pars_vertex>
 
   // Function to fetch and construct the i-th transform matrix using texelFetch
   mat4 getGroupTransform(uint i) {
@@ -150,9 +155,14 @@ const GaussianSplatMaterial = /* @__PURE__ */ shaderMaterial(
     vPosition = position.xy;
 
     gl_Position = vec4(
-        vec2(pos2d) / pos2d.w
+        (vec2(pos2d) / pos2d.w
             + position.x * v1 / viewport * 2.0
-            + position.y * v2 / viewport * 2.0, pos2d.z / pos2d.w, 1.);
+            + position.y * v2 / viewport * 2.0) * pos2d.w, pos2d.z, pos2d.w);
+
+
+    #ifdef USE_FOG
+      vFogDepth = -c_cam.z;
+    #endif
   }
 `,
   `precision mediump float;
@@ -162,23 +172,28 @@ const GaussianSplatMaterial = /* @__PURE__ */ shaderMaterial(
   in vec4 vRgba;
   in vec2 vPosition;
 
+  #include <fog_pars_fragment>
+
   void main () {
     float A = -dot(vPosition, vPosition);
     if (A < -4.0) discard;
     float B = exp(A) * vRgba.a;
     if (B < 0.01) discard;  // alphaTest.
     gl_FragColor = vec4(vRgba.rgb, B);
+    #include <fog_fragment>
   }`,
 );
 
-/**Hook to generate properties for rendering Gaussians via a three.js mesh.*/
-export function useGaussianMeshProps(
+/** Type for mesh props returned by createGaussianMeshProps. */
+export type GaussianMeshProps = ReturnType<typeof createGaussianMeshProps>;
+
+/** Create properties for rendering Gaussians via a three.js mesh. */
+export function createGaussianMeshProps(
   gaussianBuffer: Uint32Array,
   numGroups: number,
+  maxTextureSize: number,
 ) {
   const numGaussians = gaussianBuffer.length / 8;
-  const maxTextureSize = useThree((state) => state.gl).capabilities
-    .maxTextureSize;
 
   // Create instanced geometry.
   const geometry = new THREE.InstancedBufferGeometry();
@@ -229,6 +244,7 @@ export function useGaussianMeshProps(
   textureT_camera_groups.needsUpdate = true;
 
   const material = new GaussianSplatMaterial();
+  material.fog = true;
   material.textureBuffer = textureBuffer;
   material.textureT_camera_groups = textureT_camera_groups;
   material.numGaussians = numGaussians;
@@ -237,10 +253,24 @@ export function useGaussianMeshProps(
     geometry,
     material,
     textureBuffer,
+    textureWidth,
+    textureHeight,
     sortedIndexAttribute,
     textureT_camera_groups,
     rowMajorT_camera_groups,
+    numGaussians,
+    numGroups,
   };
+}
+
+/**Hook to generate properties for rendering Gaussians via a three.js mesh.*/
+export function useGaussianMeshProps(
+  gaussianBuffer: Uint32Array,
+  numGroups: number,
+) {
+  const maxTextureSize = useThree((state) => state.gl).capabilities
+    .maxTextureSize;
+  return createGaussianMeshProps(gaussianBuffer, numGroups, maxTextureSize);
 }
 /**Global splat state.*/
 interface SplatState {
@@ -248,6 +278,12 @@ interface SplatState {
   nodeRefFromId: React.MutableRefObject<{
     [name: string]: undefined | Object3D;
   }>;
+  sceneNodeNameFromId: React.MutableRefObject<{
+    [id: string]: string | undefined;
+  }>;
+}
+
+interface SplatActions {
   setBuffer: (id: string, buffer: Uint32Array) => void;
   removeBuffer: (id: string) => void;
 }
@@ -255,28 +291,35 @@ interface SplatState {
 /**Hook for creating global splat state.*/
 export function useGaussianSplatStore() {
   const nodeRefFromId = React.useRef({});
-  return React.useState(() =>
-    create<SplatState>((set) => ({
+  const sceneNodeNameFromId = React.useRef<{
+    [id: string]: string | undefined;
+  }>({});
+  return React.useState(() => {
+    const store = createStore<SplatState>({
       groupBufferFromId: {},
       nodeRefFromId: nodeRefFromId,
+      sceneNodeNameFromId: sceneNodeNameFromId,
+    });
+
+    const actions: SplatActions = {
       setBuffer: (id, buffer) => {
-        return set((state) => ({
+        store.set((state) => ({
           groupBufferFromId: { ...state.groupBufferFromId, [id]: buffer },
         }));
       },
       removeBuffer: (id) => {
-        return set((state) => {
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
-          const { [id]: _, ...buffers } = state.groupBufferFromId;
-          return { groupBufferFromId: buffers };
-        });
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { [id]: _, ...buffers } = store.get().groupBufferFromId;
+        store.set({ groupBufferFromId: buffers });
       },
-    })),
-  )[0];
+    };
+
+    return { store, actions };
+  })[0];
 }
 
 export const GaussianSplatsContext = React.createContext<{
-  useGaussianSplatStore: ReturnType<typeof useGaussianSplatStore>;
+  gaussianSplatState: ReturnType<typeof useGaussianSplatStore>;
   updateCamera: React.MutableRefObject<
     | null
     | ((

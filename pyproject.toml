@@ -31,35 +31,49 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent"
 ]
 dependencies = [
     "requests>=2.0.0,<3.0.0",
-    "websockets>=13.1,<16.0.0",
+    "websockets>=13.1,<17.0.0",
     "numpy>=1.0.0,<3.0.0",
     "msgspec>=0.18.6,<1.0.0",
     "imageio>=2.0.0,<3.0.0",
     "tqdm>=4.0.0,<5.0.0",
     "rich>=13.3.3,<15.0.0",
     "trimesh>=3.21.7,<5.0.0",
-    "yourdfpy>=0.0.53,<1.0.0",
     "typing_extensions>=4.0.0",
-    "nodeenv>=1.9.1,<2.0.0",
+    # TODO: migrate to backports.zstd when we drop Python 3.8 support.
+    # https://pypi.org/project/backports.zstd/
+    # Then migrate to stdlib compression.zstd in Python 3.14+.
+    # https://docs.python.org/3.14/library/compression.zstd.html
+    "zstandard>=0.20.0,<1.0.0",
 ]
 
 [project.optional-dependencies]
+urdf = [
+    "yourdfpy>=0.0.53,<1.0.0",
+]
 dev = [
+    "viser[examples]",
     "pyright>=1.1.308",
     "ruff>=0.9.3",
     "pre-commit==3.3.2",
     "pytest",
     "hypothesis[numpy]",
-    "opencv-python>=4.0.0.21,<5.0.0",
     "psutil>=5.9.5,<8.0.0",
+    "nodeenv>=1.9.1,<2.0.0",
+    "playwright>=1.40.0",
+    "pytest-playwright>=0.4.0",
+    "pytest-xdist>=3.0.0",
+    "pytest-split>=0.8.0",
 ]
 examples = [
+    "viser[urdf]",
     "torch>=1.13.1",
+    "torch<2.5.0; python_version<'3.9'",  # Last torch with cp38 wheels.
     "matplotlib>=3.7.1",
     "plotly>=5.21.0",
     "robot_descriptions>=1.18.0",
@@ -67,15 +81,22 @@ examples = [
     "plyfile",
     "opencv-python",
     "pyliblzfse>=0.4.1; platform_system!='Windows'",
-    "pandas",  # https://github.com/nerfstudio-project/viser/issues/457
-    "tyro>=0.2.0,<1.0.0",
+    "pandas",  # https://github.com/viser-project/viser/issues/457
+    "tyro>=1.0.0",
 ]
 
 [project.urls]
-"GitHub" = "https://github.com/nerfstudio-project/viser"
+"GitHub" = "https://github.com/viser-project/viser"
 
 [project.scripts]
 viser-build-client = "viser._client_autobuild:build_client_entrypoint"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "e2e: end-to-end browser tests (require Playwright)",
+]
+addopts = "--strict-markers"
 
 [tool.pyright]
 extraPaths = []
@@ -101,6 +122,8 @@ lint.ignore = [
     "PLR2004",  # Magic value used in comparison.
     "PLR0915",  # Too many statements.
     "PLR0913",  # Too many arguments.
+    "PLR0917",  # Too many positional arguments. (stabilized in newer ruff; same intent as PLR0913 above)
+    "PLW0108",  # Lambda may be unnecessary. (stabilized in newer ruff; flags pre-existing callback-style lambdas)
     "PLC0414",  # Import alias does not rename variable. (this is used for exporting names)
     "PLC0415",  # Import should be at the top-level of a file.
     "PLC1901",  # Use falsey strings.

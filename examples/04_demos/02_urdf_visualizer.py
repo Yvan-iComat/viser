@@ -79,7 +79,8 @@ def main(
     
     # Start viser server.
     server = viser.ViserServer()
-    server.gui.configure_theme(dark_mode=False,control_width="large")
+    server.gui.configure_theme(dark_mode=False, control_width="large")
+    server.initial_camera.position = (1.2, 1.2, 1.2)
 
     # Load URDF.
     #

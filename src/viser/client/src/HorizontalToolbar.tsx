@@ -2,7 +2,7 @@ import { ActionIcon, Group, Paper, Tooltip, useMantineColorScheme } from "@manti
 import * as TablerIcons from "@tabler/icons-react";
 import { useContext } from "react";
 import { ViewerContext } from "./ViewerContext";
-import { ToolbarButton } from "./WebsocketMessages";
+import { ToolbarButton } from "./ControlPanel/GuiState";
 
 /** Multiplier applied to the camera-to-target distance on each zoom step. */
 const ZOOM_FACTOR = 1.5;
@@ -16,7 +16,7 @@ export function HorizontalToolbar() {
   const { colorScheme } = useMantineColorScheme();
 
   // Get toolbar configuration from viewer state
-  const toolbarConfig = viewer.useSceneTree((state) => state.toolbarConfig);
+  const toolbarConfig = viewer.useGui((state) => state.toolbarConfig);
 
   // Don't render if toolbar is hidden
   if (toolbarConfig && !toolbarConfig.visible) {

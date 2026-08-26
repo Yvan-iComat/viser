@@ -1,5 +1,6 @@
 import React from "react";
-import { Switch, Select, Stack, Paper, Tooltip } from "@mantine/core";
+import { Button, Switch, Select, Stack, Paper, Tooltip } from "@mantine/core";
+import { IconLayoutDistributeHorizontal } from "@tabler/icons-react";
 import { ViewerContext } from "./ViewerContext";
 
 interface DevSettingsPanelProps {
@@ -21,13 +22,13 @@ export function DevSettingsPanel({ devSettingsStore }: DevSettingsPanelProps) {
 
   const darkMode = viewer.useGui((state) => state.theme.dark_mode);
   const setDarkMode = (dark: boolean) => {
-    viewer.useGui.setState({
-      theme: { ...viewer.useGui.getState().theme, dark_mode: dark },
+    viewer.useGui.set({
+      theme: { ...viewer.useGui.get().theme, dark_mode: dark },
     });
   };
   const setShowLogo = (showLogo: boolean) => {
-    viewer.useGui.setState({
-      theme: { ...viewer.useGui.getState().theme, show_logo: showLogo },
+    viewer.useGui.set({
+      theme: { ...viewer.useGui.get().theme, show_logo: showLogo },
     });
   };
 
@@ -47,7 +48,7 @@ export function DevSettingsPanel({ devSettingsStore }: DevSettingsPanelProps) {
           label="WebGL Stats"
           checked={showStats}
           onChange={(event) =>
-            devSettingsStore.setState({
+            devSettingsStore.set({
               showStats: event.currentTarget.checked,
             })
           }
@@ -77,7 +78,7 @@ export function DevSettingsPanel({ devSettingsStore }: DevSettingsPanelProps) {
             label="Log Camera to Console"
             checked={logCamera}
             onChange={(event) =>
-              devSettingsStore.setState({
+              devSettingsStore.set({
                 logCamera: event.currentTarget.checked,
               })
             }
@@ -100,7 +101,7 @@ export function DevSettingsPanel({ devSettingsStore }: DevSettingsPanelProps) {
             label="Show Orbit Crosshair"
             checked={enableOrbitCrosshair}
             onChange={(event) =>
-              devSettingsStore.setState({
+              devSettingsStore.set({
                 enableOrbitCrosshair: event.currentTarget.checked,
               })
             }
@@ -124,7 +125,7 @@ export function DevSettingsPanel({ devSettingsStore }: DevSettingsPanelProps) {
             placeholder="Adaptive"
             value={fixedDpr?.toString() ?? ""}
             onChange={(value) =>
-              devSettingsStore.setState({
+              devSettingsStore.set({
                 fixedDpr: value ? parseFloat(value) : null,
               })
             }
@@ -139,6 +140,25 @@ export function DevSettingsPanel({ devSettingsStore }: DevSettingsPanelProps) {
             radius="xs"
             clearable={false}
           />
+        </Tooltip>
+
+        <Tooltip
+          label="Discard any panel rearrangement and restore the layout the server set."
+          refProp="rootRef"
+        >
+          {/* Always enabled: reset is idempotent, and the "has the user
+          rearranged anything" dirty bit was the last reader of the deleted
+          user-touched tracking (D52) -- not worth keeping a subsystem for a
+          disabled-state nicety. */}
+          <Button
+            size="xs"
+            radius="xs"
+            variant="default"
+            leftSection={<IconLayoutDistributeHorizontal size={14} />}
+            onClick={() => viewer.guiActions.resetPanelLayout()}
+          >
+            Reset Panel Layout
+          </Button>
         </Tooltip>
       </Stack>
     </Paper>

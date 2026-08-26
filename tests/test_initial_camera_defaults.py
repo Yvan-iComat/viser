@@ -1,0 +1,219 @@
+"""Test that initial camera defaults match between Python and TypeScript."""
+
+from __future__ import annotations
+
+import math
+import re
+from pathlib import Path
+
+import pytest
+
+from viser._viser import InitialCameraConfig
+
+
+def test_initial_camera_defaults_match():
+    """Verify that InitialCameraConfig defaults match InitialCameraState.ts defaults."""
+    # Get the Python defaults. Pass a no-op broadcast function.
+    config = InitialCameraConfig(broadcast=lambda _: None)
+    py_defaults = {
+        "position": config.position,
+        "look_at": config.look_at,
+        "up": config.up,
+        "fov": config.fov,
+        "near": config.near,
+        "far": config.far,
+    }
+
+    # Parse TypeScript defaults from InitialCameraState.ts.
+    repo_root = Path(__file__).parent.parent
+    ts_path = repo_root / "src" / "viser" / "client" / "src" / "InitialCameraState.ts"
+
+    if not ts_path.exists():
+        pytest.skip(f"InitialCameraState.ts not found at {ts_path}")
+
+    ts_content = ts_path.read_text()
+
+    # Parse vector defaults by finding lines with the pattern:
+    # : { value: [x, y, z], source: "default" as const },
+    # We search for the property name followed by its default block.
+    def parse_vec3(name: str) -> tuple[float, float, float]:
+        # Find the block for this property by looking for:
+        # {name}: urlParams.{name}
+        #   ? ...
+        #   : { value: [...], source: "default" as const },
+        # We use a simpler approach: find all default vec3 patterns and match by order.
+        pattern = (
+            r':\s*\{\s*value:\s*\[([^\]]+)\],\s*source:\s*"default"\s*as\s*const\s*\}'
+        )
+        matches = re.findall(pattern, ts_content)
+
+        # Map property names to their index in the file order.
+        prop_order = ["position", "lookAt", "up"]
+        if name not in prop_order:
+            raise ValueError(f"Unknown vec3 property: {name}")
+        idx = prop_order.index(name)
+        assert idx < len(matches), (
+            f"Could not find default {name} in InitialCameraState.ts"
+        )
+
+        values = [float(v.strip()) for v in matches[idx].split(",")]
+        assert len(values) == 3, f"Expected 3 values for {name}, got {len(values)}"
+        return (values[0], values[1], values[2])
+
+    # Parse scalar defaults, handling expressions like (50.0 * Math.PI) / 180.0
+    def parse_scalar(name: str) -> float:
+        # Find all default scalar patterns.
+        pattern = (
+            r':\s*\{\s*value:\s*([^,\[\]]+),\s*source:\s*"default"\s*as\s*const\s*\}'
+        )
+        matches = re.findall(pattern, ts_content)
+
+        # Map property names to their index in the file order (after vec3s).
+        prop_order = ["fov", "near", "far"]
+        if name not in prop_order:
+            raise ValueError(f"Unknown scalar property: {name}")
+        idx = prop_order.index(name)
+        assert idx < len(matches), (
+            f"Could not find default {name} in InitialCameraState.ts"
+        )
+
+        expr = matches[idx].strip()
+        # Evaluate simple math expressions with Math.PI.
+        expr = expr.replace("Math.PI", str(math.pi))
+        return float(eval(expr))  # noqa: S307
+
+    ts_defaults = {
+        "position": parse_vec3("position"),
+        "lookAt": parse_vec3("lookAt"),
+        "up": parse_vec3("up"),
+        "fov": parse_scalar("fov"),
+        "near": parse_scalar("near"),
+        "far": parse_scalar("far"),
+    }
+
+    # Compare values with tolerance for floating point.
+    def assert_close(name: str, py_val: float, ts_val: float) -> None:
+        assert math.isclose(py_val, ts_val, rel_tol=1e-9), (
+            f"{name} mismatch: Python={py_val}, TypeScript={ts_val}"
+        )
+
+    def assert_vec3_close(
+        name: str,
+        py_val: tuple[float, float, float],
+        ts_val: tuple[float, float, float],
+    ) -> None:
+        for i, (p, t) in enumerate(zip(py_val, ts_val)):
+            assert math.isclose(p, t, rel_tol=1e-9), (
+                f"{name}[{i}] mismatch: Python={p}, TypeScript={t}"
+            )
+
+    # Check all values match.
+    assert_vec3_close("position", py_defaults["position"], ts_defaults["position"])
+    assert_vec3_close("look_at", py_defaults["look_at"], ts_defaults["lookAt"])
+    # Skip up comparison: Python default is None (meaning "same as scene up direction"),
+    # while TypeScript has a concrete default [0, 1, 0] in three.js coordinates.
+    assert py_defaults["up"] is None
+    assert_close("fov", py_defaults["fov"], ts_defaults["fov"])
+    assert_close("near", py_defaults["near"], ts_defaults["near"])
+    assert_close("far", py_defaults["far"], ts_defaults["far"])
+
+
+def test_orbit_distance_defaults_match():
+    """Verify that CameraHandle's orbit-distance defaults match the
+    <CameraControls> props in CameraControls.tsx.
+
+    This parity is load-bearing, not cosmetic: the `min_orbit_distance` /
+    `max_orbit_distance` setters early-return when the assigned value equals the
+    Python-side default, so if the client's actual default drifted from Python's,
+    assigning the client-side default from Python would be a silent no-op.
+    """
+    from viser._viser import CameraHandle
+
+    handle = CameraHandle(None)  # type: ignore[arg-type]
+    py_min = handle._state.min_orbit_distance
+    py_max = handle._state.max_orbit_distance
+
+    repo_root = Path(__file__).parent.parent
+    ts_path = repo_root / "src" / "viser" / "client" / "src" / "CameraControls.tsx"
+    ts_content = ts_path.read_text()
+
+    def parse_prop(name: str) -> float:
+        matches = re.findall(rf"{name}=\{{([\d.e+-]+)\}}", ts_content)
+        assert len(matches) == 1, (
+            f"Expected exactly one {name}={{...}} prop in CameraControls.tsx, "
+            f"found {len(matches)}"
+        )
+        return float(matches[0])
+
+    assert math.isclose(py_min, parse_prop("minDistance"), rel_tol=1e-9), (
+        f"min orbit distance mismatch: Python={py_min}, TypeScript prop differs"
+    )
+    assert math.isclose(py_max, parse_prop("maxDistance"), rel_tol=1e-9), (
+        f"max orbit distance mismatch: Python={py_max}, TypeScript prop differs"
+    )
+
+
+class _RecordingConnection:
+    def __init__(self) -> None:
+        self.messages: list = []
+
+    def queue_message(self, message) -> None:
+        self.messages.append(message)
+
+
+class _StubClient:
+    """Minimal stand-in for ClientHandle: just enough for the orbit-distance
+    setters, which only touch ``_websock_connection.queue_message``."""
+
+    def __init__(self) -> None:
+        self._websock_connection = _RecordingConnection()
+
+
+def test_orbit_distance_setter_validation():
+    """The orbit-distance setters reject non-finite / non-positive values and
+    min/max crossings, and validation runs before the no-op short-circuit."""
+    from viser._viser import CameraHandle
+
+    handle = CameraHandle(_StubClient())  # type: ignore[arg-type]
+
+    for bad in (0.0, -1.0, math.nan, math.inf):
+        with pytest.raises(ValueError, match="min_orbit_distance"):
+            handle.min_orbit_distance = bad
+    for bad in (0.0, -1.0, math.nan):
+        with pytest.raises(ValueError, match="max_orbit_distance"):
+            handle.max_orbit_distance = bad
+
+    # Crossings are checked against the other bound's current value.
+    with pytest.raises(ValueError, match="must be <="):
+        handle.min_orbit_distance = handle._state.max_orbit_distance * 2.0
+    with pytest.raises(ValueError, match="must be >="):
+        handle.max_orbit_distance = handle._state.min_orbit_distance / 2.0
+
+    # Rejected assignments must leave state (and the wire) untouched.
+    assert handle._state.min_orbit_distance == 0.01
+    assert handle._state.max_orbit_distance == 1e4
+    assert handle._state.client._websock_connection.messages == []
+
+    # Valid assignments still go through and queue exactly one message each.
+    handle.min_orbit_distance = 0.5
+    handle.max_orbit_distance = 100.0
+    assert handle._state.min_orbit_distance == 0.5
+    assert handle._state.max_orbit_distance == 100.0
+    assert len(handle._state.client._websock_connection.messages) == 2
+
+    # Re-assigning the current value stays a no-op (short-circuit preserved).
+    handle.min_orbit_distance = 0.5
+    assert len(handle._state.client._websock_connection.messages) == 2
+
+    # float("inf") is a valid max: the pre-1.1.0 unbounded behavior, the
+    # opt-out for scenes larger than the 1e4 default.
+    handle.max_orbit_distance = math.inf
+    assert handle._state.max_orbit_distance == math.inf
+    assert len(handle._state.client._websock_connection.messages) == 3
+
+    # But a bad value "close" to the stored one must still raise: validation
+    # runs before the short-circuit.
+    handle_at_floor = CameraHandle(_StubClient())  # type: ignore[arg-type]
+    handle_at_floor._state.min_orbit_distance = 0.0  # Bypass setter.
+    with pytest.raises(ValueError, match="min_orbit_distance"):
+        handle_at_floor.min_orbit_distance = 0.0

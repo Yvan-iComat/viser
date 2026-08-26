@@ -21,17 +21,37 @@ export default function FolderComponent({
   );
   const guiContext = React.useContext(GuiComponentContext)!;
   const isEmpty = guiIdSet === undefined || Object.keys(guiIdSet).length === 0;
-  const nextGuiType = viewer.useGui((state) =>
-    nextGuiUuid == null ? null : state.guiConfigFromUuid[nextGuiUuid]?.type,
+  const nextGuiType = viewer.useGuiConfig(nextGuiUuid ?? "", (conf) =>
+    nextGuiUuid == null ? null : (conf?.type ?? null),
   );
 
-  const ToggleIcon = opened ? IconChevronUp : IconChevronDown;
   if (!visible) return null;
+
+  // No label: render children only, no header/border/collapse. Use
+  // `unwrapped` so we don't introduce extra padding above the first child.
+  if (label === null) {
+    return (
+      <GuiComponentContext.Provider
+        value={{
+          ...guiContext,
+          folderDepth: guiContext.folderDepth + 1,
+        }}
+      >
+        <guiContext.GuiContainer containerUuid={uuid} unwrapped />
+      </GuiComponentContext.Provider>
+    );
+  }
+
+  const ToggleIcon = opened ? IconChevronUp : IconChevronDown;
   return (
     <Paper
       withBorder
       className={folderWrapper}
-      mb={nextGuiType === "GuiFolderMessage" ? "md" : undefined}
+      mb={
+        nextGuiType === "GuiFolderMessage" || nextGuiType === "GuiFormMessage"
+          ? "md"
+          : undefined
+      }
     >
       <Paper
         className={folderLabel}
@@ -48,7 +68,7 @@ export default function FolderComponent({
           }}
         />
       </Paper>
-      <Collapse in={opened && !isEmpty}>
+      <Collapse expanded={opened && !isEmpty}>
         <Box pt="0.2em">
           <GuiComponentContext.Provider
             value={{
@@ -60,7 +80,7 @@ export default function FolderComponent({
           </GuiComponentContext.Provider>
         </Box>
       </Collapse>
-      <Collapse in={!(opened && !isEmpty)}>
+      <Collapse expanded={!(opened && !isEmpty)}>
         <Box p="xs"></Box>
       </Collapse>
     </Paper>

@@ -10,61 +10,8 @@ import {
   useThree,
   ThreeElement,
 } from "@react-three/fiber";
-import { toCreasedNormals } from "three-stdlib";
-import { version } from "@react-three/drei/helpers/constants";
-import { shaderMaterial } from "@react-three/drei";
-
-export const OutlinesMaterial = /* @__PURE__ */ shaderMaterial(
-  {
-    screenspace: false as boolean,
-    color: /* @__PURE__ */ new THREE.Color("black"),
-    opacity: 1,
-    thickness: 0.05,
-    size: /* @__PURE__ */ new THREE.Vector2(),
-  },
-  `#include <common>
-   #include <morphtarget_pars_vertex>
-   #include <skinning_pars_vertex>
-   uniform float thickness;
-   uniform float screenspace;
-   uniform vec2 size;
-   void main() {
-     #if defined (USE_SKINNING)
-	     #include <beginnormal_vertex>
-       #include <morphnormal_vertex>
-       #include <skinbase_vertex>
-       #include <skinnormal_vertex>
-       #include <defaultnormal_vertex>
-     #endif
-     #include <begin_vertex>
-	   #include <morphtarget_vertex>
-	   #include <skinning_vertex>
-     #include <project_vertex>
-     vec4 tNormal = vec4(normal, 0.0);
-     vec4 tPosition = vec4(transformed, 1.0);
-     #ifdef USE_INSTANCING
-       tNormal = instanceMatrix * tNormal;
-       tPosition = instanceMatrix * tPosition;
-     #endif
-     if (screenspace == 0.0) {
-       vec3 newPosition = tPosition.xyz + tNormal.xyz * thickness;
-       gl_Position = projectionMatrix * modelViewMatrix * vec4(newPosition, 1.0);
-     } else {
-       vec4 clipPosition = projectionMatrix * modelViewMatrix * tPosition;
-       vec4 clipNormal = projectionMatrix * modelViewMatrix * tNormal;
-       vec2 offset = normalize(clipNormal.xy) * thickness / size * clipPosition.w * 2.0;
-       clipPosition.xy += offset;
-       gl_Position = clipPosition;
-     }
-   }`,
-  `uniform vec3 color;
-   uniform float opacity;
-   void main(){
-     gl_FragColor = vec4(color, opacity);
-     #include <tonemapping_fragment>
-     #include <${version >= 154 ? "colorspace_fragment" : "encodings_fragment"}>
-   }`,
-);
+import { OutlinesMaterial } from "./OutlinesMaterial";
+import { buildOutlineGeometry } from "./utils/outlineGeometry";
 
 type OutlinesProps = ThreeElement<typeof THREE.Group> & {
   /** Outline color, default: black */
@@ -105,13 +52,30 @@ export const Outlines = React.forwardRef<THREE.Group, OutlinesProps>(
     const localRef = React.useRef<THREE.Group | null>(null);
 
     const [material] = React.useState(
-      () => new OutlinesMaterial({ side: THREE.BackSide }),
+      () => new OutlinesMaterial({ side: THREE.BackSide, fog: true }),
     );
     const gl = useThree((state) => state.gl);
     const contextSize = gl.getDrawingBufferSize(new THREE.Vector2());
 
     const oldAngle = React.useRef(0);
-    const oldGeometry = React.useRef<THREE.BufferGeometry>();
+    const oldGeometry = React.useRef<THREE.BufferGeometry | undefined>(
+      undefined,
+    );
+    const oldPosition = React.useRef<THREE.BufferAttribute | undefined>(
+      undefined,
+    );
+    const oldPositionVersion = React.useRef(-1);
+    // The creased clone WE own for the current outline mesh, or null when the
+    // mesh shares the parent's geometry. Recording the disposable resource
+    // itself is what makes every dispose site correct by construction: gating
+    // on the current `angle` prop was the original bug (PI->0 leaked the old
+    // clone, 0->PI disposed the parent's live shared geometry), and the
+    // unmount cleanup cannot re-derive the mesh from localRef -- React
+    // detaches the ref (-> null) before passive cleanups run, so a
+    // `localRef.current.children[0]` lookup there is always null and the
+    // dispose would silently never happen (leaking the clone once per
+    // unmount -- every hover cycle for unmountOnHide gizmos).
+    const ownedGeometryRef = React.useRef<THREE.BufferGeometry | null>(null);
     React.useLayoutEffect(() => {
       const group = localRef.current;
       if (!group) return;
@@ -120,19 +84,38 @@ export const Outlines = React.forwardRef<THREE.Group, OutlinesProps>(
         THREE.SkinnedMesh &
         THREE.InstancedMesh;
       if (parent && parent.geometry) {
+        // The parent's geometry can be updated in place (see
+        // bufferGeometrySync), so geometry identity alone isn't enough to
+        // detect changes. When `angle` is set we render a creased *clone* of
+        // the geometry, which goes stale unless we also watch the position
+        // attribute's identity (replaced on realloc) and version (bumped by
+        // needsUpdate on in-place writes). When `angle` is unset the outline
+        // shares the parent's geometry object, so updates flow through and
+        // no rebuild is needed.
+        const position = parent.geometry.attributes
+          .position as THREE.BufferAttribute;
         if (
           oldAngle.current !== angle ||
-          oldGeometry.current !== parent.geometry
+          oldGeometry.current !== parent.geometry ||
+          (angle !== 0 &&
+            position !== undefined &&
+            (oldPosition.current !== position ||
+              oldPositionVersion.current !== position.version))
         ) {
           oldAngle.current = angle;
           oldGeometry.current = parent.geometry;
+          oldPosition.current = position;
+          oldPositionVersion.current = position?.version ?? -1;
 
-          // Remove old mesh
+          // Free the creased copy if we own one (never the parent's shared
+          // geometry; see ownedGeometryRef above) -- unconditionally, not
+          // gated on the child still being attached: the group is exposed via
+          // the forwarded ref, so an externally-removed child must not strand
+          // the owned geometry.
+          ownedGeometryRef.current?.dispose();
+          ownedGeometryRef.current = null;
           let mesh = group.children[0] as any;
-          if (mesh) {
-            if (angle) mesh.geometry.dispose();
-            group.remove(mesh);
-          }
+          if (mesh) group.remove(mesh);
 
           if (parent.skeleton) {
             mesh = new THREE.SkinnedMesh();
@@ -152,9 +135,9 @@ export const Outlines = React.forwardRef<THREE.Group, OutlinesProps>(
             mesh.material = material;
             group.add(mesh);
           }
-          mesh.geometry = angle
-            ? toCreasedNormals(parent.geometry, angle)
-            : parent.geometry;
+          const built = buildOutlineGeometry(parent.geometry, angle);
+          mesh.geometry = built.geometry;
+          ownedGeometryRef.current = built.owned ? built.geometry : null;
         }
       }
     });
@@ -185,18 +168,13 @@ export const Outlines = React.forwardRef<THREE.Group, OutlinesProps>(
 
     React.useEffect(() => {
       return () => {
-        // Dispose everything on unmount
-        const group = localRef.current;
-        if (!group) return;
-
-        const mesh = group.children[0] as THREE.Mesh<
-          THREE.BufferGeometry,
-          THREE.Material
-        >;
-        if (mesh) {
-          if (angle) mesh.geometry.dispose();
-          group.remove(mesh);
-        }
+        // Dispose everything on unmount, reading only what was recorded at
+        // build time (see ownedGeometryRef above): localRef is already null
+        // here, and the first-render `angle` closure capture is stale on
+        // flips.
+        material.dispose();
+        ownedGeometryRef.current?.dispose();
+        ownedGeometryRef.current = null;
       };
     }, []);
 
