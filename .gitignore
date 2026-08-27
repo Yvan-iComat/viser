@@ -33,3 +33,4 @@ tests/e2e/test_webgl_warning.py
 
 # Local project files (not for upstream)
 src/viser/ybd/
+PREBUILT_CLIENT.md
