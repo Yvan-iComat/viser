@@ -18,6 +18,8 @@ GUI Handles
 
 .. autoclass:: viser.GuiFolderHandle
 
+.. autoclass:: viser.GuiFolderSelectButtonHandle
+
 .. autoclass:: viser.GuiFormHandle
 
 .. autoclass:: viser.GuiHtmlHandle

@@ -973,6 +973,12 @@ in <cite>p_parent = [R | t] p_local</cite>. Synchronized to clients automaticall
 </dd></dl>
 
 <dl class="py attribute">
+<dt class="sig sig-object py" id="viser.BatchedGlbHandle.smooth_shading">
+<span class="sig-name descname"><span class="pre">smooth_shading</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></em><a class="headerlink" href="#viser.BatchedGlbHandle.smooth_shading" title="Link to this definition">¶</a></dt>
+<dd><p>Whether to use smooth shading (averaged vertex normals) on the client.</p>
+</dd></dl>
+
+<dl class="py attribute">
 <dt class="sig sig-object py" id="viser.BatchedGlbHandle.scale">
 <span class="sig-name descname"><span class="pre">scale</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#viser.BatchedGlbHandle.scale" title="Link to this definition">¶</a></dt>
 <dd><p>Scale of the batched GLB. A single float for uniform scaling or a
@@ -2713,6 +2719,12 @@ in <cite>p_parent = [R | t] p_local</cite>. Synchronized to clients automaticall
 <dd><p>Whether to receive shadows. If True, receives shadows normally. If
 False, no shadows. If a float (0-1), shadows are rendered with a fixed
 opacity regardless of lighting conditions.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="viser.GlbHandle.smooth_shading">
+<span class="sig-name descname"><span class="pre">smooth_shading</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></em><a class="headerlink" href="#viser.GlbHandle.smooth_shading" title="Link to this definition">¶</a></dt>
+<dd><p>Whether to use smooth shading (averaged vertex normals) on the client.</p>
 </dd></dl>
 
 <dl class="py attribute">
@@ -5064,6 +5076,7 @@ deprecated <a class="reference internal" href="#viser.TransformControlsHandle.on
 <li><a class="reference internal" href="#viser.BatchedGlbHandle.glb_data"><code class="docutils literal notranslate"><span class="pre">BatchedGlbHandle.glb_data</span></code></a></li>
 <li><a class="reference internal" href="#viser.BatchedGlbHandle.cast_shadow"><code class="docutils literal notranslate"><span class="pre">BatchedGlbHandle.cast_shadow</span></code></a></li>
 <li><a class="reference internal" href="#viser.BatchedGlbHandle.receive_shadow"><code class="docutils literal notranslate"><span class="pre">BatchedGlbHandle.receive_shadow</span></code></a></li>
+<li><a class="reference internal" href="#viser.BatchedGlbHandle.smooth_shading"><code class="docutils literal notranslate"><span class="pre">BatchedGlbHandle.smooth_shading</span></code></a></li>
 <li><a class="reference internal" href="#viser.BatchedGlbHandle.scale"><code class="docutils literal notranslate"><span class="pre">BatchedGlbHandle.scale</span></code></a></li>
 <li><a class="reference internal" href="#viser.BatchedGlbHandle.batched_wxyzs"><code class="docutils literal notranslate"><span class="pre">BatchedGlbHandle.batched_wxyzs</span></code></a></li>
 <li><a class="reference internal" href="#viser.BatchedGlbHandle.batched_positions"><code class="docutils literal notranslate"><span class="pre">BatchedGlbHandle.batched_positions</span></code></a></li>
@@ -5231,6 +5244,7 @@ deprecated <a class="reference internal" href="#viser.TransformControlsHandle.on
 <li><a class="reference internal" href="#viser.GlbHandle.glb_data"><code class="docutils literal notranslate"><span class="pre">GlbHandle.glb_data</span></code></a></li>
 <li><a class="reference internal" href="#viser.GlbHandle.cast_shadow"><code class="docutils literal notranslate"><span class="pre">GlbHandle.cast_shadow</span></code></a></li>
 <li><a class="reference internal" href="#viser.GlbHandle.receive_shadow"><code class="docutils literal notranslate"><span class="pre">GlbHandle.receive_shadow</span></code></a></li>
+<li><a class="reference internal" href="#viser.GlbHandle.smooth_shading"><code class="docutils literal notranslate"><span class="pre">GlbHandle.smooth_shading</span></code></a></li>
 <li><a class="reference internal" href="#viser.GlbHandle.scale"><code class="docutils literal notranslate"><span class="pre">GlbHandle.scale</span></code></a></li>
 </ul>
 </li>

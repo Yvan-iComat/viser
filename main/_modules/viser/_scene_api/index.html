@@ -1485,6 +1485,7 @@
         <span class="n">visible</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
         <span class="n">cast_shadow</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
         <span class="n">receive_shadow</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">smooth_shading</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">GlbHandle</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">"""Add a general 3D asset via binary glTF (GLB).</span>
 
@@ -1518,6 +1519,7 @@
                 <span class="n">glb_data</span><span class="o">=</span><span class="n">glb_data</span><span class="p">,</span>
                 <span class="n">cast_shadow</span><span class="o">=</span><span class="n">cast_shadow</span><span class="p">,</span>
                 <span class="n">receive_shadow</span><span class="o">=</span><span class="n">receive_shadow</span><span class="p">,</span>
+                <span class="n">smooth_shading</span><span class="o">=</span><span class="n">smooth_shading</span><span class="p">,</span>
                 <span class="n">scale</span><span class="o">=</span><span class="n">scale</span><span class="p">,</span>
             <span class="p">),</span>
         <span class="p">)</span>
@@ -2791,6 +2793,7 @@
         <span class="n">opacity</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">material</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">"standard"</span><span class="p">,</span> <span class="s2">"toon3"</span><span class="p">,</span> <span class="s2">"toon5"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"standard"</span><span class="p">,</span>
         <span class="n">flat_shading</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">smooth_shading</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="n">side</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">"front"</span><span class="p">,</span> <span class="s2">"back"</span><span class="p">,</span> <span class="s2">"double"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"front"</span><span class="p">,</span>
         <span class="n">scale</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span>
         <span class="n">cast_shadow</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
@@ -2813,7 +2816,10 @@
 <span class="sd">            material: Material type of the mesh ('standard', 'toon3', 'toon5').</span>
 <span class="sd">                This argument is ignored when wireframe=True.</span>
 <span class="sd">            flat_shading: Whether to do flat shading. This argument is ignored</span>
-<span class="sd">                when wireframe=True.</span>
+<span class="sd">                when wireframe=True. Deprecated: use smooth_shading instead.</span>
+<span class="sd">            smooth_shading: Whether to use smooth shading (averaged vertex normals).</span>
+<span class="sd">                If False, uses flat shading (one normal per face). Takes precedence</span>
+<span class="sd">                over flat_shading parameter.</span>
 <span class="sd">            side: Side of the surface to render ('front', 'back', 'double').</span>
 <span class="sd">            scale: Scale of the mesh. A single float for uniform scaling or a tuple</span>
 <span class="sd">                of (x, y, z) for per-axis scaling.</span>
@@ -2830,6 +2836,10 @@
 <span class="sd">            Handle for manipulating scene node.</span>
 <span class="sd">        """</span>
         <span class="n">_warn_wireframe_conflicts</span><span class="p">(</span><span class="n">wireframe</span><span class="p">,</span> <span class="n">material</span><span class="p">,</span> <span class="n">flat_shading</span><span class="p">)</span>
+        <span class="c1"># smooth_shading takes precedence over flat_shading (inverted logic)</span>
+        <span class="n">use_flat_shading</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="ow">not</span> <span class="n">smooth_shading</span> <span class="k">if</span> <span class="n">smooth_shading</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">flat_shading</span>
+        <span class="p">)</span>
         <span class="n">message</span> <span class="o">=</span> <span class="n">_messages</span><span class="o">.</span><span class="n">MeshMessage</span><span class="p">(</span>
             <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span>
             <span class="n">props</span><span class="o">=</span><span class="n">_messages</span><span class="o">.</span><span class="n">MeshProps</span><span class="p">(</span>
@@ -2838,7 +2848,7 @@
                 <span class="n">color</span><span class="o">=</span><span class="n">_encode_rgb</span><span class="p">(</span><span class="n">color</span><span class="p">),</span>
                 <span class="n">wireframe</span><span class="o">=</span><span class="n">wireframe</span><span class="p">,</span>
                 <span class="n">opacity</span><span class="o">=</span><span class="n">opacity</span><span class="p">,</span>
-                <span class="n">flat_shading</span><span class="o">=</span><span class="n">flat_shading</span><span class="p">,</span>
+                <span class="n">flat_shading</span><span class="o">=</span><span class="n">use_flat_shading</span><span class="p">,</span>
                 <span class="n">side</span><span class="o">=</span><span class="n">side</span><span class="p">,</span>
                 <span class="n">material</span><span class="o">=</span><span class="n">material</span><span class="p">,</span>
                 <span class="n">scale</span><span class="o">=</span><span class="n">scale</span><span class="p">,</span>
@@ -2863,6 +2873,7 @@
         <span class="n">visible</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
         <span class="n">cast_shadow</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
         <span class="n">receive_shadow</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">smooth_shading</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">GlbHandle</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">"""Add a trimesh mesh to the scene. Internally calls `self.add_glb()`.</span>
 
@@ -2880,13 +2891,18 @@
 <span class="sd">                receives shadows normally. If False, no shadows. If a float</span>
 <span class="sd">                (0-1), shadows are rendered with a fixed opacity regardless of</span>
 <span class="sd">                lighting conditions.</span>
+<span class="sd">            smooth_shading: Whether to use smooth shading (averaged vertex normals).</span>
+<span class="sd">                If True, normals are excluded from export and recalculated on client.</span>
+<span class="sd">                If False, flat shading is used (one normal per face).</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            Handle for manipulating scene node.</span>
 <span class="sd">        """</span>
 
         <span class="k">with</span> <span class="n">io</span><span class="o">.</span><span class="n">BytesIO</span><span class="p">()</span> <span class="k">as</span> <span class="n">data_buffer</span><span class="p">:</span>
-            <span class="n">mesh</span><span class="o">.</span><span class="n">export</span><span class="p">(</span><span class="n">data_buffer</span><span class="p">,</span> <span class="n">file_type</span><span class="o">=</span><span class="s2">"glb"</span><span class="p">)</span>
+            <span class="n">mesh</span><span class="o">.</span><span class="n">export</span><span class="p">(</span>
+                <span class="n">data_buffer</span><span class="p">,</span> <span class="n">file_type</span><span class="o">=</span><span class="s2">"glb"</span><span class="p">,</span> <span class="n">include_normals</span><span class="o">=</span><span class="ow">not</span> <span class="n">smooth_shading</span>
+            <span class="p">)</span>
             <span class="n">glb_data</span> <span class="o">=</span> <span class="n">data_buffer</span><span class="o">.</span><span class="n">getvalue</span><span class="p">()</span>
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">add_glb</span><span class="p">(</span>
                 <span class="n">name</span><span class="p">,</span>
@@ -2897,6 +2913,7 @@
                 <span class="n">visible</span><span class="o">=</span><span class="n">visible</span><span class="p">,</span>
                 <span class="n">cast_shadow</span><span class="o">=</span><span class="n">cast_shadow</span><span class="p">,</span>
                 <span class="n">receive_shadow</span><span class="o">=</span><span class="n">receive_shadow</span><span class="p">,</span>
+                <span class="n">smooth_shading</span><span class="o">=</span><span class="n">smooth_shading</span><span class="p">,</span>
             <span class="p">)</span></div>
 
 
@@ -3030,6 +3047,7 @@
         <span class="n">lod</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">"auto"</span><span class="p">,</span> <span class="s2">"off"</span><span class="p">]</span> <span class="o">|</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">],</span> <span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"auto"</span><span class="p">,</span>
         <span class="n">cast_shadow</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
         <span class="n">receive_shadow</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">smooth_shading</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="n">scale</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span>
         <span class="n">wxyz</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">=</span> <span class="p">(</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">),</span>
         <span class="n">position</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">=</span> <span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">),</span>
@@ -3080,6 +3098,7 @@
                     <span class="n">lod</span><span class="o">=</span><span class="n">lod</span><span class="p">,</span>
                     <span class="n">cast_shadow</span><span class="o">=</span><span class="n">cast_shadow</span><span class="p">,</span>
                     <span class="n">receive_shadow</span><span class="o">=</span><span class="n">receive_shadow</span><span class="p">,</span>
+                    <span class="n">smooth_shading</span><span class="o">=</span><span class="n">smooth_shading</span><span class="p">,</span>
                     <span class="n">scale</span><span class="o">=</span><span class="n">scale</span><span class="p">,</span>
                 <span class="p">),</span>
             <span class="p">)</span>
@@ -3100,6 +3119,7 @@
         <span class="n">lod</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">"auto"</span><span class="p">,</span> <span class="s2">"off"</span><span class="p">]</span> <span class="o">|</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">],</span> <span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"auto"</span><span class="p">,</span>
         <span class="n">cast_shadow</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
         <span class="n">receive_shadow</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">smooth_shading</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="n">scale</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span>
         <span class="n">wxyz</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">=</span> <span class="p">(</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">),</span>
         <span class="n">position</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">=</span> <span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">),</span>
@@ -3149,6 +3169,7 @@
                 <span class="n">lod</span><span class="o">=</span><span class="n">lod</span><span class="p">,</span>
                 <span class="n">cast_shadow</span><span class="o">=</span><span class="n">cast_shadow</span><span class="p">,</span>
                 <span class="n">receive_shadow</span><span class="o">=</span><span class="n">receive_shadow</span><span class="p">,</span>
+                <span class="n">smooth_shading</span><span class="o">=</span><span class="n">smooth_shading</span><span class="p">,</span>
                 <span class="n">scale</span><span class="o">=</span><span class="n">scale</span><span class="p">,</span>
             <span class="p">),</span>
         <span class="p">)</span>

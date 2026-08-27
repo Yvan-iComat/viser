@@ -445,6 +445,7 @@
     <span class="n">Generic</span><span class="p">,</span>
     <span class="n">Iterable</span><span class="p">,</span>
     <span class="n">Literal</span><span class="p">,</span>
+    <span class="n">Sequence</span><span class="p">,</span>
     <span class="n">Tuple</span><span class="p">,</span>
     <span class="n">TypeVar</span><span class="p">,</span>
     <span class="n">Union</span><span class="p">,</span>
@@ -471,6 +472,7 @@
     <span class="n">GuiDividerProps</span><span class="p">,</span>
     <span class="n">GuiDropdownProps</span><span class="p">,</span>
     <span class="n">GuiFolderProps</span><span class="p">,</span>
+    <span class="n">GuiFolderSelectButtonProps</span><span class="p">,</span>
     <span class="n">GuiFormSubmitMessage</span><span class="p">,</span>
     <span class="n">GuiHtmlProps</span><span class="p">,</span>
     <span class="n">GuiImageProps</span><span class="p">,</span>
@@ -490,6 +492,7 @@
     <span class="n">GuiSetPanelWidthMessage</span><span class="p">,</span>
     <span class="n">GuiSliderProps</span><span class="p">,</span>
     <span class="n">GuiTabGroupProps</span><span class="p">,</span>
+    <span class="n">GuiTableDataProps</span><span class="p">,</span>
     <span class="n">GuiTextProps</span><span class="p">,</span>
     <span class="n">GuiUpdateMessage</span><span class="p">,</span>
     <span class="n">GuiUploadButtonProps</span><span class="p">,</span>
@@ -498,6 +501,7 @@
     <span class="n">GuiVector3Props</span><span class="p">,</span>
     <span class="n">RemoveCommandMessage</span><span class="p">,</span>
     <span class="n">SplitPlacement</span><span class="p">,</span>
+    <span class="n">TimelineProps</span><span class="p">,</span>
 <span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">._scene_api</span><span class="w"> </span><span class="kn">import</span> <span class="n">_encode_image_binary</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">._threadpool_exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="n">print_task_error</span>
@@ -1161,6 +1165,52 @@
 
 
 
+<div class="viewcode-block" id="GuiFolderSelectButtonHandle">
+<a class="viewcode-back" href="../../../api/handles/gui_handles/#viser.GuiFolderSelectButtonHandle">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">GuiFolderSelectButtonHandle</span><span class="p">(</span><span class="n">_GuiInputHandle</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">GuiFolderSelectButtonProps</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Handle for a folder select button in our visualizer.</span>
+
+<span class="sd">    The `.value` attribute will be updated with the absolute path of the selected folder.</span>
+
+<span class="sd">    .. attribute:: value</span>
+<span class="sd">       :type: str</span>
+
+<span class="sd">       Value of the input. Contains the absolute path of the selected folder.</span>
+<span class="sd">    """</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">_impl</span><span class="p">:</span> <span class="n">_GuiHandleState</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">_icon</span><span class="p">:</span> <span class="n">IconName</span> <span class="o">|</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">impl</span><span class="o">=</span><span class="n">_impl</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_icon</span> <span class="o">=</span> <span class="n">_icon</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">icon</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">IconName</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Icon to display on the folder select button. When set to None, no icon is displayed."""</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_icon</span>
+
+    <span class="nd">@icon</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">icon</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">icon</span><span class="p">:</span> <span class="n">IconName</span> <span class="o">|</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_icon</span> <span class="o">=</span> <span class="n">icon</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_icon_html</span> <span class="o">=</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">icon</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">svg_from_icon</span><span class="p">(</span><span class="n">icon</span><span class="p">)</span>
+
+<div class="viewcode-block" id="GuiFolderSelectButtonHandle.on_select">
+<a class="viewcode-back" href="../../../api/handles/gui_handles/#viser.GuiFolderSelectButtonHandle.on_select">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">on_select</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">:</span> <span class="n">TGuiHandle</span><span class="p">,</span> <span class="n">func</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">GuiEvent</span><span class="p">[</span><span class="n">TGuiHandle</span><span class="p">]],</span> <span class="n">NoneOrCoroutine</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">GuiEvent</span><span class="p">[</span><span class="n">TGuiHandle</span><span class="p">]],</span> <span class="n">NoneOrCoroutine</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""Attach a function to call when a folder is selected.</span>
+
+<span class="sd">        Note:</span>
+<span class="sd">        - If `func` is a regular function (defined with `def`), it will be executed in a thread pool.</span>
+<span class="sd">        - If `func` is an async function (defined with `async def`), it will be executed in the event loop.</span>
+
+<span class="sd">        Using async functions can be useful for reducing race conditions.</span>
+<span class="sd">        """</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_impl</span><span class="o">.</span><span class="n">update_cb</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">func</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">func</span></div>
+</div>
+
+
+
 <div class="viewcode-block" id="GuiButtonGroupHandle">
 <a class="viewcode-back" href="../../../api/handles/gui_handles/#viser.GuiButtonGroupHandle">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">GuiButtonGroupHandle</span><span class="p">(</span><span class="n">_GuiInputHandle</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">GuiButtonGroupProps</span><span class="p">):</span>
@@ -1243,6 +1293,146 @@
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">value</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">options</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="n">options</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span></div>
 
+
+
+<span class="n">TableData</span> <span class="o">=</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">int</span><span class="p">],</span> <span class="o">...</span><span class="p">],</span> <span class="o">...</span><span class="p">]</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">GuiTableDataHandle</span><span class="p">(</span><span class="n">GuiInputHandle</span><span class="p">[</span><span class="n">TableData</span><span class="p">],</span> <span class="n">GuiTableDataProps</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Handle for table data component.</span>
+
+<span class="sd">    The table stores data as rows and columns. Cells can be strings or numbers</span>
+<span class="sd">    depending on column configuration.</span>
+
+<span class="sd">    .. attribute:: value</span>
+<span class="sd">       :type: Tuple[Tuple[Union[str, float, int], ...], ...]</span>
+
+<span class="sd">       Current table data as tuple of rows. Each row is a tuple of cell values.</span>
+<span class="sd">       Synchronized automatically when assigned.</span>
+
+<span class="sd">    Example:</span>
+<span class="sd">        &gt;&gt;&gt; # Access current data</span>
+<span class="sd">        &gt;&gt;&gt; current_data = table.value</span>
+<span class="sd">        &gt;&gt;&gt;</span>
+<span class="sd">        &gt;&gt;&gt; # Replace entire table</span>
+<span class="sd">        &gt;&gt;&gt; table.value = (("A", 1), ("B", 2))</span>
+<span class="sd">    """</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">clear_rows</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Remove all rows from the table, keeping column structure."""</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="p">()</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">append_row</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">row</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span> <span class="o">|</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">int</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Append a new row to the end of the table.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            row: Sequence of cell values matching column count and types.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            ValueError: If row length doesn't match column count or types are invalid.</span>
+<span class="sd">        """</span>
+        <span class="n">row_tuple</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">row</span><span class="p">)</span>
+
+        <span class="c1"># Validate row</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">row_tuple</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">columns</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"Row has </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">row_tuple</span><span class="p">)</span><span class="si">}</span><span class="s2"> cells but table has </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span><span class="si">}</span><span class="s2"> columns"</span>
+            <span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">col_idx</span><span class="p">,</span> <span class="p">(</span><span class="n">cell</span><span class="p">,</span> <span class="n">col_def</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">row_tuple</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">columns</span><span class="p">)):</span>
+            <span class="k">if</span> <span class="n">col_def</span><span class="o">.</span><span class="n">cell_type</span> <span class="o">==</span> <span class="s2">"number"</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">cell</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">)):</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">"Cell at column </span><span class="si">{</span><span class="n">col_idx</span><span class="si">}</span><span class="s2"> ('</span><span class="si">{</span><span class="n">col_def</span><span class="o">.</span><span class="n">title</span><span class="si">}</span><span class="s2">') must be numeric, got </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">cell</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">"</span>
+                <span class="p">)</span>
+
+        <span class="c1"># Append to current data</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">value</span> <span class="o">+</span> <span class="p">(</span><span class="n">row_tuple</span><span class="p">,)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">set_cell</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">row</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">col</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Update a single cell value.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            row: Row index (0-based).</span>
+<span class="sd">            col: Column index (0-based).</span>
+<span class="sd">            value: New cell value.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            IndexError: If row or column index is out of bounds.</span>
+<span class="sd">            ValueError: If value type doesn't match column type.</span>
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="n">row</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">row</span> <span class="o">&gt;=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">IndexError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"Row index </span><span class="si">{</span><span class="n">row</span><span class="si">}</span><span class="s2"> out of bounds (table has </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="p">)</span><span class="si">}</span><span class="s2"> rows)"</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="n">col</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">col</span> <span class="o">&gt;=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">columns</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">IndexError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"Column index </span><span class="si">{</span><span class="n">col</span><span class="si">}</span><span class="s2"> out of bounds (table has </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span><span class="si">}</span><span class="s2"> columns)"</span>
+            <span class="p">)</span>
+
+        <span class="n">col_def</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">columns</span><span class="p">[</span><span class="n">col</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">col_def</span><span class="o">.</span><span class="n">cell_type</span> <span class="o">==</span> <span class="s2">"number"</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">)):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"Column </span><span class="si">{</span><span class="n">col</span><span class="si">}</span><span class="s2"> ('</span><span class="si">{</span><span class="n">col_def</span><span class="o">.</span><span class="n">title</span><span class="si">}</span><span class="s2">') requires numeric value, got </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">value</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">"</span>
+            <span class="p">)</span>
+
+        <span class="c1"># Create new data structure with updated cell</span>
+        <span class="n">new_rows</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+        <span class="n">row_list</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">new_rows</span><span class="p">[</span><span class="n">row</span><span class="p">])</span>
+        <span class="n">row_list</span><span class="p">[</span><span class="n">col</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+        <span class="n">new_rows</span><span class="p">[</span><span class="n">row</span><span class="p">]</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">row_list</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">new_rows</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">delete_row</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">row</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Delete a row from the table.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            row: Row index (0-based) to delete.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            IndexError: If row index is out of bounds.</span>
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="n">row</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">row</span> <span class="o">&gt;=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">IndexError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"Row index </span><span class="si">{</span><span class="n">row</span><span class="si">}</span><span class="s2"> out of bounds (table has </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="p">)</span><span class="si">}</span><span class="s2"> rows)"</span>
+            <span class="p">)</span>
+
+        <span class="n">new_rows</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+        <span class="k">del</span> <span class="n">new_rows</span><span class="p">[</span><span class="n">row</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">new_rows</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">on_select_row</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">:</span> <span class="n">TGuiHandle</span><span class="p">,</span> <span class="n">func</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">GuiEvent</span><span class="p">[</span><span class="n">TGuiHandle</span><span class="p">]],</span> <span class="n">NoneOrCoroutine</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">GuiEvent</span><span class="p">[</span><span class="n">TGuiHandle</span><span class="p">]],</span> <span class="n">NoneOrCoroutine</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""Attach a callback for when a user selects a table row.</span>
+
+<span class="sd">        The selected row index is available via `event.target.selected_row`.</span>
+<span class="sd">        When a row is deselected, the value will be -1.</span>
+
+<span class="sd">        Note:</span>
+<span class="sd">            - If `func` is a regular function (defined with `def`), it will be executed in a thread pool.</span>
+<span class="sd">            - If `func` is an async function (defined with `async def`), it will be executed in the event loop.</span>
+
+<span class="sd">        Using async functions can be useful for reducing race conditions.</span>
+
+<span class="sd">        Example:</span>
+<span class="sd">            &gt;&gt;&gt; @table.on_select_row</span>
+<span class="sd">            &gt;&gt;&gt; def handle_selection(event):</span>
+<span class="sd">            &gt;&gt;&gt;     row_idx = event.target.selected_row</span>
+<span class="sd">            &gt;&gt;&gt;     if row_idx &gt;= 0:</span>
+<span class="sd">            &gt;&gt;&gt;         row_data = event.target.value[row_idx]</span>
+<span class="sd">            &gt;&gt;&gt;         print(f"Selected row {row_idx}: {row_data}")</span>
+<span class="sd">        """</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_impl</span><span class="o">.</span><span class="n">update_cb</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">func</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">func</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">selected_row</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Index of currently selected row, or -1 if no row is selected.</span>
+
+<span class="sd">        Only meaningful when selection_mode is 'single'.</span>
+<span class="sd">        """</span>
+        <span class="c1"># This will be stored as an internal property updated by frontend</span>
+        <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_impl</span><span class="p">,</span> <span class="s2">"_selected_row"</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
 
 
 <span class="k">class</span><span class="w"> </span><span class="nc">_TabContainerMixin</span><span class="p">:</span>
@@ -2120,6 +2310,85 @@
             <span class="n">_cascade_remove</span><span class="p">(</span><span class="n">child</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_gui_api</span><span class="o">.</span><span class="n">_container_handle_from_uuid</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_uuid</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_gui_api</span><span class="o">.</span><span class="n">_modal_handle_from_uuid</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_uuid</span><span class="p">)</span>
+
+
+<span class="nd">@dataclasses</span><span class="o">.</span><span class="n">dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">TimelineHandle</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Handle for timeline slider widget.</span>
+
+<span class="sd">    Provides access to timeline state and callbacks for user interactions.</span>
+<span class="sd">    """</span>
+
+    <span class="n">_gui_api</span><span class="p">:</span> <span class="n">GuiApi</span>
+    <span class="n">_value</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">_props</span><span class="p">:</span> <span class="n">TimelineProps</span>
+    <span class="n">_update_callbacks</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Callable</span><span class="p">[[</span><span class="n">GuiEvent</span><span class="p">],</span> <span class="kc">None</span> <span class="o">|</span> <span class="n">Coroutine</span><span class="p">]]</span>
+    <span class="n">_play_callbacks</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Callable</span><span class="p">[[</span><span class="n">GuiEvent</span><span class="p">],</span> <span class="kc">None</span> <span class="o">|</span> <span class="n">Coroutine</span><span class="p">]]</span>
+    <span class="n">_removed</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">value</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Current slider value. Synchronized automatically when assigned."""</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_value</span>
+
+    <span class="nd">@value</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">value</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Update slider value and sync to all clients."""</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_value</span> <span class="o">=</span> <span class="n">value</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_gui_api</span><span class="o">.</span><span class="n">_websock_interface</span><span class="o">.</span><span class="n">queue_message</span><span class="p">(</span>
+            <span class="n">GuiUpdateMessage</span><span class="p">(</span><span class="s2">"__timeline__"</span><span class="p">,</span> <span class="p">{</span><span class="s2">"value"</span><span class="p">:</span> <span class="n">value</span><span class="p">})</span>
+        <span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">visible</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Visibility state. Synchronized automatically when assigned."""</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_props</span><span class="o">.</span><span class="n">visible</span>
+
+    <span class="nd">@visible</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">visible</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">visible</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Update visibility and sync to all clients."""</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_props</span><span class="o">.</span><span class="n">visible</span> <span class="o">=</span> <span class="n">visible</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_gui_api</span><span class="o">.</span><span class="n">_websock_interface</span><span class="o">.</span><span class="n">queue_message</span><span class="p">(</span>
+            <span class="n">GuiUpdateMessage</span><span class="p">(</span><span class="s2">"__timeline__"</span><span class="p">,</span> <span class="p">{</span><span class="s2">"visible"</span><span class="p">:</span> <span class="n">visible</span><span class="p">})</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">on_update</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">func</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">GuiEvent</span><span class="p">],</span> <span class="kc">None</span> <span class="o">|</span> <span class="n">Coroutine</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">GuiEvent</span><span class="p">],</span> <span class="kc">None</span> <span class="o">|</span> <span class="n">Coroutine</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""Attach callback for when slider value changes.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            func: Callback function. Takes GuiEvent with client info.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            The input function (for use as decorator).</span>
+<span class="sd">        """</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_update_callbacks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">func</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">func</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">on_play</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">func</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">GuiEvent</span><span class="p">],</span> <span class="kc">None</span> <span class="o">|</span> <span class="n">Coroutine</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">GuiEvent</span><span class="p">],</span> <span class="kc">None</span> <span class="o">|</span> <span class="n">Coroutine</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""Attach callback for when play button is clicked.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            func: Callback function. Takes GuiEvent with client info.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            The input function (for use as decorator).</span>
+<span class="sd">        """</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_play_callbacks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">func</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">func</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">remove</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Remove timeline from display."""</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_removed</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_removed</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_gui_api</span><span class="o">.</span><span class="n">_websock_interface</span><span class="o">.</span><span class="n">queue_message</span><span class="p">(</span>
+            <span class="n">_messages</span><span class="o">.</span><span class="n">TimelineRemoveMessage</span><span class="p">()</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_gui_api</span><span class="o">.</span><span class="n">_timeline_handle</span> <span class="o">=</span> <span class="kc">None</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_get_data_url</span><span class="p">(</span><span class="n">url</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">image_root</span><span class="p">:</span> <span class="n">Path</span> <span class="o">|</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>

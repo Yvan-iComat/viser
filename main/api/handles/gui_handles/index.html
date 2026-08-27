@@ -990,6 +990,99 @@ a header or border (useful for pure layout grouping).</p>
 </dd></dl>
 
 <dl class="py class">
+<dt class="sig sig-object py" id="viser.GuiFolderSelectButtonHandle">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">viser.</span></span><span class="sig-name descname"><span class="pre">GuiFolderSelectButtonHandle</span></span><a class="reference internal" href="../../../_modules/viser/_gui_handles/#GuiFolderSelectButtonHandle"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#viser.GuiFolderSelectButtonHandle" title="Link to this definition">¶</a></dt>
+<dd><p>Handle for a folder select button in our visualizer.</p>
+<p>The <cite>.value</cite> attribute will be updated with the absolute path of the selected folder.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="viser.GuiFolderSelectButtonHandle.value">
+<span class="sig-name descname"><span class="pre">value</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></em><a class="headerlink" href="#viser.GuiFolderSelectButtonHandle.value" title="Link to this definition">¶</a></dt>
+<dd><p>Value of the input. Contains the absolute path of the selected folder.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="viser.GuiFolderSelectButtonHandle.icon">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">icon</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">IconName</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></em><a class="headerlink" href="#viser.GuiFolderSelectButtonHandle.icon" title="Link to this definition">¶</a></dt>
+<dd><p>Icon to display on the folder select button. When set to None, no icon is displayed.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="viser.GuiFolderSelectButtonHandle.on_select">
+<span class="sig-name descname"><span class="pre">on_select</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">func</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.14)"><span class="pre">Callable</span></a><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="../../advanced/events/#viser.GuiEvent" title="viser._gui_handles.GuiEvent"><span class="pre">GuiEvent</span></a><span class="p"><span class="pre">[</span></span><span class="pre">TGuiHandle</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">NoneOrCoroutine</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.14)"><span class="pre">Callable</span></a><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="../../advanced/events/#viser.GuiEvent" title="viser._gui_handles.GuiEvent"><span class="pre">GuiEvent</span></a><span class="p"><span class="pre">[</span></span><span class="pre">TGuiHandle</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">NoneOrCoroutine</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../../../_modules/viser/_gui_handles/#GuiFolderSelectButtonHandle.on_select"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#viser.GuiFolderSelectButtonHandle.on_select" title="Link to this definition">¶</a></dt>
+<dd><p>Attach a function to call when a folder is selected.</p>
+<p>Note:
+- If <cite>func</cite> is a regular function (defined with <cite>def</cite>), it will be executed in a thread pool.
+- If <cite>func</cite> is an async function (defined with <cite>async def</cite>), it will be executed in the event loop.</p>
+<p>Using async functions can be useful for reducing race conditions.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>self</strong> (<em>TGuiHandle</em>)</p></li>
+<li><p><strong>func</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.14)"><em>Callable</em></a><em>[</em><em>[</em><a class="reference internal" href="../../advanced/events/#viser.GuiEvent" title="viser._gui_handles.GuiEvent"><em>GuiEvent</em></a><em>[</em><em>TGuiHandle</em><em>]</em><em>]</em><em>, </em><em>NoneOrCoroutine</em><em>]</em>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.14)"><em>Callable</em></a>[[<a class="reference internal" href="../../advanced/events/#viser.GuiEvent" title="viser._gui_handles.GuiEvent"><em>GuiEvent</em></a>[<em>TGuiHandle</em>]], <em>NoneOrCoroutine</em>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="viser.GuiFolderSelectButtonHandle.remove">
+<span class="sig-name descname"><span class="pre">remove</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span></span><a class="headerlink" href="#viser.GuiFolderSelectButtonHandle.remove" title="Link to this definition">¶</a></dt>
+<dd><p>Permanently remove this GUI element from the visualizer.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="viser.GuiFolderSelectButtonHandle.update_timestamp">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">update_timestamp</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></em><a class="headerlink" href="#viser.GuiFolderSelectButtonHandle.update_timestamp" title="Link to this definition">¶</a></dt>
+<dd><p>Read-only timestamp when this input was last updated.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="viser.GuiFolderSelectButtonHandle.color">
+<span class="sig-name descname"><span class="pre">color</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">LiteralColor</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></em><a class="headerlink" href="#viser.GuiFolderSelectButtonHandle.color" title="Link to this definition">¶</a></dt>
+<dd><p>Color of the folder select button.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="viser.GuiFolderSelectButtonHandle.order">
+<span class="sig-name descname"><span class="pre">order</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></em><a class="headerlink" href="#viser.GuiFolderSelectButtonHandle.order" title="Link to this definition">¶</a></dt>
+<dd><p>Order value for arranging GUI elements.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="viser.GuiFolderSelectButtonHandle.label">
+<span class="sig-name descname"><span class="pre">label</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></em><a class="headerlink" href="#viser.GuiFolderSelectButtonHandle.label" title="Link to this definition">¶</a></dt>
+<dd><p>Label text for the GUI element.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="viser.GuiFolderSelectButtonHandle.hint">
+<span class="sig-name descname"><span class="pre">hint</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></em><a class="headerlink" href="#viser.GuiFolderSelectButtonHandle.hint" title="Link to this definition">¶</a></dt>
+<dd><p>Optional hint text for the GUI element.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="viser.GuiFolderSelectButtonHandle.visible">
+<span class="sig-name descname"><span class="pre">visible</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></em><a class="headerlink" href="#viser.GuiFolderSelectButtonHandle.visible" title="Link to this definition">¶</a></dt>
+<dd><p>Visibility state of the GUI element.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="viser.GuiFolderSelectButtonHandle.disabled">
+<span class="sig-name descname"><span class="pre">disabled</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></em><a class="headerlink" href="#viser.GuiFolderSelectButtonHandle.disabled" title="Link to this definition">¶</a></dt>
+<dd><p>Disabled state of the GUI element.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
 <dt class="sig sig-object py" id="viser.GuiFormHandle">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">viser.</span></span><span class="sig-name descname"><span class="pre">GuiFormHandle</span></span><a class="reference internal" href="../../../_modules/viser/_gui_handles/#GuiFormHandle"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#viser.GuiFormHandle" title="Link to this definition">¶</a></dt>
 <dd><p>Use as a context to place GUI elements into a form.</p>
@@ -3151,6 +3244,20 @@ errors defaults to ‘strict’.</p>
 <li><a class="reference internal" href="#viser.GuiFolderHandle.label"><code class="docutils literal notranslate"><span class="pre">GuiFolderHandle.label</span></code></a></li>
 <li><a class="reference internal" href="#viser.GuiFolderHandle.visible"><code class="docutils literal notranslate"><span class="pre">GuiFolderHandle.visible</span></code></a></li>
 <li><a class="reference internal" href="#viser.GuiFolderHandle.expand_by_default"><code class="docutils literal notranslate"><span class="pre">GuiFolderHandle.expand_by_default</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#viser.GuiFolderSelectButtonHandle"><code class="docutils literal notranslate"><span class="pre">GuiFolderSelectButtonHandle</span></code></a><ul>
+<li><a class="reference internal" href="#viser.GuiFolderSelectButtonHandle.value"><code class="docutils literal notranslate"><span class="pre">GuiFolderSelectButtonHandle.value</span></code></a></li>
+<li><a class="reference internal" href="#viser.GuiFolderSelectButtonHandle.icon"><code class="docutils literal notranslate"><span class="pre">GuiFolderSelectButtonHandle.icon</span></code></a></li>
+<li><a class="reference internal" href="#viser.GuiFolderSelectButtonHandle.on_select"><code class="docutils literal notranslate"><span class="pre">GuiFolderSelectButtonHandle.on_select()</span></code></a></li>
+<li><a class="reference internal" href="#viser.GuiFolderSelectButtonHandle.remove"><code class="docutils literal notranslate"><span class="pre">GuiFolderSelectButtonHandle.remove()</span></code></a></li>
+<li><a class="reference internal" href="#viser.GuiFolderSelectButtonHandle.update_timestamp"><code class="docutils literal notranslate"><span class="pre">GuiFolderSelectButtonHandle.update_timestamp</span></code></a></li>
+<li><a class="reference internal" href="#viser.GuiFolderSelectButtonHandle.color"><code class="docutils literal notranslate"><span class="pre">GuiFolderSelectButtonHandle.color</span></code></a></li>
+<li><a class="reference internal" href="#viser.GuiFolderSelectButtonHandle.order"><code class="docutils literal notranslate"><span class="pre">GuiFolderSelectButtonHandle.order</span></code></a></li>
+<li><a class="reference internal" href="#viser.GuiFolderSelectButtonHandle.label"><code class="docutils literal notranslate"><span class="pre">GuiFolderSelectButtonHandle.label</span></code></a></li>
+<li><a class="reference internal" href="#viser.GuiFolderSelectButtonHandle.hint"><code class="docutils literal notranslate"><span class="pre">GuiFolderSelectButtonHandle.hint</span></code></a></li>
+<li><a class="reference internal" href="#viser.GuiFolderSelectButtonHandle.visible"><code class="docutils literal notranslate"><span class="pre">GuiFolderSelectButtonHandle.visible</span></code></a></li>
+<li><a class="reference internal" href="#viser.GuiFolderSelectButtonHandle.disabled"><code class="docutils literal notranslate"><span class="pre">GuiFolderSelectButtonHandle.disabled</span></code></a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#viser.GuiFormHandle"><code class="docutils literal notranslate"><span class="pre">GuiFormHandle</span></code></a><ul>

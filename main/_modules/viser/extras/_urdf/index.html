@@ -509,7 +509,7 @@
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">target</span><span class="p">:</span> <span class="n">viser</span><span class="o">.</span><span class="n">ViserServer</span> <span class="o">|</span> <span class="n">viser</span><span class="o">.</span><span class="n">ClientHandle</span><span class="p">,</span>
-        <span class="n">urdf_or_path</span><span class="p">:</span> <span class="n">yourdfpy</span><span class="o">.</span><span class="n">URDF</span> <span class="o">|</span> <span class="n">Path</span><span class="p">,</span>
+        <span class="n">urdf_or_path</span><span class="p">:</span> <span class="n">yourdfpy</span><span class="o">.</span><span class="n">URDF</span> <span class="o">|</span> <span class="n">Path</span> <span class="o">|</span> <span class="nb">str</span><span class="p">,</span>
         <span class="n">scale</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span>
         <span class="n">root_node_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"/"</span><span class="p">,</span>
         <span class="n">mesh_color_override</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span>
@@ -532,16 +532,20 @@
                 <span class="s2">"Install it with `pip install yourdfpy` or `pip install viser[urdf]`."</span>
             <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
 
-        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">urdf_or_path</span><span class="p">,</span> <span class="n">Path</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">urdf_or_path</span><span class="p">,</span> <span class="p">(</span><span class="n">Path</span><span class="p">,</span> <span class="nb">str</span><span class="p">)):</span>
+            <span class="c1"># Convert string path to Path object for consistent handling</span>
+            <span class="n">path_obj</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="n">Path</span><span class="p">(</span><span class="n">urdf_or_path</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">urdf_or_path</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="n">urdf_or_path</span>
+            <span class="p">)</span>
             <span class="n">urdf</span> <span class="o">=</span> <span class="n">yourdfpy</span><span class="o">.</span><span class="n">URDF</span><span class="o">.</span><span class="n">load</span><span class="p">(</span>
-                <span class="n">urdf_or_path</span><span class="p">,</span>
+                <span class="n">path_obj</span><span class="p">,</span>
                 <span class="n">build_scene_graph</span><span class="o">=</span><span class="n">load_meshes</span><span class="p">,</span>
                 <span class="n">build_collision_scene_graph</span><span class="o">=</span><span class="n">load_collision_meshes</span><span class="p">,</span>
                 <span class="n">load_meshes</span><span class="o">=</span><span class="n">load_meshes</span><span class="p">,</span>
                 <span class="n">load_collision_meshes</span><span class="o">=</span><span class="n">load_collision_meshes</span><span class="p">,</span>
                 <span class="n">filename_handler</span><span class="o">=</span><span class="n">partial</span><span class="p">(</span>
                     <span class="n">yourdfpy</span><span class="o">.</span><span class="n">filename_handler_magic</span><span class="p">,</span>
-                    <span class="nb">dir</span><span class="o">=</span><span class="n">urdf_or_path</span><span class="o">.</span><span class="n">parent</span><span class="p">,</span>
+                    <span class="nb">dir</span><span class="o">=</span><span class="n">path_obj</span><span class="o">.</span><span class="n">parent</span><span class="p">,</span>
                 <span class="p">),</span>
             <span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
@@ -699,6 +703,32 @@
         <span class="c1"># Add coordinate frame for each joint.</span>
         <span class="k">for</span> <span class="n">joint</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_urdf</span><span class="o">.</span><span class="n">joint_map</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
             <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">joint</span><span class="p">,</span> <span class="n">yourdfpy</span><span class="o">.</span><span class="n">Joint</span><span class="p">)</span>
+
+            <span class="c1"># # Extract position from origin matrix</span>
+            <span class="c1"># if isinstance(joint.origin, np.ndarray) and joint.origin.shape == (4, 4):</span>
+            <span class="c1">#     position = tuple(joint.origin[:3, 3])</span>
+            <span class="c1"># else:</span>
+            <span class="c1">#     position = (</span>
+            <span class="c1">#         joint.origin[0][3],</span>
+            <span class="c1">#         joint.origin[1][3],</span>
+            <span class="c1">#         joint.origin[2][3],</span>
+            <span class="c1">#     )</span>
+
+            <span class="c1"># # Build hierarchical frame name</span>
+            <span class="c1"># frame_name = _viser_name_from_frame(</span>
+            <span class="c1">#     scene,</span>
+            <span class="c1">#     joint.child,</span>
+            <span class="c1">#     prefixed_root_node_name,</span>
+            <span class="c1"># )</span>
+
+            <span class="c1"># self._joint_frames.append(</span>
+            <span class="c1">#     self._target.scene.add_frame(</span>
+            <span class="c1">#         frame_name,</span>
+            <span class="c1">#         show_axes=True,</span>
+            <span class="c1">#         position=position</span>
+            <span class="c1">#     )</span>
+            <span class="c1"># )</span>
+
             <span class="bp">self</span><span class="o">.</span><span class="n">_joint_frames</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_target</span><span class="o">.</span><span class="n">scene</span><span class="o">.</span><span class="n">add_frame</span><span class="p">(</span>
                     <span class="n">_viser_name_from_frame</span><span class="p">(</span>
@@ -710,7 +740,24 @@
                 <span class="p">)</span>
             <span class="p">)</span>
 
+        <span class="c1"># list of 10 colors</span>
+        <span class="n">colors</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="p">(</span><span class="mf">0.9</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">),</span>
+            <span class="p">(</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.9</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">),</span>
+            <span class="p">(</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.9</span><span class="p">),</span>
+            <span class="p">(</span><span class="mf">0.9</span><span class="p">,</span> <span class="mf">0.9</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">),</span>
+            <span class="p">(</span><span class="mf">0.9</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.9</span><span class="p">),</span>
+            <span class="p">(</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.9</span><span class="p">,</span> <span class="mf">0.9</span><span class="p">),</span>
+            <span class="p">(</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">),</span>
+            <span class="p">(</span><span class="mf">0.9</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">),</span>
+            <span class="p">(</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.9</span><span class="p">),</span>
+            <span class="p">(</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.9</span><span class="p">),</span>
+        <span class="p">]</span>
+
         <span class="c1"># Add the URDF's meshes/geometry to viser.</span>
+        <span class="n">index_mesh</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">smooth_shading</span> <span class="o">=</span> <span class="kc">False</span>
+
         <span class="k">for</span> <span class="n">link_name</span><span class="p">,</span> <span class="n">mesh</span> <span class="ow">in</span> <span class="n">scene</span><span class="o">.</span><span class="n">geometry</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
             <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">mesh</span><span class="p">,</span> <span class="n">trimesh</span><span class="o">.</span><span class="n">Trimesh</span><span class="p">)</span>
             <span class="n">T_parent_child</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_urdf</span><span class="o">.</span><span class="n">get_transform</span><span class="p">(</span>
@@ -729,8 +776,19 @@
             <span class="n">mesh</span><span class="o">.</span><span class="n">apply_scale</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_scale</span><span class="p">)</span>
             <span class="n">mesh</span><span class="o">.</span><span class="n">apply_transform</span><span class="p">(</span><span class="n">T_parent_child</span><span class="p">)</span>
 
+            <span class="c1"># Merge duplicate vertices before exporting for smooth shading</span>
+            <span class="n">mesh</span><span class="o">.</span><span class="n">merge_vertices</span><span class="p">()</span>
+
+            <span class="c1"># apply a color from a list (cycle through colors if more than 10 meshes)</span>
+            <span class="n">mesh</span><span class="o">.</span><span class="n">visual</span><span class="o">.</span><span class="n">vertex_colors</span> <span class="o">=</span> <span class="n">colors</span><span class="p">[</span><span class="n">index_mesh</span> <span class="o">%</span> <span class="nb">len</span><span class="p">(</span><span class="n">colors</span><span class="p">)]</span>
+            <span class="n">index_mesh</span> <span class="o">+=</span> <span class="mi">1</span>
+
             <span class="k">if</span> <span class="n">mesh_color_override</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_meshes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_target</span><span class="o">.</span><span class="n">scene</span><span class="o">.</span><span class="n">add_mesh_trimesh</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">mesh</span><span class="p">))</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_meshes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_target</span><span class="o">.</span><span class="n">scene</span><span class="o">.</span><span class="n">add_mesh_trimesh</span><span class="p">(</span>
+                        <span class="n">name</span><span class="p">,</span> <span class="n">mesh</span><span class="p">,</span> <span class="n">smooth_shading</span><span class="o">=</span><span class="n">smooth_shading</span>
+                    <span class="p">)</span>
+                <span class="p">)</span>
             <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">mesh_color_override</span><span class="p">)</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_meshes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">_target</span><span class="o">.</span><span class="n">scene</span><span class="o">.</span><span class="n">add_mesh_simple</span><span class="p">(</span>
@@ -738,6 +796,7 @@
                         <span class="n">mesh</span><span class="o">.</span><span class="n">vertices</span><span class="p">,</span>
                         <span class="n">mesh</span><span class="o">.</span><span class="n">faces</span><span class="p">,</span>
                         <span class="n">color</span><span class="o">=</span><span class="n">mesh_color_override</span><span class="p">,</span>
+                        <span class="n">smooth_shading</span><span class="o">=</span><span class="n">smooth_shading</span><span class="p">,</span>
                     <span class="p">)</span>
                 <span class="p">)</span>
             <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">mesh_color_override</span><span class="p">)</span> <span class="o">==</span> <span class="mi">4</span><span class="p">:</span>
@@ -748,10 +807,23 @@
                         <span class="n">mesh</span><span class="o">.</span><span class="n">faces</span><span class="p">,</span>
                         <span class="n">color</span><span class="o">=</span><span class="n">mesh_color_override</span><span class="p">[:</span><span class="mi">3</span><span class="p">],</span>
                         <span class="n">opacity</span><span class="o">=</span><span class="n">mesh_color_override</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span>
+                        <span class="n">smooth_shading</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                     <span class="p">)</span>
                 <span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">assert_never</span><span class="p">(</span><span class="n">mesh_color_override</span><span class="p">)</span>
+
+            <span class="c1"># Yvan test debug: extract feature edges, and create a polyline mesh to overlay</span>
+            <span class="n">feature_edges</span><span class="p">,</span> <span class="n">edge_coords</span> <span class="o">=</span> <span class="n">extract_feature_edges</span><span class="p">(</span><span class="n">mesh</span><span class="p">)</span>
+
+            <span class="c1"># Use edge_coords for line segments, with a default color and line width</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_target</span><span class="o">.</span><span class="n">scene</span><span class="o">.</span><span class="n">add_line_segments</span><span class="p">(</span>
+                <span class="n">name</span> <span class="o">+</span> <span class="s2">"/feature_edges"</span><span class="p">,</span>
+                <span class="n">points</span><span class="o">=</span><span class="n">edge_coords</span><span class="p">,</span>
+                <span class="n">colors</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">]),</span>  <span class="c1"># black lines</span>
+                <span class="n">line_width</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
+            <span class="p">)</span>
+
         <span class="k">return</span> <span class="n">root_frame</span></div>
 
 
@@ -788,6 +860,57 @@
     <span class="k">if</span> <span class="n">root_node_name</span> <span class="o">!=</span> <span class="s2">"/"</span><span class="p">:</span>
         <span class="n">frames</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">root_node_name</span><span class="p">)</span>
     <span class="k">return</span> <span class="s2">"/"</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">frames</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">calculate_dihedral_angles</span><span class="p">(</span><span class="n">mesh</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Manually calculate dihedral angles between adjacent faces</span>
+<span class="sd">    """</span>
+    <span class="n">face_adjacency</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">face_adjacency</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">face_adjacency</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])</span>
+
+    <span class="c1"># Get face normals</span>
+    <span class="n">face_normals</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">face_normals</span>
+
+    <span class="c1"># Calculate angles between adjacent face normals</span>
+    <span class="n">face_pairs</span> <span class="o">=</span> <span class="n">face_adjacency</span>
+    <span class="n">normal_pairs</span> <span class="o">=</span> <span class="n">face_normals</span><span class="p">[</span><span class="n">face_pairs</span><span class="p">]</span>
+
+    <span class="c1"># Dot product between normal vectors</span>
+    <span class="n">dot_products</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">normal_pairs</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="n">normal_pairs</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="c1"># Clamp to avoid numerical errors</span>
+    <span class="n">dot_products</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="n">dot_products</span><span class="p">,</span> <span class="o">-</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)</span>
+
+    <span class="c1"># Calculate dihedral angles</span>
+    <span class="n">dihedral_angles</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arccos</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">dot_products</span><span class="p">))</span>
+
+    <span class="k">return</span> <span class="n">dihedral_angles</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">extract_feature_edges</span><span class="p">(</span><span class="n">mesh</span><span class="p">,</span> <span class="n">angle_tolerance_deg</span><span class="o">=</span><span class="mi">30</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Extract feature edges using manual angle calculation</span>
+<span class="sd">    """</span>
+    <span class="c1"># Calculate dihedral angles</span>
+    <span class="n">dihedral_angles</span> <span class="o">=</span> <span class="n">calculate_dihedral_angles</span><span class="p">(</span><span class="n">mesh</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">dihedral_angles</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([]),</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])</span>
+
+    <span class="c1"># Convert tolerance</span>
+    <span class="n">angle_threshold</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="n">angle_tolerance_deg</span><span class="p">)</span>
+
+    <span class="c1"># Find sharp edges</span>
+    <span class="n">feature_mask</span> <span class="o">=</span> <span class="n">dihedral_angles</span> <span class="o">&gt;</span> <span class="n">angle_threshold</span>
+
+    <span class="c1"># Get edge coordinates</span>
+    <span class="n">feature_edges</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">face_adjacency_edges</span><span class="p">[</span><span class="n">feature_mask</span><span class="p">]</span>
+    <span class="n">edge_coords</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">vertices</span><span class="p">[</span><span class="n">feature_edges</span><span class="p">]</span>
+
+    <span class="k">return</span> <span class="n">feature_edges</span><span class="p">,</span> <span class="n">edge_coords</span>
 </pre></div>
         </article>
       </div>
