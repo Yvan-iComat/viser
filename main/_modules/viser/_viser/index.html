@@ -1180,7 +1180,7 @@
         <span class="c1"># Private attributes.</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_websock_connection</span> <span class="o">=</span> <span class="n">conn</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_viser_server</span> <span class="o">=</span> <span class="n">server</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_toolbar_action_callbacks</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Callable</span><span class="p">[[</span><span class="nb">str</span><span class="p">],</span> <span class="n">NoneOrCoroutine</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_toolbar_action_callbacks</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Callable</span><span class="p">[[</span><span class="nb">str</span><span class="p">],</span> <span class="kc">None</span> <span class="o">|</span> <span class="n">Coroutine</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[]</span>
 
         <span class="c1"># Public attributes.</span>
         <span class="c1"># client_id is assigned BEFORE the scene/gui APIs: SceneApi.__init__</span>
@@ -1484,8 +1484,8 @@
             <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
         <span class="p">)</span>
 
-        <span class="c1"># Send message to all clients</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_websock_server</span><span class="o">.</span><span class="n">queue_message</span><span class="p">(</span>
+        <span class="c1"># Send message to this client.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_websock_connection</span><span class="o">.</span><span class="n">queue_message</span><span class="p">(</span>
             <span class="n">_messages</span><span class="o">.</span><span class="n">TimelineMessage</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="n">initial_value</span><span class="p">,</span> <span class="n">props</span><span class="o">=</span><span class="n">props</span><span class="p">)</span>
         <span class="p">)</span>
 

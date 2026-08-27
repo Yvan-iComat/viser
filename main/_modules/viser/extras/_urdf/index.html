@@ -638,8 +638,14 @@
 
 <div class="viewcode-block" id="ViserUrdf.update_cfg">
 <a class="viewcode-back" href="../../../../api/auxiliary/extras/#viser.extras.ViserUrdf.update_cfg">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">update_cfg</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">configuration</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">"""Update the joint angles of the visualized URDF."""</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">update_cfg</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">configuration</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">|</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Update the joint angles of the visualized URDF.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            configuration: Joint positions, either as an array ordered like</span>
+<span class="sd">                :attr:`get_actuated_joint_names`, or as a mapping from joint</span>
+<span class="sd">                name to position.</span>
+<span class="sd">        """</span>
         <span class="kn">import</span><span class="w"> </span><span class="nn">yourdfpy</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_urdf</span><span class="o">.</span><span class="n">update_cfg</span><span class="p">(</span><span class="n">configuration</span><span class="p">)</span>
@@ -780,7 +786,8 @@
             <span class="n">mesh</span><span class="o">.</span><span class="n">merge_vertices</span><span class="p">()</span>
 
             <span class="c1"># apply a color from a list (cycle through colors if more than 10 meshes)</span>
-            <span class="n">mesh</span><span class="o">.</span><span class="n">visual</span><span class="o">.</span><span class="n">vertex_colors</span> <span class="o">=</span> <span class="n">colors</span><span class="p">[</span><span class="n">index_mesh</span> <span class="o">%</span> <span class="nb">len</span><span class="p">(</span><span class="n">colors</span><span class="p">)]</span>
+            <span class="k">if</span> <span class="n">mesh</span><span class="o">.</span><span class="n">visual</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">mesh</span><span class="o">.</span><span class="n">visual</span><span class="o">.</span><span class="n">vertex_colors</span> <span class="o">=</span> <span class="n">colors</span><span class="p">[</span><span class="n">index_mesh</span> <span class="o">%</span> <span class="nb">len</span><span class="p">(</span><span class="n">colors</span><span class="p">)]</span>
             <span class="n">index_mesh</span> <span class="o">+=</span> <span class="mi">1</span>
 
             <span class="k">if</span> <span class="n">mesh_color_override</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -821,7 +828,8 @@
                 <span class="n">name</span> <span class="o">+</span> <span class="s2">"/feature_edges"</span><span class="p">,</span>
                 <span class="n">points</span><span class="o">=</span><span class="n">edge_coords</span><span class="p">,</span>
                 <span class="n">colors</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">]),</span>  <span class="c1"># black lines</span>
-                <span class="n">line_width</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
+                <span class="n">thickness</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
+                <span class="n">thickness_units</span><span class="o">=</span><span class="s2">"screen"</span><span class="p">,</span>
             <span class="p">)</span>
 
         <span class="k">return</span> <span class="n">root_frame</span></div>
