@@ -23,7 +23,7 @@ function formatTime(seconds: number): string {
   const hrs = Math.floor(seconds / 3600);
   const mins = Math.floor((seconds % 3600) / 60);
   const secs = Math.floor(seconds % 60);
-  return `${hrs}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  return `${hrs}:${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
 }
 
 /** Inner component that renders the actual timeline UI */
@@ -101,7 +101,7 @@ function TimelineSliderInner({ value, props }: TimelineMessage) {
         {/* Elapsed Time */}
         <Text
           size="sm"
-          style={{ 
+          style={{
             fontVariantNumeric: "tabular-nums",
             minWidth: "4.5rem",
             textAlign: "right",
@@ -124,14 +124,14 @@ function TimelineSliderInner({ value, props }: TimelineMessage) {
           onChange={updateValue}
           marks={[]}
           styles={{
-            markLabel: { display: 'none' }
+            markLabel: { display: "none" },
           }}
         />
 
         {/* Remaining Time */}
         <Text
           size="sm"
-          style={{ 
+          style={{
             fontVariantNumeric: "tabular-nums",
             minWidth: "4.5rem",
             textAlign: "left",

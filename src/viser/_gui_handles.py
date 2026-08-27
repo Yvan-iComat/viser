@@ -75,6 +75,7 @@ from ._messages import (
     RemoveCommandMessage,
     SplitPlacement,
     TimelineProps,
+    TimelineRemoveMessage,
 )
 from ._scene_api import _encode_image_binary
 from ._threadpool_exceptions import print_task_error
@@ -1844,9 +1845,7 @@ class TimelineHandle:
         if self._removed:
             return
         self._removed = True
-        self._gui_api._websock_interface.queue_message(
-            _messages.TimelineRemoveMessage()
-        )
+        self._gui_api._websock_interface.queue_message(TimelineRemoveMessage())
         self._gui_api._timeline_handle = None
 
 

@@ -204,8 +204,14 @@ class ViserUrdf:
         for mesh in self._meshes:
             mesh.remove()
 
-    def update_cfg(self, configuration: np.ndarray) -> None:
-        """Update the joint angles of the visualized URDF."""
+    def update_cfg(self, configuration: np.ndarray | dict[str, float]) -> None:
+        """Update the joint angles of the visualized URDF.
+
+        Args:
+            configuration: Joint positions, either as an array ordered like
+                :attr:`get_actuated_joint_names`, or as a mapping from joint
+                name to position.
+        """
         import yourdfpy
 
         self._urdf.update_cfg(configuration)
@@ -339,7 +345,8 @@ class ViserUrdf:
             mesh.merge_vertices()
 
             # apply a color from a list (cycle through colors if more than 10 meshes)
-            mesh.visual.vertex_colors = colors[index_mesh % len(colors)]
+            if mesh.visual is not None:
+                mesh.visual.vertex_colors = colors[index_mesh % len(colors)]
             index_mesh += 1
 
             if mesh_color_override is None:
@@ -380,7 +387,8 @@ class ViserUrdf:
                 name + "/feature_edges",
                 points=edge_coords,
                 colors=np.array([0.0, 0.0, 0.0]),  # black lines
-                line_width=1.0,
+                thickness=1.0,
+                thickness_units="screen",
             )
 
         return root_frame

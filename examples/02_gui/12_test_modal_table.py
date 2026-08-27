@@ -21,19 +21,21 @@ def main():
         def _(_) -> None:
             # Create modal with medium size (default)
             modal_size = "xl"
-            with client.gui.add_modal(f"Data Table - {modal_size.upper()}", size=modal_size) as modal:
+            with client.gui.add_modal(
+                f"Data Table - {modal_size.upper()}", size=modal_size
+            ) as modal:
                 client.gui.add_markdown("**Sample Data Table with 6 Columns**")
 
                 # Create table with 6 columns
-                _ = client.gui.add_table_data(
+                client.gui.add_table_data(
                     "Sample Data",
                     columns=[
-                        ("ID", "number", False),           # Column 1: Read-only ID
-                        ("Name", "string", True),          # Column 2: Editable name
-                        ("Category", "string", True),      # Column 3: Editable category
-                        ("Value", "number", True),         # Column 4: Editable value
-                        ("Status", "string", True),        # Column 5: Editable status
-                        ("Notes", "string", True),         # Column 6: Editable notes
+                        ("ID", "number", False),  # Column 1: Read-only ID
+                        ("Name", "string", True),  # Column 2: Editable name
+                        ("Category", "string", True),  # Column 3: Editable category
+                        ("Value", "number", True),  # Column 4: Editable value
+                        ("Status", "string", True),  # Column 5: Editable status
+                        ("Notes", "string", True),  # Column 6: Editable notes
                     ],
                     initial_rows=[
                         (1, "Item Alpha", "Type A", 125.50, "Active", "First entry"),

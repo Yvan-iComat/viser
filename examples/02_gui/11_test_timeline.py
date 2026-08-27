@@ -1,4 +1,5 @@
 """Test script for timeline widget functionality."""
+
 import time
 
 import viser
@@ -13,18 +14,21 @@ timeline = server.add_timeline(
     max=100.0,
     step=1.0,
     initial_value=0.0,
-    marks=[(0.0, "Start"), (50.0, "Middle"), (100.0, "End")],
+    marks=((0.0, "Start"), (50.0, "Middle"), (100.0, "End")),
 )
+
 
 # Add callback for value updates
 @timeline.on_update
 def on_timeline_update(event):
     print(f"Timeline value updated: {timeline.value}")
 
+
 # Add callback for play button
 @timeline.on_play
 def on_play_button(event):
     print("Play button clicked!")
+
 
 # Test visibility toggle
 print("\nWaiting 5 seconds...")

@@ -34,7 +34,10 @@ export const BatchedGlbAsset = React.forwardRef<
     ).length > 0;
 
   // Note: We don't support animations for batched meshes.
-  const { gltf } = useGlbLoader(message.props.glb_data, message.props.smooth_shading);
+  const { gltf } = useGlbLoader(
+    message.props.glb_data,
+    message.props.smooth_shading,
+  );
 
   // Extract geometry and materials from the GLB.
   const { geometry, material } = useMemo(() => {

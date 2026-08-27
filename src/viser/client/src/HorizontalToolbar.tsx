@@ -1,4 +1,10 @@
-import { ActionIcon, Group, Paper, Tooltip, useMantineColorScheme } from "@mantine/core";
+import {
+  ActionIcon,
+  Group,
+  Paper,
+  Tooltip,
+  useMantineColorScheme,
+} from "@mantine/core";
 import * as TablerIcons from "@tabler/icons-react";
 import { useContext } from "react";
 import { ViewerContext } from "./ViewerContext";
@@ -48,9 +54,10 @@ export function HorizontalToolbar() {
   ];
 
   // Use provided buttons, or defaults if none specified
-  const buttons = (toolbarConfig?.buttons && toolbarConfig.buttons.length > 0)
-    ? toolbarConfig.buttons
-    : defaultButtons;
+  const buttons =
+    toolbarConfig?.buttons && toolbarConfig.buttons.length > 0
+      ? toolbarConfig.buttons
+      : defaultButtons;
 
   const handleAction = (action: string) => {
     const cameraControls = viewer.mutable.current.cameraControl;

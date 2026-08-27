@@ -34,7 +34,10 @@ export default function TableDataComponent({
         ? row.map((cell, j) => (j === colIdx ? newValue : cell))
         : row,
     );
-    setValue(uuid, newData.map((row) => [...row]));
+    setValue(
+      uuid,
+      newData.map((row) => [...row]),
+    );
   };
 
   const finishEditing = () => {
@@ -44,7 +47,11 @@ export default function TableDataComponent({
     setEditingCell(null);
   };
 
-  const startEditing = (rowIdx: number, colIdx: number, initialValue: CellValue) => {
+  const startEditing = (
+    rowIdx: number,
+    colIdx: number,
+    initialValue: CellValue,
+  ) => {
     setEditingCell({ row: rowIdx, col: colIdx });
     setEditValue(initialValue);
   };

@@ -18,6 +18,7 @@ Requires yourdfpy and robot_descriptions. Any URDF supported by yourdfpy should 
 from __future__ import annotations
 
 import time
+from pathlib import Path
 from typing import Literal
 
 import numpy as np
@@ -26,7 +27,6 @@ import tyro
 import viser
 from viser.extras import ViserUrdf
 
-from pathlib import Path
 
 def create_robot_control_sliders(
     server: viser.ViserServer, viser_urdf: ViserUrdf
@@ -60,35 +60,36 @@ def create_robot_control_sliders(
 
 
 def apply_joint_sequence(
-    viser_urdf: ViserUrdf, 
-    slider_handles: list[viser.GuiInputHandle[float]], 
-    sequence: list[tuple[dict[str, float], float]]
+    viser_urdf: ViserUrdf,
+    slider_handles: list[viser.GuiInputHandle[float]],
+    sequence: list[tuple[dict[str, float], float]],
 ) -> None:
     """Apply a sequence of joint configurations with time durations."""
     import threading
-    
+
     def _apply_sequence():
         for joint_values, duration in sequence:
             # Update the URDF model configuration
-            viser_urdf.update_cfg(joint_values)            
-         
+            viser_urdf.update_cfg(joint_values)
+
             # Update the sliders to match the applied values
             # for slider in slider_handles:
             #     if slider.gui_api.label in joint_values:
             #         slider.value = joint_values[slider.gui_api.label]
-            
+
             # Update the visual representation
             # joint_positions = []
             # for slider in slider_handles:
             #     joint_positions.append( slider.gui_api.labe.value)
             # viser_urdf.update_cfg(np.array(joint_positions))
-            
+
             # Wait for the specified duration
             time.sleep(duration)
-    
+
     # Run in a separate thread to avoid blocking
     thread = threading.Thread(target=_apply_sequence)
     thread.start()
+
 
 def main(
     robot_type: Literal[
@@ -110,7 +111,7 @@ def main(
     # Start viser server.
     server = viser.ViserServer()
 
-    up_dir=(0.0, 1.0, 0.0)
+    up_dir = (0.0, 1.0, 0.0)
     server.scene.set_up_direction(up_dir)
 
     # Load URDF.
@@ -126,7 +127,7 @@ def main(
 
     # get folder from script file location
     script_folder = Path(__file__).parent
-    file_path = script_folder / "winder_urdf" /"winder_robot.urdf"
+    file_path = script_folder / "winder_urdf" / "winder_robot.urdf"
     urdf = Path(file_path)
 
     viser_urdf = ViserUrdf(
@@ -134,7 +135,7 @@ def main(
         scale=1e-03,
         urdf_or_path=urdf,
         load_meshes=load_meshes,
-        load_collision_meshes=load_collision_meshes        
+        load_collision_meshes=load_collision_meshes,
     )
 
     # Create sliders in GUI that help us move the robot joints.
@@ -169,12 +170,7 @@ def main(
     viser_urdf.update_cfg(np.array(initial_config))
 
     # Create grid.
-    server.scene.add_grid(
-        "/grid",
-        width=5,
-        height=5,
-        plane='xz'
-    )
+    server.scene.add_grid("/grid", width=5, height=5, plane="xz")
 
     # Create joint reset button.
     reset_button = server.gui.add_button("Reset")
@@ -186,14 +182,32 @@ def main(
 
     # Create apply sequence button.
     apply_sequence_button = server.gui.add_button("Apply Joint Sequence")
-    
+
     @apply_sequence_button.on_click
     def _(_):
         # Dummy list of joint configurations with time durations
         dummy_sequence = [
-            ({joint_name: 1000.0 for joint_name in viser_urdf.get_actuated_joint_limits().keys()}, 2.0),
-            ({joint_name: -300. for joint_name in viser_urdf.get_actuated_joint_limits().keys()}, 1.5),
-            ({joint_name: 300.0 for joint_name in viser_urdf.get_actuated_joint_limits().keys()}, 1.0),
+            (
+                {
+                    joint_name: 1000.0
+                    for joint_name in viser_urdf.get_actuated_joint_limits().keys()
+                },
+                2.0,
+            ),
+            (
+                {
+                    joint_name: -300.0
+                    for joint_name in viser_urdf.get_actuated_joint_limits().keys()
+                },
+                1.5,
+            ),
+            (
+                {
+                    joint_name: 300.0
+                    for joint_name in viser_urdf.get_actuated_joint_limits().keys()
+                },
+                1.0,
+            ),
         ]
         apply_joint_sequence(viser_urdf, slider_handles, dummy_sequence)
 

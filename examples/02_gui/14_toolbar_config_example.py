@@ -113,6 +113,7 @@ def main():
         @client.on_toolbar_action
         def handle_toolbar_action(action: str) -> None:
             """Handle both default and custom toolbar button clicks."""
+            nonlocal grid_visible
             print(f"Toolbar action received from {client.client_id}: {action}")
 
             # Handle default toolbar actions
@@ -123,7 +124,9 @@ def main():
 
             elif action == "snapshot":
                 # Simple snapshot: just print camera position
-                print(f"Camera: pos={client.camera.position}, look_at={client.camera.look_at}")
+                print(
+                    f"Camera: pos={client.camera.position}, look_at={client.camera.look_at}"
+                )
 
             # Handle custom toolbar actions
             elif action == "save_scene":
@@ -149,7 +152,7 @@ def main():
                 if grid_visible:
                     server.scene.add_grid("ground", width=10, height=10, cell_size=1.0)
                 else:
-                    server.scene.remove_node("ground")
+                    server.scene.remove_by_name("ground")
                 client.add_notification(
                     title="Grid Toggled",
                     body=f"Grid {'visible' if grid_visible else 'hidden'}",
@@ -161,8 +164,8 @@ def main():
                 # Remove all boxes
                 for i in range(1, 4):
                     try:
-                        server.scene.remove_node(f"box{i}")
-                    except:
+                        server.scene.remove_by_name(f"box{i}")
+                    except KeyError:
                         pass
                 # Re-add boxes at default positions
                 server.scene.add_box(

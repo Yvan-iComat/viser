@@ -416,7 +416,7 @@ class GuiApi:
                 event = GuiEvent(
                     client_id=client_id,
                     client=client,
-                    target=timeline,
+                    target=timeline,  # type: ignore[arg-type]
                 )
                 for cb in timeline._update_callbacks:
                     if asyncio.iscoroutinefunction(cb):
@@ -431,7 +431,7 @@ class GuiApi:
                 event = GuiEvent(
                     client_id=client_id,
                     client=client,
-                    target=timeline,
+                    target=timeline,  # type: ignore[arg-type]
                 )
                 for cb in timeline._play_callbacks:
                     if asyncio.iscoroutinefunction(cb):
@@ -2347,7 +2347,7 @@ class GuiApi:
                     container_uuid=self._get_container_uuid(),
                     props=_messages.GuiTableDataProps(
                         order=order,
-                        label=label,
+                        label=label if label is not None else "",
                         hint=hint,
                         columns=tuple(parsed_columns),
                         selection_mode=selection_mode,

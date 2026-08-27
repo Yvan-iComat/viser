@@ -9,7 +9,7 @@ import time
 import viser
 
 server = viser.ViserServer()
-server.gui.configure_theme(dark_mode=False,control_width="large")
+server.gui.configure_theme(dark_mode=False, control_width="large")
 
 
 # Create a table with typed columns
@@ -96,26 +96,24 @@ def _(_):
 def _(_):
     """Show a modal window with a large table."""
     modal = server.gui.add_modal("Large Data Table", size="100%")
-    
+
     with modal:
-        large_table = server.gui.add_table_data(
+        server.gui.add_table_data(
             label=None,
-            columns=[
-                f"Column {i+1}" for i in range(10)
-            ],
+            columns=[f"Column {i + 1}" for i in range(10)],
             initial_rows=[
-                tuple(f"Cell {row+1},{col+1}" for col in range(10))
+                tuple(f"Cell {row + 1},{col + 1}" for col in range(10))
                 for row in range(5)
             ],
             hint="This is a large table with 10 columns and 5 rows",
         )
-        
+
         close_button = server.gui.add_button("Close")
-        
+
         @close_button.on_click
         def _(_):
             modal.close()
-    
+
     print("Modal with large table opened")
 
 

@@ -10,8 +10,6 @@ of the main 3D viewer window. The default toolbar contains these action buttons:
 
 import time
 
-import numpy as np
-
 import viser
 
 
@@ -63,7 +61,8 @@ def main():
                 # server is still notified so custom logic can hook in here.
                 client.add_notification(
                     title="Zoom In" if action == "zoom_in" else "Zoom Out",
-                    body="Camera dollied " + ("closer" if action == "zoom_in" else "farther"),
+                    body="Camera dollied "
+                    + ("closer" if action == "zoom_in" else "farther"),
                     auto_close_seconds=2.0,
                 )
 

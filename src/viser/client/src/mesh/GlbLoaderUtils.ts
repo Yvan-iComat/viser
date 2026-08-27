@@ -31,7 +31,10 @@ export function disposeNode(node: any) {
 /**
  * Custom hook for loading a GLB model.
  */
-export function useGlbLoader(glb_data: Uint8Array, smoothShading: boolean = true) {
+export function useGlbLoader(
+  glb_data: Uint8Array,
+  smoothShading: boolean = true,
+) {
   // State for loaded model and meshes, tagged by the exact input object they
   // were parsed from. On a `glb_data` change, render must stop returning the
   // previous scene immediately: the old load's cleanup can dispose it before

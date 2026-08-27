@@ -727,7 +727,7 @@ class ClientHandle(DeprecatedAttributeShim if not TYPE_CHECKING else object):
         # Private attributes.
         self._websock_connection = conn
         self._viser_server = server
-        self._toolbar_action_callbacks: list[Callable[[str], NoneOrCoroutine]] = []
+        self._toolbar_action_callbacks: list[Callable[[str], None | Coroutine]] = []
 
         # Public attributes.
         # client_id is assigned BEFORE the scene/gui APIs: SceneApi.__init__
@@ -1014,8 +1014,8 @@ class ClientHandle(DeprecatedAttributeShim if not TYPE_CHECKING else object):
             else None,
         )
 
-        # Send message to all clients
-        self._websock_server.queue_message(
+        # Send message to this client.
+        self._websock_connection.queue_message(
             _messages.TimelineMessage(value=initial_value, props=props)
         )
 

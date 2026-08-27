@@ -16,14 +16,14 @@ export default function FolderSelectButtonComponent({
   const folderSelectRef = React.useRef<HTMLInputElement>(null);
 
   // Check if File System Access API is available (modern browsers)
-  const supportsFileSystemAccess = 'showDirectoryPicker' in window;
+  const supportsFileSystemAccess = "showDirectoryPicker" in window;
 
   const handleModernFolderSelect = async () => {
     try {
       // Use File System Access API for absolute path support
       // @ts-ignore - showDirectoryPicker is not in TypeScript definitions yet
       const dirHandle = await window.showDirectoryPicker({
-        mode: 'read',
+        mode: "read",
       });
 
       // Get the full path if available
@@ -31,15 +31,15 @@ export default function FolderSelectButtonComponent({
       let fullPath = dirHandle.name;
 
       // Try to get the full path using the experimental API
-      if ('resolve' in dirHandle) {
+      if ("resolve" in dirHandle) {
         try {
           // @ts-ignore
           const pathSegments = await dirHandle.resolve(dirHandle);
           if (pathSegments) {
-            fullPath = '/' + pathSegments.join('/');
+            fullPath = "/" + pathSegments.join("/");
           }
         } catch (err) {
-          console.warn('Could not resolve full path:', err);
+          console.warn("Could not resolve full path:", err);
         }
       }
 
@@ -49,11 +49,10 @@ export default function FolderSelectButtonComponent({
         source_component_uuid: uuid,
         folder_path: fullPath,
       });
-
     } catch (err: any) {
       // User cancelled or error occurred
-      if (err.name !== 'AbortError') {
-        console.error('Error selecting folder:', err);
+      if (err.name !== "AbortError") {
+        console.error("Error selecting folder:", err);
       }
     }
   };
@@ -68,7 +67,7 @@ export default function FolderSelectButtonComponent({
     const relativePath = (file as any).webkitRelativePath;
     if (!relativePath) return;
 
-    const folderName = relativePath.split('/')[0];
+    const folderName = relativePath.split("/")[0];
 
     viewer.mutable.current.sendMessage({
       type: "FolderSelectMessage",
