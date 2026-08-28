@@ -345,7 +345,7 @@ class ViserUrdf:
             mesh.merge_vertices()
 
             # apply a color from a list (cycle through colors if more than 10 meshes)
-            if mesh.visual is not None:
+            if isinstance(mesh.visual, trimesh.visual.color.ColorVisuals):
                 mesh.visual.vertex_colors = colors[index_mesh % len(colors)]
             index_mesh += 1
 

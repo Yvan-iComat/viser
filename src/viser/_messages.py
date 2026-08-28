@@ -2012,7 +2012,7 @@ class GuiModalMessage(
     order: float
     uuid: str
     title: str
-    size: Literal["xs", "sm", "md", "lg", "xl"] | str
+    size: Union[Literal["xs", "sm", "md", "lg", "xl"], str]
 
 
 @dataclasses.dataclass
@@ -2365,7 +2365,7 @@ class ThemeConfigurationMessage(Message, include_in_scene_serialization=True):
 
     titlebar_content: Optional[theme.TitlebarConfig]
     control_layout: Literal["floating", "collapsible", "fixed"]
-    control_width: Literal["small", "medium", "large"] | str
+    control_width: Union[Literal["small", "medium", "large"], str]
     show_logo: bool
     show_share_button: bool
     dark_mode: bool
