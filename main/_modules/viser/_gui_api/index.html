@@ -1612,11 +1612,12 @@
         <span class="o">*</span><span class="p">,</span>
         <span class="n">visible</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
         <span class="n">buttons</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">_messages</span><span class="o">.</span><span class="n">ToolbarButton</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">top_offset</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">=</span> <span class="mf">4.0</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">"""Configure the horizontal toolbar that appears at the top of the 3D view.</span>
 
 <span class="sd">        The toolbar allows for quick access to common actions. You can control its</span>
-<span class="sd">        visibility and add custom buttons with icons and tooltips.</span>
+<span class="sd">        visibility, vertical placement, and add custom buttons with icons and tooltips.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            visible: Whether the toolbar should be visible. Default is True.</span>
@@ -1625,10 +1626,17 @@
 <span class="sd">                - action: Custom action identifier (used in on_toolbar_action callbacks)</span>
 <span class="sd">                - icon: Icon name from Tabler Icons (e.g., "IconCamera", "IconDownload")</span>
 <span class="sd">                - tooltip: Tooltip text shown on hover</span>
+<span class="sd">            top_offset: Distance from the top of the window to the top of the</span>
+<span class="sd">                toolbar. A number is interpreted as ``em`` units; a string is</span>
+<span class="sd">                passed through as a raw CSS length (for example ``"20px"`` or</span>
+<span class="sd">                ``"10%"``). Default is 4.0, which sits just below the titlebar.</span>
 
 <span class="sd">        Example:</span>
 <span class="sd">            &gt;&gt;&gt; # Hide the toolbar</span>
 <span class="sd">            &gt;&gt;&gt; server.gui.configure_toolbar(visible=False)</span>
+<span class="sd">            &gt;&gt;&gt;</span>
+<span class="sd">            &gt;&gt;&gt; # Push the toolbar further down, to the middle of the viewport</span>
+<span class="sd">            &gt;&gt;&gt; server.gui.configure_toolbar(top_offset="50%")</span>
 <span class="sd">            &gt;&gt;&gt;</span>
 <span class="sd">            &gt;&gt;&gt; # Add custom buttons</span>
 <span class="sd">            &gt;&gt;&gt; from viser._messages import ToolbarButton</span>
@@ -1662,6 +1670,9 @@
             <span class="n">_messages</span><span class="o">.</span><span class="n">ToolbarConfigMessage</span><span class="p">(</span>
                 <span class="n">visible</span><span class="o">=</span><span class="n">visible</span><span class="p">,</span>
                 <span class="n">buttons</span><span class="o">=</span><span class="nb">tuple</span><span class="p">(</span><span class="n">buttons</span><span class="p">)</span> <span class="k">if</span> <span class="n">buttons</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="p">(),</span>
+                <span class="n">top_offset</span><span class="o">=</span><span class="p">(</span>
+                    <span class="n">top_offset</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">top_offset</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">top_offset</span><span class="si">}</span><span class="s2">em"</span>
+                <span class="p">),</span>
             <span class="p">),</span>
         <span class="p">)</span></div>
 
