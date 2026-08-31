@@ -358,6 +358,7 @@ function useMessageHandler() {
         setToolbarConfig({
           visible: message.visible,
           buttons: message.buttons,
+          topOffset: message.top_offset,
         });
         return;
       }

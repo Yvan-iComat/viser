@@ -581,6 +581,7 @@ export interface ToolbarConfigMessage {
   type: "ToolbarConfigMessage";
   visible: boolean;
   buttons: { action: string; icon: string; tooltip: string }[];
+  top_offset: string;
 }
 /** Remove a particular node's variant, for the scope stamped in
  * ``owner``, from the scene. Removal is scope-local: it never touches the
@@ -1889,7 +1890,7 @@ export interface GuiPanelRemoveMessage {
   type: "GuiPanelRemoveMessage";
   uuid: string;
 }
-/** GuiModalMessage(order: 'float', uuid: 'str', title: 'str', size: "Literal['xs', 'sm', 'md', 'lg', 'xl'] | str")
+/** GuiModalMessage(order: 'float', uuid: 'str', title: 'str', size: "Union[Literal['xs', 'sm', 'md', 'lg', 'xl'], str]")
  *
  * (automatically generated)
  */

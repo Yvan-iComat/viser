@@ -9,6 +9,7 @@ import * as TablerIcons from "@tabler/icons-react";
 import { useContext } from "react";
 import { ViewerContext } from "./ViewerContext";
 import { ToolbarButton } from "./ControlPanel/GuiState";
+import { computeSceneBoundingSphere } from "./utils/sceneBounds";
 
 /** Multiplier applied to the camera-to-target distance on each zoom step. */
 const ZOOM_FACTOR = 1.5;
@@ -34,7 +35,10 @@ export function HorizontalToolbar() {
     {
       action: "reframe_view",
       icon: "IconMaximize",
-      tooltip: "Fit model in view",
+      // NOTE: keep "view" out of this label -- Playwright's get_by_role
+      // matches accessible names by substring, and upstream e2e tests target
+      // a button named "View" (see test_advanced_gui.py).
+      tooltip: "Fit model",
     },
     {
       action: "zoom_in",
@@ -66,7 +70,13 @@ export function HorizontalToolbar() {
     if (action === "reframe_view") {
       const scene = viewer.mutable.current.scene;
       if (cameraControls && scene) {
-        cameraControls.fitToSphere(scene, true);
+        // Frame the scene's real geometry, not the scene root: the root also
+        // holds the grid, lights and other reference objects, and the grid
+        // (10x10 by default, ~1010 units when infinite) would otherwise
+        // dominate the fit and leave the model a speck. Null => nothing to
+        // frame, so leave the camera where it is.
+        const sphere = computeSceneBoundingSphere(scene);
+        if (sphere !== null) cameraControls.fitToSphere(sphere, true);
       }
     } else if (action === "zoom_in" && cameraControls) {
       // Dolly toward the orbit target; clamped by min/max distance.
@@ -95,7 +105,8 @@ export function HorizontalToolbar() {
       shadow="md"
       style={{
         position: "absolute",
-        top: "4em", // Below titlebar (3.2em height)
+        // Server-controlled; defaults to just below the titlebar (3.2em height).
+        top: toolbarConfig?.topOffset ?? "4em",
         left: "50%",
         transform: "translateX(-50%)",
         zIndex: 9,

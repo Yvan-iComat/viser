@@ -345,6 +345,7 @@ class ToolbarConfigMessage(Message, include_in_scene_serialization=True):
 
     visible: bool  # Whether toolbar is visible
     buttons: Tuple[ToolbarButton, ...]  # Custom buttons to add to toolbar
+    top_offset: str  # CSS length for the toolbar's distance from the window top
 
 
 @dataclasses.dataclass

@@ -25,6 +25,8 @@ export type ToolbarButton = ToolbarConfigMessage["buttons"][number];
 export type ToolbarConfig = {
   visible: boolean;
   buttons: readonly ToolbarButton[];
+  /** CSS length for the toolbar's distance from the top of the window. */
+  topOffset: string;
 };
 
 /** One placement axis as last written by the server: the value plus the

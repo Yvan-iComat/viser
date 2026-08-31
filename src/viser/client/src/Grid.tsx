@@ -12,6 +12,7 @@
 import * as React from "react";
 import * as THREE from "three";
 import { useFrame } from "@react-three/fiber";
+import { EXCLUDE_FROM_BOUNDS } from "./utils/sceneBounds";
 
 const vertexShader = /* glsl */ `
   #include <common>
@@ -280,6 +281,12 @@ export const Grid = React.forwardRef<THREE.Mesh, GridProps>(function Grid(
       frustumCulled={false}
       material={material}
       receiveShadow
+      // The grid is a size/orientation reference, not content: keep it out of
+      // "fit all in" framing. It's much larger than typical models (10x10 by
+      // default, scaled by `1 + fadeDistance` when infinite) and with
+      // followCamera its world bounds track the camera, so including it would
+      // both shrink the model to a speck and make the fit non-idempotent.
+      userData={{ [EXCLUDE_FROM_BOUNDS]: true }}
       {...props}
     >
       <planeGeometry args={args} />

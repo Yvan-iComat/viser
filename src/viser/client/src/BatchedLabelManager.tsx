@@ -6,6 +6,7 @@ import { Instances, Instance } from "@react-three/drei";
 import { Text as TroikaText, BatchedText } from "troika-three-text";
 import { BatchedLabelManagerContext } from "./BatchedLabelManagerContext";
 import { ViewerContext } from "./ViewerContext";
+import { EXCLUDE_FROM_BOUNDS } from "./utils/sceneBounds";
 import {
   setupBatchedTextMaterial,
   calculateBillboardRotation,
@@ -47,7 +48,15 @@ export const BatchedLabelManager: React.FC<{
   // on the very first render. Otherwise a child label whose effect runs before
   // the manager's mount effect would call registerText() while `group` was
   // still null and be dropped permanently.
-  const group = React.useMemo(() => new THREE.Group(), []);
+  const group = React.useMemo(() => {
+    const g = new THREE.Group();
+    // Labels are billboarded and sized in screen space, so their world bounds
+    // don't correspond to anything visible -- a label offset from the model
+    // would pull "fit all in" outward for no reason. Keep the whole label
+    // subtree (text batches + background instances) out of framing.
+    g.userData[EXCLUDE_FROM_BOUNDS] = true;
+    return g;
+  }, []);
 
   // One BatchedText instance per depthTest setting (true/false).
   const batchedTextsRef = React.useRef<Map<boolean, BatchedText>>(new Map());

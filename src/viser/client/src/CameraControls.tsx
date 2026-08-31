@@ -13,6 +13,7 @@ import * as THREE from "three";
 import { computeT_threeworld_world } from "./WorldTransformUtils";
 import { useThrottledMessageSender } from "./WebsocketUtils";
 import { isFormElement } from "./utils/isFormElement";
+import { EXCLUDE_FROM_BOUNDS } from "./utils/sceneBounds";
 
 // Rotation from the three.js camera convention to the OpenCV one. Constant, so
 // it lives at module scope instead of being rebuilt every render.
@@ -136,35 +137,42 @@ function OrbitOriginTool({
   // camera move -- keeping it mounted means its first drag starts from the
   // correct pose.
   return (
-    <PivotControls
-      ref={pivotRef}
-      scale={200}
-      lineWidth={3}
-      fixed={true}
-      axisColors={["#ffaaff", "#ff33ff", "#ffaaff"]}
-      disableScaling={true}
-      disableAxes={!show}
-      disableRotations={!show}
-      disableSliders={!show}
-      onDragStart={onDragStart}
-      onDragEnd={() => {
-        if (pivotRef.current !== null) onPivotChange(pivotRef.current.matrix);
-      }}
-    >
-      <Grid
-        args={[10, 10, 10, 10]}
-        infiniteGrid
-        fadeStrength={0}
-        fadeFrom={0}
-        fadeDistance={1000}
-        sectionColor={"#ffaaff"}
-        cellColor={"#ffccff"}
-        side={THREE.DoubleSide}
-        visible={show}
-      />
-      {/* Crosshair visualization at look-at point */}
-      <CrosshairVisual visible={enableOrbitCrosshair && crosshairVisible} />
-    </PivotControls>
+    // The gizmo stays mounted even while hidden (see below), and its own
+    // meshes are large: scale={200} handles plus an infinite grid with
+    // fadeDistance={1000}. It's a camera widget, not scene content, so keep the
+    // whole subtree out of "fit all in" framing. Tagged on a wrapper because
+    // PivotControls doesn't forward userData to the meshes it creates.
+    <group userData={{ [EXCLUDE_FROM_BOUNDS]: true }}>
+      <PivotControls
+        ref={pivotRef}
+        scale={200}
+        lineWidth={3}
+        fixed={true}
+        axisColors={["#ffaaff", "#ff33ff", "#ffaaff"]}
+        disableScaling={true}
+        disableAxes={!show}
+        disableRotations={!show}
+        disableSliders={!show}
+        onDragStart={onDragStart}
+        onDragEnd={() => {
+          if (pivotRef.current !== null) onPivotChange(pivotRef.current.matrix);
+        }}
+      >
+        <Grid
+          args={[10, 10, 10, 10]}
+          infiniteGrid
+          fadeStrength={0}
+          fadeFrom={0}
+          fadeDistance={1000}
+          sectionColor={"#ffaaff"}
+          cellColor={"#ffccff"}
+          side={THREE.DoubleSide}
+          visible={show}
+        />
+        {/* Crosshair visualization at look-at point */}
+        <CrosshairVisual visible={enableOrbitCrosshair && crosshairVisible} />
+      </PivotControls>
+    </group>
   );
 }
 

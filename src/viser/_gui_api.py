@@ -1169,11 +1169,12 @@ class GuiApi:
         *,
         visible: bool = True,
         buttons: Sequence[_messages.ToolbarButton] | None = None,
+        top_offset: float | str = 4.0,
     ) -> None:
         """Configure the horizontal toolbar that appears at the top of the 3D view.
 
         The toolbar allows for quick access to common actions. You can control its
-        visibility and add custom buttons with icons and tooltips.
+        visibility, vertical placement, and add custom buttons with icons and tooltips.
 
         Args:
             visible: Whether the toolbar should be visible. Default is True.
@@ -1182,10 +1183,17 @@ class GuiApi:
                 - action: Custom action identifier (used in on_toolbar_action callbacks)
                 - icon: Icon name from Tabler Icons (e.g., "IconCamera", "IconDownload")
                 - tooltip: Tooltip text shown on hover
+            top_offset: Distance from the top of the window to the top of the
+                toolbar. A number is interpreted as ``em`` units; a string is
+                passed through as a raw CSS length (for example ``"20px"`` or
+                ``"10%"``). Default is 4.0, which sits just below the titlebar.
 
         Example:
             >>> # Hide the toolbar
             >>> server.gui.configure_toolbar(visible=False)
+            >>>
+            >>> # Push the toolbar further down, to the middle of the viewport
+            >>> server.gui.configure_toolbar(top_offset="50%")
             >>>
             >>> # Add custom buttons
             >>> from viser._messages import ToolbarButton
@@ -1219,6 +1227,9 @@ class GuiApi:
             _messages.ToolbarConfigMessage(
                 visible=visible,
                 buttons=tuple(buttons) if buttons is not None else (),
+                top_offset=(
+                    top_offset if isinstance(top_offset, str) else f"{top_offset}em"
+                ),
             ),
         )
 

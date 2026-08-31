@@ -35,6 +35,7 @@ import { DragLayer } from "./DragLayer";
 import { KeyModifier, hasCmdCtrl, keyModifierFromEvent } from "./dragUtils";
 import { shallowArrayEqual } from "./utils/shallowArrayEqual";
 import { isFormElement } from "./utils/isFormElement";
+import { EXCLUDE_FROM_BOUNDS } from "./utils/sceneBounds";
 import { ndcFromPointerXy, opencvXyFromPointerXy } from "./utils/pointerCoords";
 import { ViewerContext, ViewerContextContents } from "./ViewerContext";
 import ControlPanel from "./ControlPanel/ControlPanel";
@@ -1214,7 +1215,14 @@ function BackgroundImage() {
   });
 
   return (
-    <mesh ref={backgroundMesh} material={backgroundMaterial}>
+    <mesh
+      ref={backgroundMesh}
+      material={backgroundMaterial}
+      // Repositioned onto the camera every frame (above), so its world bounds
+      // follow the viewer -- including it in "fit all in" would make framing
+      // depend on where the camera already is, and never settle.
+      userData={{ [EXCLUDE_FROM_BOUNDS]: true }}
+    >
       <planeGeometry attach="geometry" args={[1, 1]} />
     </mesh>
   );
