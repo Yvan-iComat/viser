@@ -582,6 +582,7 @@ export interface ToolbarConfigMessage {
   visible: boolean;
   buttons: { action: string; icon: string; tooltip: string }[];
   top_offset: string;
+  opacity: number;
 }
 /** Remove a particular node's variant, for the scope stamped in
  * ``owner``, from the scene. Removal is scope-local: it never touches the

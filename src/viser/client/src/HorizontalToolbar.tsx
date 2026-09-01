@@ -100,6 +100,14 @@ export function HorizontalToolbar() {
 
   const isDark = colorScheme === "dark";
 
+  // Server-controlled panel opacity; defaults to fully opaque. Scales the
+  // existing background/border alpha rather than setting CSS `opacity` on the
+  // whole Paper, so icons and tooltips stay fully legible even when the
+  // background is nearly transparent.
+  const panelOpacity = toolbarConfig?.opacity ?? 1.0;
+  const backgroundAlpha = 0.9 * panelOpacity;
+  const borderAlpha = 0.15 * panelOpacity;
+
   return (
     <Paper
       shadow="md"
@@ -111,14 +119,14 @@ export function HorizontalToolbar() {
         transform: "translateX(-50%)",
         zIndex: 9,
         backgroundColor: isDark
-          ? "rgba(40, 40, 40, 0.9)"
-          : "rgba(255, 255, 255, 0.9)",
+          ? `rgba(40, 40, 40, ${backgroundAlpha})`
+          : `rgba(255, 255, 255, ${backgroundAlpha})`,
         backdropFilter: "blur(10px)",
         borderRadius: "0.5em",
         padding: "0.5em",
         border: isDark
-          ? "1px solid rgba(255, 255, 255, 0.15)"
-          : "1px solid rgba(0, 0, 0, 0.15)",
+          ? `1px solid rgba(255, 255, 255, ${borderAlpha})`
+          : `1px solid rgba(0, 0, 0, ${borderAlpha})`,
       }}
     >
       <Group gap="xs">

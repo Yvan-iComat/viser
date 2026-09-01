@@ -7,6 +7,7 @@ configure_toolbar() method from the GUI API. You can:
 - Use default buttons (Fit Model, Snapshot) when buttons=[]
 - Handle button clicks via the on_toolbar_action callback
 - Control the toolbar's distance from the top of the window via top_offset
+- Control the toolbar's background opacity via opacity
 
 The scene holds boxes, a sphere and a cone inside a much larger 10x10 grid, so
 it also serves as a check on "fit all in": that button frames the meshes only,
@@ -121,15 +122,26 @@ def main():
             step=0.5,
             initial_value=4.0,
         )
+        # Background panel opacity. Only the background/border/blur fade --
+        # icons and tooltips stay fully legible even near 0.
+        toolbar_opacity = server.gui.add_slider(
+            "Toolbar Opacity",
+            min=0.0,
+            max=1.0,
+            step=0.05,
+            initial_value=1.0,
+        )
 
         def update_toolbar() -> None:
             server.gui.configure_toolbar(
                 visible=toolbar_visible.value,
                 buttons=buttons,
                 top_offset=toolbar_top_offset.value,
+                opacity=toolbar_opacity.value,
             )
 
         toolbar_visible.on_update(lambda _: update_toolbar())
+        toolbar_opacity.on_update(lambda _: update_toolbar())
         toolbar_top_offset.on_update(lambda _: update_toolbar())
 
     # Push the initial configuration (buttons, visibility, placement).
@@ -242,6 +254,7 @@ def main():
     print("\nCONTROLS:")
     print("   - Use the 'Show Toolbar' checkbox to toggle toolbar visibility")
     print("   - Use the 'Toolbar Top Offset' slider to move the toolbar down")
+    print("   - Use the 'Toolbar Opacity' slider to fade the toolbar background")
     print("   - Click toolbar buttons to trigger actions")
     print("   - Check console output for action logs")
     print("\nRESET SCENE:")

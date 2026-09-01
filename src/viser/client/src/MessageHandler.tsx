@@ -359,6 +359,7 @@ function useMessageHandler() {
           visible: message.visible,
           buttons: message.buttons,
           topOffset: message.top_offset,
+          opacity: message.opacity,
         });
         return;
       }

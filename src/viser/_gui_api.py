@@ -1170,11 +1170,13 @@ class GuiApi:
         visible: bool = True,
         buttons: Sequence[_messages.ToolbarButton] | None = None,
         top_offset: float | str = 4.0,
+        opacity: float = 1.0,
     ) -> None:
         """Configure the horizontal toolbar that appears at the top of the 3D view.
 
         The toolbar allows for quick access to common actions. You can control its
-        visibility, vertical placement, and add custom buttons with icons and tooltips.
+        visibility, vertical placement, background opacity, and add custom buttons
+        with icons and tooltips.
 
         Args:
             visible: Whether the toolbar should be visible. Default is True.
@@ -1187,6 +1189,10 @@ class GuiApi:
                 toolbar. A number is interpreted as ``em`` units; a string is
                 passed through as a raw CSS length (for example ``"20px"`` or
                 ``"10%"``). Default is 4.0, which sits just below the titlebar.
+            opacity: Opacity of the toolbar's background panel, from 0.0
+                (fully transparent) to 1.0 (fully opaque, the default). Only
+                the background/border/blur are affected; icons and tooltips
+                stay fully opaque so they remain legible.
 
         Example:
             >>> # Hide the toolbar
@@ -1194,6 +1200,9 @@ class GuiApi:
             >>>
             >>> # Push the toolbar further down, to the middle of the viewport
             >>> server.gui.configure_toolbar(top_offset="50%")
+            >>>
+            >>> # Make the toolbar's background mostly see-through
+            >>> server.gui.configure_toolbar(opacity=0.3)
             >>>
             >>> # Add custom buttons
             >>> from viser._messages import ToolbarButton
@@ -1223,6 +1232,9 @@ class GuiApi:
             ...         elif action == "custom_export":
             ...             print("Exporting data...")
         """
+        if not 0.0 <= opacity <= 1.0:
+            raise ValueError(f"opacity must be in [0, 1]; got {opacity}")
+
         self._websock_interface.queue_message(
             _messages.ToolbarConfigMessage(
                 visible=visible,
@@ -1230,6 +1242,7 @@ class GuiApi:
                 top_offset=(
                     top_offset if isinstance(top_offset, str) else f"{top_offset}em"
                 ),
+                opacity=opacity,
             ),
         )
 

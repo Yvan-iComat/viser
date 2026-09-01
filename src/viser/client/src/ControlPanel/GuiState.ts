@@ -27,6 +27,8 @@ export type ToolbarConfig = {
   buttons: readonly ToolbarButton[];
   /** CSS length for the toolbar's distance from the top of the window. */
   topOffset: string;
+  /** Opacity of the toolbar's background panel, in [0, 1]. */
+  opacity: number;
 };
 
 /** One placement axis as last written by the server: the value plus the
