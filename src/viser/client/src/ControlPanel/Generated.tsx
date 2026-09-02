@@ -29,6 +29,7 @@ import ProgressBarComponent from "../components/ProgressBar";
 import ImageComponent from "../components/Image";
 import HtmlComponent from "../components/Html";
 import TableDataComponent from "../components/TableData";
+import GalleryComponent from "../components/Gallery";
 import DividerComponent from "../components/Divider";
 
 /** Root of generated inputs. */
@@ -219,6 +220,13 @@ function GeneratedInput(props: {
       return <ButtonGroupComponent {...conf} />;
     case "GuiTableDataMessage":
       return <TableDataComponent {...conf} />;
+    case "GuiGalleryMessage":
+      // A "window" gallery is drawn by GalleryOverlay in App.tsx, so it
+      // renders nothing here; an "inline" one is a normal component in its
+      // container (panel tab, folder, or the control panel).
+      return conf.props.placement === "inline" ? (
+        <GalleryComponent {...conf} />
+      ) : null;
     case "GuiProgressBarMessage":
       return <ProgressBarComponent {...conf} />;
     default:

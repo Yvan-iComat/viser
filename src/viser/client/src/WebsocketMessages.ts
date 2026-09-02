@@ -1275,6 +1275,33 @@ export interface GuiTableDataMessage {
     selection_mode: "none" | "single";
   };
 }
+/** GuiGalleryMessage(uuid: 'str', container_uuid: 'str', props: 'GuiGalleryProps')
+ *
+ * (automatically generated)
+ */
+export interface GuiGalleryMessage {
+  type: "GuiGalleryMessage";
+  uuid: string;
+  container_uuid: string;
+  props: {
+    order: number;
+    label: string;
+    hint: string | null;
+    visible: boolean;
+    disabled: boolean;
+    blocks: {
+      block_id: string;
+      title: string;
+      subtitle: string | null;
+      _data: Uint8Array<ArrayBuffer> | null;
+      _format: "jpeg" | "png";
+    }[];
+    block_width: number;
+    block_height: number;
+    gap: number;
+    placement: "window" | "inline";
+  };
+}
 /** Sent server->client to remove a GUI element.
  *
  * (automatically generated)
@@ -1944,6 +1971,37 @@ export interface GuiButtonHoldMessage {
   uuid: string;
   frequency: number;
 }
+/** Message sent from client->server when a gallery block is left clicked.
+ *
+ * (automatically generated)
+ */
+export interface GuiGalleryClickMessage {
+  type: "GuiGalleryClickMessage";
+  uuid: string;
+  block_id: string;
+}
+/** Message sent from server->client to render an STL mesh into a snapshot.
+ *
+ * (automatically generated)
+ */
+export interface GuiGalleryRenderRequestMessage {
+  type: "GuiGalleryRenderRequestMessage";
+  uuid: string;
+  render_uuid: string;
+  _stl_data: Uint8Array<ArrayBuffer>;
+  width: number;
+  height: number;
+}
+/** Message sent from client->server with a rendered STL snapshot.
+ *
+ * (automatically generated)
+ */
+export interface GuiGalleryRenderReplyMessage {
+  type: "GuiGalleryRenderReplyMessage";
+  uuid: string;
+  render_uuid: string;
+  _data: Uint8Array<ArrayBuffer> | null;
+}
 /** Sent client<->server when any property of a GUI component is changed.
  *
  * (automatically generated)
@@ -2344,6 +2402,7 @@ export type Message =
   | GuiDropdownMessage
   | GuiButtonGroupMessage
   | GuiTableDataMessage
+  | GuiGalleryMessage
   | GuiRemoveMessage
   | RunJavascriptMessage
   | NotificationShowMessage
@@ -2390,6 +2449,9 @@ export type Message =
   | TimelineMessage
   | TimelineRemoveMessage
   | GuiButtonHoldMessage
+  | GuiGalleryClickMessage
+  | GuiGalleryRenderRequestMessage
+  | GuiGalleryRenderReplyMessage
   | GuiUpdateMessage
   | SceneNodeUpdateMessage
   | ThemeConfigurationMessage
@@ -2469,7 +2531,8 @@ export type GuiComponentMessage =
   | GuiTextMessage
   | GuiDropdownMessage
   | GuiButtonGroupMessage
-  | GuiTableDataMessage;
+  | GuiTableDataMessage
+  | GuiGalleryMessage;
 const typeSetSceneNodeMessage = new Set([
   "CameraFrustumMessage",
   "GlbMessage",
@@ -2531,6 +2594,7 @@ const typeSetGuiComponentMessage = new Set([
   "GuiDropdownMessage",
   "GuiButtonGroupMessage",
   "GuiTableDataMessage",
+  "GuiGalleryMessage",
 ]);
 export function isGuiComponentMessage(
   message: Message,

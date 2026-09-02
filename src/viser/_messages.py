@@ -2332,6 +2332,79 @@ class GuiTableDataMessage(_CreateGuiComponentMessage):
 
 
 @dataclasses.dataclass
+class GuiGalleryBlock:
+    """A single clickable block (card) in a gallery."""
+
+    block_id: str
+    """Stable identifier for this block, used to route click events."""
+    title: str
+    """Title text, displayed in the block footer."""
+    subtitle: Optional[str]
+    """Optional subtitle, displayed below the title."""
+    _data: Optional[bytes]
+    """(Private) Binary snapshot image data. None while a render is pending."""
+    _format: Literal["jpeg", "png"]
+    """(Private) Format of the snapshot image ('jpeg' or 'png')."""
+
+
+@dataclasses.dataclass
+class GuiGalleryProps(GuiBaseProps):
+    blocks: Tuple[GuiGalleryBlock, ...]
+    """Blocks to display, in grid order."""
+    block_width: int
+    """Target width of each block in pixels. Determines blocks per row."""
+    block_height: int
+    """Height of each block's snapshot area, in pixels."""
+    gap: int
+    """Gap between blocks, in pixels."""
+    placement: Literal["window", "inline"]
+    """Where the gallery renders. 'window' covers the viewport as a full-window
+    overlay; 'inline' renders in its container (a panel tab, folder, or the
+    control panel) like any other GUI component."""
+
+
+@dataclasses.dataclass
+class GuiGalleryMessage(_CreateGuiComponentMessage):
+    container_uuid: str
+    props: GuiGalleryProps
+
+
+@dataclasses.dataclass
+class GuiGalleryClickMessage(Message, include_in_scene_serialization=False):
+    """Message sent from client->server when a gallery block is left clicked."""
+
+    uuid: str
+    block_id: str
+    """Identifier of the block that was clicked."""
+
+
+@dataclasses.dataclass
+class GuiGalleryRenderRequestMessage(Message, include_in_scene_serialization=False):
+    """Message sent from server->client to render an STL mesh into a snapshot."""
+
+    uuid: str
+    render_uuid: str
+    """Identifier used to match the reply to this request."""
+    _stl_data: bytes
+    """(Private) Raw bytes of the STL file to render."""
+    width: int
+    """Width of the requested snapshot, in pixels."""
+    height: int
+    """Height of the requested snapshot, in pixels."""
+
+
+@dataclasses.dataclass
+class GuiGalleryRenderReplyMessage(Message, include_in_scene_serialization=False):
+    """Message sent from client->server with a rendered STL snapshot."""
+
+    uuid: str
+    render_uuid: str
+    """Identifier matching the originating render request."""
+    _data: Optional[bytes]
+    """(Private) PNG bytes of the render, or None if rendering failed."""
+
+
+@dataclasses.dataclass
 class GuiUpdateMessage(
     Message,
     entity=EntityLifecycle("gui", "update_dict", "uuid"),

@@ -4,6 +4,7 @@ import React, { useContext } from "react";
 import * as THREE from "three";
 import { TextureLoader } from "three";
 import { toMantineColor } from "./components/colorUtils";
+import { renderStlSnapshot } from "./components/GalleryStlSnapshot";
 
 import { createParkedSceneUpdates } from "./batchedSceneUpdates";
 import { ViewerContext, variantKey } from "./ViewerContext";
@@ -416,6 +417,33 @@ function useMessageHandler() {
           error,
           request_uuid: message.request_uuid,
         });
+        return;
+      }
+
+      // Render an STL mesh into a gallery block snapshot. Offscreen and
+      // asynchronous: the reply carries the PNG back to the server, which
+      // applies it to the block as an image prop update.
+      case "GuiGalleryRenderRequestMessage": {
+        const { uuid, render_uuid } = message;
+        renderStlSnapshot(message._stl_data, message.width, message.height)
+          .then((data) => {
+            viewerMutable.sendMessage({
+              type: "GuiGalleryRenderReplyMessage",
+              uuid,
+              render_uuid,
+              _data: data,
+            });
+          })
+          .catch((error) => {
+            console.error("Gallery STL snapshot failed:", error);
+            // Always reply, so the server's wait doesn't hang until timeout.
+            viewerMutable.sendMessage({
+              type: "GuiGalleryRenderReplyMessage",
+              uuid,
+              render_uuid,
+              _data: null,
+            });
+          });
         return;
       }
 

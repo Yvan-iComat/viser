@@ -3,6 +3,8 @@ from typing import TYPE_CHECKING as _TYPE_CHECKING
 from ._gui_api import GuiApi as GuiApi
 from ._gui_handles import CommandEvent as CommandEvent
 from ._gui_handles import CommandHandle as CommandHandle
+from ._gui_handles import GalleryBlockEvent as GalleryBlockEvent
+from ._gui_handles import GalleryBlockHandle as GalleryBlockHandle
 from ._gui_handles import GuiButtonGroupHandle as GuiButtonGroupHandle
 from ._gui_handles import GuiButtonHandle as GuiButtonHandle
 from ._gui_handles import GuiCheckboxHandle as GuiCheckboxHandle
@@ -12,6 +14,7 @@ from ._gui_handles import GuiEvent as GuiEvent
 from ._gui_handles import GuiFolderHandle as GuiFolderHandle
 from ._gui_handles import GuiFolderSelectButtonHandle as GuiFolderSelectButtonHandle
 from ._gui_handles import GuiFormHandle as GuiFormHandle
+from ._gui_handles import GuiGalleryHandle as GuiGalleryHandle
 from ._gui_handles import GuiHtmlHandle as GuiHtmlHandle
 from ._gui_handles import GuiImageHandle as GuiImageHandle
 from ._gui_handles import GuiInputHandle as GuiInputHandle

@@ -62,6 +62,7 @@ import { FrameSynchronizedMessageHandler } from "./MessageHandler";
 import { PlaybackFromFile, PlaybackFromEmbedData } from "./FilePlayback";
 import { SplatRenderContext } from "./Splatting/GaussianSplats";
 import { BrowserWarning } from "./BrowserWarning";
+import { GalleryOverlay } from "./components/GalleryOverlay";
 import { MacWindowWrapper } from "./MacWindowWrapper";
 import { CascadedDirectionalLight } from "./CascadedDirectionalLight";
 import { VISER_VERSION, GITHUB_CONTRIBUTORS, Contributor } from "./VersionInfo";
@@ -539,10 +540,19 @@ function AppLayout({
               enabled={dockFloating}
               onDockStateChange={setControlDock}
             >
+              {/* Galleries cover the canvas as their own surface. Rendered
+              INSIDE the dock surface, behind the panes: the dock's own layers
+              (panes at zIndex 5, floating windows at 10+, resizers at 15, drop
+              hints at 1000) must stay on top, or a docked panel would be
+              painted over and its drag/drop targets swallowed. */}
+              <GalleryOverlay />
               {canvasContent}
             </ControlPanelDockSurface>
           ) : (
-            canvasContent
+            <>
+              <GalleryOverlay />
+              {canvasContent}
+            </>
           )}
         </Box>
         {messageSource === "websocket" && !dockFloating && <ControlPanel />}

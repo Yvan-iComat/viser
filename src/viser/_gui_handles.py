@@ -3,9 +3,11 @@ from __future__ import annotations
 import asyncio
 import base64
 import dataclasses
+import io
 import json
 import math
 import re
+import threading
 import time
 import uuid
 import warnings
@@ -47,6 +49,9 @@ from ._messages import (
     GuiFolderProps,
     GuiFolderSelectButtonProps,
     GuiFormSubmitMessage,
+    GuiGalleryBlock,
+    GuiGalleryProps,
+    GuiGalleryRenderRequestMessage,
     GuiHtmlProps,
     GuiImageProps,
     GuiMarkdownProps,
@@ -935,6 +940,304 @@ class GuiTableDataHandle(GuiInputHandle[TableData], GuiTableDataProps):
         """
         # This will be stored as an internal property updated by frontend
         return getattr(self._impl, "_selected_row", -1)
+
+
+class GalleryBlockHandle:
+    """Handle for a single block (card) within a gallery.
+
+    Blocks are not standalone GUI components: the gallery owns all block state
+    in its ``blocks`` prop, and this handle is a façade that reads and rewrites
+    the entry matching its ``block_id``. Mutating a removed block is a no-op.
+    """
+
+    def __init__(self, gallery: GuiGalleryHandle, block_id: str) -> None:
+        self._gallery = gallery
+        self._block_id = block_id
+        self._click_cb: list[Callable[[GalleryBlockEvent], None | Coroutine]] = []
+
+    @property
+    def block_id(self) -> str:
+        """Stable identifier for this block."""
+        return self._block_id
+
+    @property
+    def removed(self) -> bool:
+        """Whether this block has been removed from its gallery."""
+        return self._gallery._find_block(self._block_id) is None
+
+    @property
+    def title(self) -> str:
+        """Title text shown in the block footer. Synchronized when assigned."""
+        block = self._gallery._find_block(self._block_id)
+        return "" if block is None else block.title
+
+    @title.setter
+    def title(self, title: str) -> None:
+        self._gallery._mutate_block(self._block_id, title=title)
+
+    @property
+    def subtitle(self) -> str | None:
+        """Optional subtitle shown below the title. Synchronized when assigned."""
+        block = self._gallery._find_block(self._block_id)
+        return None if block is None else block.subtitle
+
+    @subtitle.setter
+    def subtitle(self, subtitle: str | None) -> None:
+        self._gallery._mutate_block(self._block_id, subtitle=subtitle)
+
+    def set_image(self, image: np.ndarray) -> None:
+        """Replace this block's snapshot with a numpy image.
+
+        Args:
+            image: (H, W, 3) or (H, W, 4) uint8 array.
+        """
+        image_format, data = _encode_image_binary(image, "auto")
+        self._gallery._mutate_block(self._block_id, _data=data, _format=image_format)
+
+    def remove(self) -> None:
+        """Remove this block from its gallery."""
+        self._gallery.remove_block(self)
+
+    def on_click(
+        self, func: Callable[[GalleryBlockEvent], NoneOrCoroutine]
+    ) -> Callable[[GalleryBlockEvent], NoneOrCoroutine]:
+        """Attach a callback for when this block is left clicked.
+
+        Note:
+            - If `func` is a regular function (defined with `def`), it will be executed in a thread pool.
+            - If `func` is an async function (defined with `async def`), it will be executed in the event loop.
+
+        Example:
+            >>> @block.on_click
+            >>> def _(event):
+            >>>     print("clicked", event.target.title)
+        """
+        self._click_cb.append(func)
+        return func
+
+
+@dataclasses.dataclass(frozen=True)
+class GalleryBlockEvent:
+    """Information associated with a gallery block click.
+
+    Passed as input to callback functions."""
+
+    client: ClientHandle | None
+    """Client that triggered this event."""
+    client_id: int | None
+    """ID of client that triggered this event."""
+    gallery: GuiGalleryHandle
+    """Gallery containing the clicked block."""
+    target: GalleryBlockHandle
+    """Block that was clicked."""
+
+    @property
+    def block_id(self) -> str:
+        """Identifier of the block that was clicked."""
+        return self.target.block_id
+
+
+class GuiGalleryHandle(_GuiHandle[None], GuiGalleryProps):
+    """Handle for a gallery of clickable image blocks arranged in a grid.
+
+    The grid's column count is derived by the client from ``block_width`` and
+    the available width, so the gallery reflows to fill the window.
+    """
+
+    def __init__(self, _impl: _GuiHandleState) -> None:
+        super().__init__(impl=_impl)
+        self._block_handles: dict[str, GalleryBlockHandle] = {}
+        self._gallery_click_cb: list[
+            Callable[[GalleryBlockEvent], None | Coroutine]
+        ] = []
+        # Pending STL renders, keyed by render_uuid, awaiting a client reply.
+        self._pending_renders: dict[str, tuple[str, threading.Event]] = {}
+
+    def _find_block(self, block_id: str) -> GuiGalleryBlock | None:
+        for block in self.blocks:
+            if block.block_id == block_id:
+                return block
+        return None
+
+    def _mutate_block(self, block_id: str, **changes: Any) -> None:
+        """Rewrite one block in-place, resyncing the whole ``blocks`` prop.
+
+        Silently ignores unknown ids so callbacks racing a removal are safe.
+        """
+        new_blocks = tuple(
+            dataclasses.replace(block, **changes)
+            if block.block_id == block_id
+            else block
+            for block in self.blocks
+        )
+        # Only assign when something actually matched, so a stale handle does
+        # not trigger a redundant broadcast.
+        if any(block.block_id == block_id for block in self.blocks):
+            self.blocks = new_blocks
+
+    def add_block(
+        self,
+        title: str,
+        subtitle: str | None = None,
+        *,
+        image: np.ndarray | None = None,
+        stl: str | Path | bytes | None = None,
+        block_id: str | None = None,
+        timeout: float | None = 10.0,
+    ) -> GalleryBlockHandle:
+        """Add a block to the gallery.
+
+        Exactly one of ``image`` or ``stl`` must be provided.
+
+        Args:
+            title: Title text, shown in the block footer.
+            subtitle: Optional subtitle, shown below the title.
+            image: Snapshot as an (H, W, 3) or (H, W, 4) uint8 numpy array.
+            stl: Path to (or raw bytes of) an STL mesh. A snapshot is rendered
+                from it in the browser; requires a connected client.
+            block_id: Optional stable identifier. Generated if omitted.
+            timeout: Seconds to wait for an STL snapshot before giving up. The
+                block is still added; its image stays blank on timeout.
+
+        Returns:
+            A handle for manipulating the new block.
+        """
+        if (image is None) == (stl is None):
+            raise ValueError("Exactly one of `image` or `stl` must be provided.")
+
+        block_id = block_id if block_id is not None else _make_uuid()
+        if self._find_block(block_id) is not None:
+            raise ValueError(f"Gallery already contains a block with id {block_id!r}.")
+
+        if image is not None:
+            image_format, data = _encode_image_binary(image, "auto")
+            stl_data = None
+        else:
+            # Snapshot is filled in by the client; start blank. Validate the
+            # mesh up front so a bad file raises instead of leaving behind a
+            # permanently blank block.
+            assert stl is not None
+            image_format, data = "png", None
+            stl_data = self._load_stl_bytes(block_id, stl)
+
+        self.blocks = self.blocks + (
+            GuiGalleryBlock(
+                block_id=block_id,
+                title=title,
+                subtitle=subtitle,
+                _data=data,
+                _format=image_format,
+            ),
+        )
+        handle = GalleryBlockHandle(self, block_id)
+        self._block_handles[block_id] = handle
+
+        if stl_data is not None:
+            self._request_stl_snapshot(block_id, stl_data, timeout=timeout)
+
+        return handle
+
+    def _load_stl_bytes(self, block_id: str, stl: str | Path | bytes) -> bytes:
+        """Read and validate an STL, raising before any block state is touched."""
+        stl_data = stl if isinstance(stl, bytes) else Path(stl).read_bytes()
+
+        # Parse to fail fast on malformed input, with a clearer error than the
+        # browser could give us. trimesh is already a hard dependency.
+        import trimesh
+
+        try:
+            parsed = trimesh.load(io.BytesIO(stl_data), file_type="stl")
+        except Exception as e:
+            raise ValueError(f"Could not parse STL for block {block_id!r}: {e}") from e
+
+        # trimesh doesn't raise on unparseable STL bytes -- it hands back an
+        # empty Scene. Without this check a malformed file would silently
+        # become a blank block after the render timeout elapsed.
+        if parsed.is_empty:
+            raise ValueError(
+                f"Could not parse STL for block {block_id!r}: no geometry found."
+            )
+        return stl_data
+
+    def _request_stl_snapshot(
+        self, block_id: str, stl_data: bytes, timeout: float | None
+    ) -> None:
+        """Ask a client to render an STL into this block's snapshot."""
+        render_uuid = _make_uuid()
+        done = threading.Event()
+        self._pending_renders[render_uuid] = (block_id, done)
+        self._impl.gui_api._websock_interface.queue_message(
+            GuiGalleryRenderRequestMessage(
+                uuid=self._impl.uuid,
+                render_uuid=render_uuid,
+                _stl_data=stl_data,
+                width=self.block_width,
+                height=self.block_height,
+            )
+        )
+        if timeout is not None:
+            # Wait for the snapshot so callers see a populated block on return.
+            # A miss is not fatal: the reply still lands if it arrives late.
+            if not done.wait(timeout):
+                num_clients = len(
+                    getattr(
+                        self._impl.gui_api._websock_interface,
+                        "_client_state_from_id",
+                        {},
+                    )
+                )
+                hint = (
+                    "No client is connected: STL snapshots are rendered in the "
+                    "browser, so add these blocks from an `on_client_connect` "
+                    "callback, or pass `image=` instead."
+                    if num_clients == 0
+                    else f"{num_clients} client(s) connected but none replied in "
+                    f"{timeout}s; try a longer `timeout`."
+                )
+                warnings.warn(
+                    f"Timed out waiting for STL snapshot of block {block_id!r}. "
+                    f"The block was added without an image. {hint}"
+                )
+
+    def _handle_render_reply(self, render_uuid: str, data: bytes | None) -> None:
+        """Apply a client-rendered snapshot to its block."""
+        pending = self._pending_renders.pop(render_uuid, None)
+        if pending is None:
+            return
+        block_id, done = pending
+        if data is not None:
+            self._mutate_block(block_id, _data=data, _format="png")
+        done.set()
+
+    def remove_block(self, block: GalleryBlockHandle | str) -> None:
+        """Remove a block from the gallery.
+
+        Args:
+            block: The block handle, or its ``block_id``. Unknown ids are ignored.
+        """
+        block_id = block if isinstance(block, str) else block.block_id
+        self.blocks = tuple(b for b in self.blocks if b.block_id != block_id)
+        self._block_handles.pop(block_id, None)
+
+    def clear(self) -> None:
+        """Remove all blocks from the gallery."""
+        self.blocks = ()
+        self._block_handles.clear()
+
+    def on_click(
+        self, func: Callable[[GalleryBlockEvent], NoneOrCoroutine]
+    ) -> Callable[[GalleryBlockEvent], NoneOrCoroutine]:
+        """Attach a callback for when any block in this gallery is clicked.
+
+        Fires after any per-block callbacks. The clicked block is available as
+        ``event.target``.
+
+        Note:
+            - If `func` is a regular function (defined with `def`), it will be executed in a thread pool.
+            - If `func` is an async function (defined with `async def`), it will be executed in the event loop.
+        """
+        self._gallery_click_cb.append(func)
+        return func
 
 
 class _TabContainerMixin:

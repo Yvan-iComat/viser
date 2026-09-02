@@ -43,6 +43,7 @@ from ._gui_handles import (
     CONTROL_PANEL_ID,
     CommandEvent,
     CommandHandle,
+    GalleryBlockEvent,
     GuiButtonGroupHandle,
     GuiButtonHandle,
     GuiCheckboxHandle,
@@ -53,6 +54,7 @@ from ._gui_handles import (
     GuiFolderHandle,
     GuiFolderSelectButtonHandle,
     GuiFormHandle,
+    GuiGalleryHandle,
     GuiHtmlHandle,
     GuiImageHandle,
     GuiMarkdownHandle,
@@ -341,6 +343,7 @@ class GuiApi:
         # restarted server's counter restart would otherwise read as stale).
         self._layout_run_id = uuid.uuid4().hex[:8]
         self._command_handle_from_uuid: dict[str, CommandHandle] = {}
+        self._gallery_handle_from_uuid: dict[str, GuiGalleryHandle] = {}
         self._current_file_upload_states: dict[str, _FileUploadState] = {}
 
         # Set to True when plotly.min.js has been sent to client.
@@ -371,6 +374,12 @@ class GuiApi:
         )
         self._websock_interface.register_handler(
             _messages.CommandTriggerMessage, self._handle_command_trigger
+        )
+        self._websock_interface.register_handler(
+            _messages.GuiGalleryClickMessage, self._handle_gallery_click
+        )
+        self._websock_interface.register_handler(
+            _messages.GuiGalleryRenderReplyMessage, self._handle_gallery_render_reply
         )
 
     def _resolve_client(self, client_id: ClientId) -> ClientHandle | None:
@@ -538,6 +547,44 @@ class GuiApi:
                 self._thread_executor.submit(
                     cb, GuiEvent(client, client_id, handle)
                 ).add_done_callback(print_threadpool_errors)
+
+    async def _handle_gallery_click(
+        self, client_id: ClientId, message: _messages.GuiGalleryClickMessage
+    ) -> None:
+        """Callback for handling gallery block clicks."""
+        gallery = self._gallery_handle_from_uuid.get(message.uuid, None)
+        if gallery is None or gallery._impl.removed:
+            return
+
+        # The block may have been removed between the click and its dispatch.
+        block = gallery._block_handles.get(message.block_id, None)
+        if block is None or block.removed:
+            return
+
+        client = self._resolve_client(client_id)
+        if client is None:
+            return
+
+        event = GalleryBlockEvent(
+            client=client, client_id=client_id, gallery=gallery, target=block
+        )
+        # Per-block callbacks fire before gallery-level ones.
+        for cb in (*block._click_cb, *gallery._gallery_click_cb):
+            if asyncio.iscoroutinefunction(cb):
+                await cb(event)
+            else:
+                self._thread_executor.submit(cb, event).add_done_callback(
+                    print_threadpool_errors
+                )
+
+    async def _handle_gallery_render_reply(
+        self, client_id: ClientId, message: _messages.GuiGalleryRenderReplyMessage
+    ) -> None:
+        """Callback for handling client-rendered STL snapshots."""
+        gallery = self._gallery_handle_from_uuid.get(message.uuid, None)
+        if gallery is None or gallery._impl.removed:
+            return
+        gallery._handle_render_reply(message.render_uuid, message._data)
 
     async def _handle_gui_form_submit(
         self, client_id: ClientId, message: _messages.GuiFormSubmitMessage
@@ -790,6 +837,23 @@ class GuiApi:
                 self._thread_executor.submit(
                     cb, GuiEvent(client, client_id, handle)
                 ).add_done_callback(print_threadpool_errors)
+
+    def _container_uuid_from_handle(self, container: Any) -> str:
+        """Resolve an explicit container handle to its container uuid.
+
+        Container handles key themselves into ``_container_handle_from_uuid``
+        under different attributes (``_id`` for tabs, ``_impl.uuid`` for
+        folders, ``_uuid`` for the control panel), so match by identity rather
+        than guessing which attribute to read.
+        """
+        for uuid_, handle in self._container_handle_from_uuid.items():
+            if handle is container:
+                return uuid_
+        raise ValueError(
+            f"{type(container).__name__} is not a GUI container of this server. "
+            "Pass a tab, folder, or the control panel -- or 'window' for a "
+            "full-window gallery."
+        )
 
     def _get_container_uuid(self) -> str:
         """Get container ID associated with the current thread.
@@ -2381,6 +2445,117 @@ class GuiApi:
                 ),
             ),
         )
+
+    def add_gallery(
+        self,
+        label: str = "",
+        *,
+        parent: Literal["window"]
+        | GuiContainerProtocol
+        | PanelHandle
+        | None = "window",
+        block_width: int = 220,
+        block_height: int = 160,
+        gap: int = 16,
+        hint: str | None = None,
+        visible: bool = True,
+        order: float | None = None,
+    ) -> GuiGalleryHandle:
+        """Add a gallery of clickable image blocks, arranged as a grid.
+
+        The number of blocks per row is derived by the client from
+        ``block_width`` and the available width, so the grid reflows to fill
+        whatever space it is given.
+
+        Args:
+            parent: Where to place the gallery. ``"window"`` (default) renders it
+                as a full-window overlay covering the viewport. Pass a container
+                -- a :class:`PanelHandle`, a tab, a folder, or the control panel
+                -- to render it inline there instead. Inside a ``with`` block on
+                a container, pass ``parent=None`` to use that context.
+            block_width: Target width of each block in pixels. Blocks stretch to
+                fill the row, so the realized width may be slightly larger.
+            block_height: Height of each block's snapshot area, in pixels.
+            gap: Gap between blocks, in pixels.
+            label: Optional title displayed above the grid.
+            hint: Optional hint to display on hover.
+            visible: Whether the gallery is visible initially.
+            order: Optional ordering, smallest values will be displayed first.
+
+        Returns:
+            A handle used to add, remove, and manage blocks.
+
+        Example:
+            >>> # Full-window gallery.
+            >>> gallery = server.gui.add_gallery(block_width=220)
+            >>> block = gallery.add_block("Actuator Housing", "Simon Slater", image=arr)
+            >>>
+            >>> # Or inside a movable panel.
+            >>> panel = server.gui.add_panel()
+            >>> tab = panel.add_tab("Parts")
+            >>> gallery = server.gui.add_gallery(parent=tab, block_width=140)
+            >>>
+            >>> @gallery.on_click
+            >>> def _(event):
+            >>>     print("clicked", event.target.title)
+        """
+        if block_width <= 0 or block_height <= 0:
+            raise ValueError("`block_width` and `block_height` must be positive.")
+        if gap < 0:
+            raise ValueError("`gap` must be non-negative.")
+
+        # A panel is a container for tabs, not for content: resolving one here
+        # would silently drop the gallery, so point the user at the tab.
+        if isinstance(parent, PanelHandle):
+            raise TypeError(
+                "A panel holds tabs, not content directly. Add the gallery to one "
+                "of its tabs:\n"
+                "    panel = server.gui.add_panel()\n"
+                '    gallery = server.gui.add_gallery(parent=panel.add_tab("Parts"))'
+            )
+
+        if parent == "window":
+            placement: Literal["window", "inline"] = "window"
+            # Galleries render outside the inline GUI tree, so the container is
+            # only a lifecycle parent; the root keeps it alive for the session.
+            container_uuid = self._get_container_uuid()
+        elif parent is None:
+            # Use the ambient `with container:` context.
+            placement = "inline"
+            container_uuid = self._get_container_uuid()
+        else:
+            placement = "inline"
+            container_uuid = self._container_uuid_from_handle(parent)
+
+        message = _messages.GuiGalleryMessage(
+            uuid=_make_uuid(),
+            container_uuid=container_uuid,
+            props=_messages.GuiGalleryProps(
+                order=_apply_default_order(order),
+                label=label,
+                hint=hint,
+                visible=visible,
+                disabled=False,
+                blocks=(),
+                block_width=block_width,
+                block_height=block_height,
+                gap=gap,
+                placement=placement,
+            ),
+        )
+        self._websock_interface.queue_message(message)
+
+        handle = GuiGalleryHandle(
+            _GuiHandleState(
+                message.uuid,
+                self,
+                None,
+                props=message.props,
+                parent_container_id=message.container_uuid,
+            )
+        )
+        self._gallery_handle_from_uuid[message.uuid] = handle
+        return handle
 
     @deprecated_positional_shim
     def add_checkbox(

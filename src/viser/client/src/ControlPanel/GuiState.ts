@@ -117,6 +117,11 @@ export interface GuiState {
    * top-level entity (like modals) -- NOT part of the inline GUI tree -- so
    * panels never appear in `guiUuidSetFromContainerUuid`. */
   panels: { [uuid: string]: GuiPanelMessage };
+  /** UUIDs of galleries (`server.gui.add_gallery()`), in creation order. Their
+   * configs live in the per-component config store like any other component;
+   * this index exists because galleries render as a full-window overlay rather
+   * than inline in their container, so the overlay needs to enumerate them. */
+  galleryUuids: string[];
   guiOrderFromUuid: { [id: string]: number };
   /** Set of form UUIDs that currently have unsaved changes. Updated by
    * GuiFormDirtyMessage (adds) and GuiFormSubmitMessage (removes). */
@@ -265,6 +270,7 @@ const cleanGuiState: GuiState = {
   timeline: null,
   toolbarConfig: null,
   panels: {},
+  galleryUuids: [],
   guiOrderFromUuid: {},
   dirtyFormUuids: {},
   uploadsInProgress: {},
@@ -372,6 +378,10 @@ export function useGuiState(initialServer: string) {
               [guiConfig.uuid]: true as const,
             },
           },
+          ...(guiConfig.type === "GuiGalleryMessage" &&
+          !state.galleryUuids.includes(guiConfig.uuid)
+            ? { galleryUuids: [...state.galleryUuids, guiConfig.uuid] }
+            : {}),
         });
         configStore.set({ [guiConfig.uuid]: guiConfig });
       },
@@ -472,6 +482,11 @@ export function useGuiState(initialServer: string) {
           guiOrderFromUuid: remainingOrders,
           dirtyFormUuids,
           guiUuidSetFromContainerUuid: newContainerMap,
+          ...(guiConfig.type === "GuiGalleryMessage"
+            ? {
+                galleryUuids: state.galleryUuids.filter((u) => u !== id),
+              }
+            : {}),
         });
         configStore.set({ [id]: undefined });
       },
@@ -486,6 +501,7 @@ export function useGuiState(initialServer: string) {
           timeline: cleanGuiState.timeline,
           toolbarConfig: cleanGuiState.toolbarConfig,
           panels: cleanGuiState.panels,
+          galleryUuids: cleanGuiState.galleryUuids,
           guiOrderFromUuid: cleanGuiState.guiOrderFromUuid,
           dirtyFormUuids: cleanGuiState.dirtyFormUuids,
           uploadsInProgress: cleanGuiState.uploadsInProgress,

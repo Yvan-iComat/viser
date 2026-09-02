@@ -6,6 +6,8 @@ GUI Handles
 
 .. autoclass:: viser.CommandHandle
 
+.. autoclass:: viser.GalleryBlockHandle
+
 .. autoclass:: viser.GuiButtonGroupHandle
 
 .. autoclass:: viser.GuiButtonHandle
@@ -21,6 +23,8 @@ GUI Handles
 .. autoclass:: viser.GuiFolderSelectButtonHandle
 
 .. autoclass:: viser.GuiFormHandle
+
+.. autoclass:: viser.GuiGalleryHandle
 
 .. autoclass:: viser.GuiHtmlHandle
 
