@@ -29,13 +29,19 @@ the common subset above.
 
 Usage
 -----
-    python xacro_to_urdf.py model.urdf.xacro -o model.urdf
-    python xacro_to_urdf.py model.urdf.xacro -o model.urdf \
+    python xacro_to_urdf.py model.urdf.xacro --output model.urdf
+    python xacro_to_urdf.py model.urdf.xacro --output model.urdf \
         --package-path ../ros_ws/src --arg prefix:=left_
 
-Verify the result loads before trusting it::
+``--mesh-paths copy`` also copies the referenced meshes next to the output, so
+the result is self-contained and loads from any directory::
 
-    python xacro_to_urdf.py model.urdf.xacro -o model.urdf --check
+    python xacro_to_urdf.py model.urdf.xacro --output out/model.urdf \
+        --package-path ../ros_ws/src --mesh-paths copy --check
+
+Always pass ``--check`` to confirm the result actually loads before trusting it.
+An incomplete expansion (missing macro packages) is refused rather than written,
+since a hollow URDF loads cleanly but is missing most of the robot.
 """
 
 from __future__ import annotations
@@ -116,9 +122,26 @@ def resolve_find(pkg: str, packages: dict[str, Path], strict: bool) -> str:
 
 _SAFE_FUNCS: dict[str, Any] = {
     k: getattr(math, k)
-    for k in ("pi", "sin", "cos", "tan", "asin", "acos", "atan", "atan2", "sqrt", "radians", "degrees", "fabs", "floor", "ceil")
+    for k in (
+        "pi",
+        "sin",
+        "cos",
+        "tan",
+        "asin",
+        "acos",
+        "atan",
+        "atan2",
+        "sqrt",
+        "radians",
+        "degrees",
+        "fabs",
+        "floor",
+        "ceil",
+    )
 }
-_SAFE_FUNCS.update({"True": True, "False": False, "min": min, "max": max, "abs": abs, "round": round})
+_SAFE_FUNCS.update(
+    {"True": True, "False": False, "min": min, "max": max, "abs": abs, "round": round}
+)
 
 
 def eval_expr(expr: str, symbols: dict[str, Any]) -> Any:
@@ -198,7 +221,9 @@ def substitute(text: str, ctx: Context) -> str:
     for _ in range(10):
         if "${" not in text:
             break
-        new = _DOLLAR_BRACE.sub(lambda m: str(eval_expr(m.group(1), ctx.symbols())), text)
+        new = _DOLLAR_BRACE.sub(
+            lambda m: str(eval_expr(m.group(1), ctx.symbols())), text
+        )
         if new == text:
             break
         text = new
@@ -230,7 +255,9 @@ def _xacro_name(el: ET.Element) -> str | None:
     return None
 
 
-def collect_definitions(root: ET.Element, base_dir: Path, ctx: Context) -> list[ET.Element]:
+def collect_definitions(
+    root: ET.Element, base_dir: Path, ctx: Context
+) -> list[ET.Element]:
     """Recursively process includes and hoist property/arg/macro definitions.
 
     Returns the flattened list of content nodes (definitions removed).
@@ -254,7 +281,11 @@ def collect_definitions(root: ET.Element, base_dir: Path, ctx: Context) -> list[
                 print(f"  warning: {msg}", file=sys.stderr)
                 ctx.unresolved.append(f"include {fname}")
                 continue
-            inc = (base_dir / fname).resolve() if not Path(fname).is_absolute() else Path(fname)
+            inc = (
+                (base_dir / fname).resolve()
+                if not Path(fname).is_absolute()
+                else Path(fname)
+            )
             if not inc.exists():
                 if ctx.strict:
                     raise XacroError(f"Include not found: {inc}\n  (from {base_dir})")
@@ -288,14 +319,20 @@ def collect_definitions(root: ET.Element, base_dir: Path, ctx: Context) -> list[
     return content
 
 
-def expand_node(el: ET.Element, ctx: Context, blocks: dict[str, list[ET.Element]]) -> list[ET.Element]:
+def expand_node(
+    el: ET.Element, ctx: Context, blocks: dict[str, list[ET.Element]]
+) -> list[ET.Element]:
     """Expand one element, returning zero or more concrete elements."""
     kind = _xacro_name(el)
 
     if kind == "insert_block":
-        return [c for b in blocks.get(el.get("name", ""), []) for c in expand_node(b, ctx, blocks)]
+        return [
+            c
+            for b in blocks.get(el.get("name", ""), [])
+            for c in expand_node(b, ctx, blocks)
+        ]
 
-    if kind == "if" or kind == "unless":
+    if kind in ("if", "unless"):
         cond = substitute(el.get("value", ""), ctx)
         truth = str(cond).strip().lower() in ("1", "true", "yes")
         if kind == "unless":
@@ -339,7 +376,10 @@ def expand_node(el: ET.Element, ctx: Context, blocks: dict[str, list[ET.Element]
 
 
 def instantiate_macro(
-    macro: ET.Element, call: ET.Element, ctx: Context, outer_blocks: dict[str, list[ET.Element]]
+    macro: ET.Element,
+    call: ET.Element,
+    ctx: Context,
+    outer_blocks: dict[str, list[ET.Element]],
 ) -> list[ET.Element]:
     """Instantiate a ``<xacro:macro>`` at a call site."""
     scope = ctx.child()
@@ -405,24 +445,29 @@ def expand_builtin(
 # --------------------------------------------------------------------------
 
 
-def expand_with_xacro_pkg(path: Path, args: dict[str, str], packages: dict[str, Path]) -> ET.Element:
+def expand_with_xacro_pkg(
+    path: Path, args: dict[str, str], packages: dict[str, Path]
+) -> ET.Element:
     """Expand using the actual ``xacro`` package, if it is importable."""
     import xacro  # noqa: PLC0415
 
-    # Teach xacro/ament how to find packages without a real ROS workspace.
-    try:
-        import ament_index_python.packages as aip  # noqa: PLC0415
-
-        aip.get_package_share_directory = lambda p, *a, **k: str(  # type: ignore[assignment]
-            packages.get(p, Path(p))
+    # Teach xacro how to resolve $(find pkg) without a ROS workspace. Upstream
+    # routes this through ament_index_python, which only exists under ROS, so
+    # point _eval_find at our own package map instead.
+    def _eval_find(pkg: str) -> str:
+        if pkg in packages:
+            return packages[pkg].as_posix()
+        raise XacroError(
+            f"Cannot resolve $(find {pkg}): package not found.\n"
+            f"  Known packages: {sorted(packages) or '(none)'}\n"
+            f"  Pass --package-path pointing at a directory that contains it."
         )
-    except ImportError:
-        pass
-    try:
-        import roslaunch.substitution_args as sub  # noqa: PLC0415
 
-        sub._find = lambda resolved, a, args_, context: resolved  # type: ignore[attr-defined]
-    except ImportError:
+    try:
+        import xacro.substitution_args as sub  # noqa: PLC0415
+
+        sub._eval_find = _eval_find  # type: ignore[attr-defined]
+    except (ImportError, AttributeError):
         pass
 
     doc = xacro.process_file(str(path), mappings={k: str(v) for k, v in args.items()})
@@ -434,7 +479,9 @@ def expand_with_xacro_pkg(path: Path, args: dict[str, str], packages: dict[str, 
 # --------------------------------------------------------------------------
 
 
-def rewrite_mesh_paths(root: ET.Element, packages: dict[str, Path], out_dir: Path, mode: str) -> int:
+def rewrite_mesh_paths(
+    root: ET.Element, packages: dict[str, Path], out_dir: Path, mode: str
+) -> int:
     """Normalize mesh filenames so a URDF loader can find them.
 
     ``mode='package'`` keeps ``package://pkg/...`` URIs (yourdfpy's
@@ -541,8 +588,10 @@ def check_urdf(path: Path) -> bool:
         print(f"  CHECK FAILED: {type(e).__name__}: {e}", file=sys.stderr)
         return False
     n_geom = len(urdf.scene.geometry) if urdf.scene is not None else 0
-    print(f"  check OK: {len(urdf.robot.links)} links, "
-          f"{len(urdf.actuated_joint_names)} actuated joints, {n_geom} mesh geometries")
+    print(
+        f"  check OK: {len(urdf.robot.links)} links, "
+        f"{len(urdf.actuated_joint_names)} actuated joints, {n_geom} mesh geometries"
+    )
     if n_geom == 0:
         print("  warning: no mesh geometry loaded - check mesh paths", file=sys.stderr)
     return True
@@ -576,7 +625,9 @@ def main(
     if not input.exists():
         raise SystemExit(f"Input not found: {input}")
 
-    out_path = output or input.parent / (input.name.replace(".xacro", "") or f"{input.stem}.urdf")
+    out_path = output or input.parent / (
+        input.name.replace(".xacro", "") or f"{input.stem}.urdf"
+    )
     if out_path.suffix != ".urdf":
         out_path = out_path.with_suffix(".urdf")
 
@@ -608,12 +659,24 @@ def main(
             root = expand_with_xacro_pkg(input, cli_args, packages)
         except Exception as e:
             if backend == "xacro":
-                raise SystemExit(f"xacro backend failed: {type(e).__name__}: {e}") from e
-            print(f"  xacro backend failed ({type(e).__name__}), using builtin", file=sys.stderr)
-            root, unresolved = expand_builtin(input, cli_args, packages, strict)
+                raise SystemExit(
+                    f"xacro backend failed: {type(e).__name__}: {e}"
+                ) from e
+            print(
+                f"  xacro backend failed ({type(e).__name__}), using builtin",
+                file=sys.stderr,
+            )
+            try:
+                root, unresolved = expand_builtin(input, cli_args, packages, strict)
+            except XacroError as e2:
+                raise SystemExit(f"\n  ERROR: {e2}") from None
     else:
         print("  backend: builtin expander")
-        root, unresolved = expand_builtin(input, cli_args, packages, strict)
+        try:
+            root, unresolved = expand_builtin(input, cli_args, packages, strict)
+        except XacroError as e:
+            # Expected, actionable failure: report it without a traceback.
+            raise SystemExit(f"\n  ERROR: {e}") from None
 
     n_links = len(root.findall("link"))
     n_joints = len(root.findall("joint"))
@@ -637,7 +700,9 @@ def main(
         raise SystemExit(2)
 
     if n_links == 0:
-        print("\n  ERROR: expansion produced 0 links; nothing written.", file=sys.stderr)
+        print(
+            "\n  ERROR: expansion produced 0 links; nothing written.", file=sys.stderr
+        )
         raise SystemExit(2)
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
