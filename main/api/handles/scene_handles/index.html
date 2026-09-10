@@ -3801,6 +3801,16 @@ vertices. Should have shape (F, 3).</p>
 </dd></dl>
 
 <dl class="py attribute">
+<dt class="sig sig-object py" id="viser.MeshHandle.vertex_colors">
+<span class="sig-name descname"><span class="pre">vertex_colors</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">npt.NDArray</span><span class="p"><span class="pre">[</span></span><span class="pre">np.uint8</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></em><a class="headerlink" href="#viser.MeshHandle.vertex_colors" title="Link to this definition">¶</a></dt>
+<dd><p>Optional per-vertex colors as RGB integers, shape (V, 3). Colors are
+interpolated across each triangle by the rasterizer, which gives smooth
+gradients when adjacent faces share vertices. Values are interpreted as
+sRGB (same convention as <cite>color</cite>) and converted to linear on the client.
+When set, <cite>color</cite> is ignored. None means use the uniform <cite>color</cite>.</p>
+</dd></dl>
+
+<dl class="py attribute">
 <dt class="sig sig-object py" id="viser.MeshHandle.wireframe">
 <span class="sig-name descname"><span class="pre">wireframe</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></em><a class="headerlink" href="#viser.MeshHandle.wireframe" title="Link to this definition">¶</a></dt>
 <dd><p>Boolean indicating if the mesh should be rendered as a wireframe.</p>
@@ -4090,6 +4100,16 @@ vertices. Should have shape (F, 3).</p>
 <dt class="sig sig-object py" id="viser.MeshSkinnedHandle.color">
 <span class="sig-name descname"><span class="pre">color</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#viser.MeshSkinnedHandle.color" title="Link to this definition">¶</a></dt>
 <dd><p>Color of the mesh as RGB integers.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="viser.MeshSkinnedHandle.vertex_colors">
+<span class="sig-name descname"><span class="pre">vertex_colors</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">npt.NDArray</span><span class="p"><span class="pre">[</span></span><span class="pre">np.uint8</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></em><a class="headerlink" href="#viser.MeshSkinnedHandle.vertex_colors" title="Link to this definition">¶</a></dt>
+<dd><p>Optional per-vertex colors as RGB integers, shape (V, 3). Colors are
+interpolated across each triangle by the rasterizer, which gives smooth
+gradients when adjacent faces share vertices. Values are interpreted as
+sRGB (same convention as <cite>color</cite>) and converted to linear on the client.
+When set, <cite>color</cite> is ignored. None means use the uniform <cite>color</cite>.</p>
 </dd></dl>
 
 <dl class="py attribute">
@@ -5377,6 +5397,7 @@ deprecated <a class="reference internal" href="#viser.TransformControlsHandle.on
 <li><a class="reference internal" href="#viser.MeshHandle.vertices"><code class="docutils literal notranslate"><span class="pre">MeshHandle.vertices</span></code></a></li>
 <li><a class="reference internal" href="#viser.MeshHandle.faces"><code class="docutils literal notranslate"><span class="pre">MeshHandle.faces</span></code></a></li>
 <li><a class="reference internal" href="#viser.MeshHandle.color"><code class="docutils literal notranslate"><span class="pre">MeshHandle.color</span></code></a></li>
+<li><a class="reference internal" href="#viser.MeshHandle.vertex_colors"><code class="docutils literal notranslate"><span class="pre">MeshHandle.vertex_colors</span></code></a></li>
 <li><a class="reference internal" href="#viser.MeshHandle.wireframe"><code class="docutils literal notranslate"><span class="pre">MeshHandle.wireframe</span></code></a></li>
 <li><a class="reference internal" href="#viser.MeshHandle.opacity"><code class="docutils literal notranslate"><span class="pre">MeshHandle.opacity</span></code></a></li>
 <li><a class="reference internal" href="#viser.MeshHandle.flat_shading"><code class="docutils literal notranslate"><span class="pre">MeshHandle.flat_shading</span></code></a></li>
@@ -5411,6 +5432,7 @@ deprecated <a class="reference internal" href="#viser.TransformControlsHandle.on
 <li><a class="reference internal" href="#viser.MeshSkinnedHandle.vertices"><code class="docutils literal notranslate"><span class="pre">MeshSkinnedHandle.vertices</span></code></a></li>
 <li><a class="reference internal" href="#viser.MeshSkinnedHandle.faces"><code class="docutils literal notranslate"><span class="pre">MeshSkinnedHandle.faces</span></code></a></li>
 <li><a class="reference internal" href="#viser.MeshSkinnedHandle.color"><code class="docutils literal notranslate"><span class="pre">MeshSkinnedHandle.color</span></code></a></li>
+<li><a class="reference internal" href="#viser.MeshSkinnedHandle.vertex_colors"><code class="docutils literal notranslate"><span class="pre">MeshSkinnedHandle.vertex_colors</span></code></a></li>
 <li><a class="reference internal" href="#viser.MeshSkinnedHandle.wireframe"><code class="docutils literal notranslate"><span class="pre">MeshSkinnedHandle.wireframe</span></code></a></li>
 <li><a class="reference internal" href="#viser.MeshSkinnedHandle.opacity"><code class="docutils literal notranslate"><span class="pre">MeshSkinnedHandle.opacity</span></code></a></li>
 <li><a class="reference internal" href="#viser.MeshSkinnedHandle.flat_shading"><code class="docutils literal notranslate"><span class="pre">MeshSkinnedHandle.flat_shading</span></code></a></li>

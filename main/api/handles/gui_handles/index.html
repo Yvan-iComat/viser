@@ -509,6 +509,91 @@ on non-Firefox browsers) and can optionally be triggered via hotkeys.</p>
 </dd></dl>
 
 <dl class="py class">
+<dt class="sig sig-object py" id="viser.GalleryBlockHandle">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">viser.</span></span><span class="sig-name descname"><span class="pre">GalleryBlockHandle</span></span><a class="reference internal" href="../../../_modules/viser/_gui_handles/#GalleryBlockHandle"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#viser.GalleryBlockHandle" title="Link to this definition">¶</a></dt>
+<dd><p>Handle for a single block (card) within a gallery.</p>
+<p>Blocks are not standalone GUI components: the gallery owns all block state
+in its <code class="docutils literal notranslate"><span class="pre">blocks</span></code> prop, and this handle is a façade that reads and rewrites
+the entry matching its <code class="docutils literal notranslate"><span class="pre">block_id</span></code>. Mutating a removed block is a no-op.</p>
+<dl class="py property">
+<dt class="sig sig-object py" id="viser.GalleryBlockHandle.block_id">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">block_id</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></em><a class="headerlink" href="#viser.GalleryBlockHandle.block_id" title="Link to this definition">¶</a></dt>
+<dd><p>Stable identifier for this block.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="viser.GalleryBlockHandle.removed">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">removed</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></em><a class="headerlink" href="#viser.GalleryBlockHandle.removed" title="Link to this definition">¶</a></dt>
+<dd><p>Whether this block has been removed from its gallery.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="viser.GalleryBlockHandle.title">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">title</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></em><a class="headerlink" href="#viser.GalleryBlockHandle.title" title="Link to this definition">¶</a></dt>
+<dd><p>Title text shown in the block footer. Synchronized when assigned.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="viser.GalleryBlockHandle.subtitle">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">subtitle</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></em><a class="headerlink" href="#viser.GalleryBlockHandle.subtitle" title="Link to this definition">¶</a></dt>
+<dd><p>Optional subtitle shown below the title. Synchronized when assigned.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="viser.GalleryBlockHandle.set_image">
+<span class="sig-name descname"><span class="pre">set_image</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">image</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../../../_modules/viser/_gui_handles/#GalleryBlockHandle.set_image"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#viser.GalleryBlockHandle.set_image" title="Link to this definition">¶</a></dt>
+<dd><p>Replace this block’s snapshot with a numpy image.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>image</strong> (<em>ndarray</em>) – (H, W, 3) or (H, W, 4) uint8 array.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="viser.GalleryBlockHandle.remove">
+<span class="sig-name descname"><span class="pre">remove</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../../../_modules/viser/_gui_handles/#GalleryBlockHandle.remove"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#viser.GalleryBlockHandle.remove" title="Link to this definition">¶</a></dt>
+<dd><p>Remove this block from its gallery.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="viser.GalleryBlockHandle.on_click">
+<span class="sig-name descname"><span class="pre">on_click</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">func</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.14)"><span class="pre">Callable</span></a><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="../../advanced/events/#viser.GalleryBlockEvent" title="viser._gui_handles.GalleryBlockEvent"><span class="pre">GalleryBlockEvent</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">NoneOrCoroutine</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.14)"><span class="pre">Callable</span></a><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="../../advanced/events/#viser.GalleryBlockEvent" title="viser._gui_handles.GalleryBlockEvent"><span class="pre">GalleryBlockEvent</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">NoneOrCoroutine</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../../../_modules/viser/_gui_handles/#GalleryBlockHandle.on_click"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#viser.GalleryBlockHandle.on_click" title="Link to this definition">¶</a></dt>
+<dd><p>Attach a callback for when this block is left clicked.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<ul class="simple">
+<li><p>If <cite>func</cite> is a regular function (defined with <cite>def</cite>), it will be executed in a thread pool.</p></li>
+<li><p>If <cite>func</cite> is an async function (defined with <cite>async def</cite>), it will be executed in the event loop.</p></li>
+</ul>
+</div>
+<p class="rubric">Example</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="nd">@block</span><span class="o">.</span><span class="n">on_click</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">def</span><span class="w"> </span><span class="nf">_</span><span class="p">(</span><span class="n">event</span><span class="p">):</span>
+<span class="gp">&gt;&gt;&gt; </span>    <span class="nb">print</span><span class="p">(</span><span class="s2">"clicked"</span><span class="p">,</span> <span class="n">event</span><span class="o">.</span><span class="n">target</span><span class="o">.</span><span class="n">title</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>func</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.14)"><em>Callable</em></a><em>[</em><em>[</em><a class="reference internal" href="../../advanced/events/#viser.GalleryBlockEvent" title="viser._gui_handles.GalleryBlockEvent"><em>GalleryBlockEvent</em></a><em>]</em><em>, </em><em>NoneOrCoroutine</em><em>]</em>)</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.14)"><em>Callable</em></a>[[<a class="reference internal" href="../../advanced/events/#viser.GalleryBlockEvent" title="viser._gui_handles.GalleryBlockEvent"><em>GalleryBlockEvent</em></a>], <em>NoneOrCoroutine</em>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
 <dt class="sig sig-object py" id="viser.GuiButtonGroupHandle">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">viser.</span></span><span class="sig-name descname"><span class="pre">GuiButtonGroupHandle</span></span><a class="reference internal" href="../../../_modules/viser/_gui_handles/#GuiButtonGroupHandle"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#viser.GuiButtonGroupHandle" title="Link to this definition">¶</a></dt>
 <dd><p>Handle for a button group input in our visualizer.</p>
@@ -809,6 +894,90 @@ the button is held. Defaults to 10.0 Hz.</p></li>
 <dt class="sig sig-object py" id="viser.GuiCheckboxHandle.disabled">
 <span class="sig-name descname"><span class="pre">disabled</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></em><a class="headerlink" href="#viser.GuiCheckboxHandle.disabled" title="Link to this definition">¶</a></dt>
 <dd><p>Disabled state of the GUI element.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="viser.GuiColorbarHandle">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">viser.</span></span><span class="sig-name descname"><span class="pre">GuiColorbarHandle</span></span><a class="reference internal" href="../../../_modules/viser/_gui_handles/#GuiColorbarHandle"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#viser.GuiColorbarHandle" title="Link to this definition">¶</a></dt>
+<dd><p>Handle for updating and removing colorbars.</p>
+<p>Every prop is assignable, so a colorbar can follow a live colormap or data
+range: <code class="docutils literal notranslate"><span class="pre">colorbar.colors</span> <span class="pre">=</span> <span class="pre">new_ramp</span></code>, <code class="docutils literal notranslate"><span class="pre">colorbar.vmax</span> <span class="pre">=</span> <span class="pre">42.0</span></code>.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="viser.GuiColorbarHandle.remove">
+<span class="sig-name descname"><span class="pre">remove</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span></span><a class="headerlink" href="#viser.GuiColorbarHandle.remove" title="Link to this definition">¶</a></dt>
+<dd><p>Permanently remove this GUI element from the visualizer.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="viser.GuiColorbarHandle.order">
+<span class="sig-name descname"><span class="pre">order</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></em><a class="headerlink" href="#viser.GuiColorbarHandle.order" title="Link to this definition">¶</a></dt>
+<dd><p>Order value for arranging GUI elements.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="viser.GuiColorbarHandle.colors">
+<span class="sig-name descname"><span class="pre">colors</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">npt.NDArray</span><span class="p"><span class="pre">[</span></span><span class="pre">np.uint8</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#viser.GuiColorbarHandle.colors" title="Link to this definition">¶</a></dt>
+<dd><p>Colormap control points as RGB integers, shape (N, 3), N &gt;= 2. Spaced
+evenly from <cite>vmin</cite> to <cite>vmax</cite> and interpolated between.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="viser.GuiColorbarHandle.vmin">
+<span class="sig-name descname"><span class="pre">vmin</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></em><a class="headerlink" href="#viser.GuiColorbarHandle.vmin" title="Link to this definition">¶</a></dt>
+<dd><p>Data value at the low end of the ramp.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="viser.GuiColorbarHandle.vmax">
+<span class="sig-name descname"><span class="pre">vmax</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></em><a class="headerlink" href="#viser.GuiColorbarHandle.vmax" title="Link to this definition">¶</a></dt>
+<dd><p>Data value at the high end of the ramp.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="viser.GuiColorbarHandle.label">
+<span class="sig-name descname"><span class="pre">label</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></em><a class="headerlink" href="#viser.GuiColorbarHandle.label" title="Link to this definition">¶</a></dt>
+<dd><p>Title shown above the bar. None for no title.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="viser.GuiColorbarHandle.ticks">
+<span class="sig-name descname"><span class="pre">ticks</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#viser.GuiColorbarHandle.ticks" title="Link to this definition">¶</a></dt>
+<dd><p>Tick marks as (data value, label) pairs. Values outside [vmin, vmax]
+are not drawn.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="viser.GuiColorbarHandle.orientation">
+<span class="sig-name descname"><span class="pre">orientation</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Literal</span><span class="p"><span class="pre">[</span></span><span class="s"><span class="pre">'vertical'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'horizontal'</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#viser.GuiColorbarHandle.orientation" title="Link to this definition">¶</a></dt>
+<dd><p>Bar direction. Vertical puts <cite>vmax</cite> at the top and ticks on the right;
+horizontal puts <cite>vmax</cite> at the right and ticks below.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="viser.GuiColorbarHandle.length">
+<span class="sig-name descname"><span class="pre">length</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></em><a class="headerlink" href="#viser.GuiColorbarHandle.length" title="Link to this definition">¶</a></dt>
+<dd><p>Length of the bar in pixels (height when vertical, width when
+horizontal).</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="viser.GuiColorbarHandle.thickness">
+<span class="sig-name descname"><span class="pre">thickness</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></em><a class="headerlink" href="#viser.GuiColorbarHandle.thickness" title="Link to this definition">¶</a></dt>
+<dd><p>Thickness of the bar in pixels (width when vertical, height when
+horizontal).</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="viser.GuiColorbarHandle.visible">
+<span class="sig-name descname"><span class="pre">visible</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></em><a class="headerlink" href="#viser.GuiColorbarHandle.visible" title="Link to this definition">¶</a></dt>
+<dd><p>Visibility state of the colorbar.</p>
 </dd></dl>
 
 </dd></dl>
@@ -1196,6 +1365,151 @@ a header or border (useful for pure layout grouping).</p>
 <dt class="sig sig-object py" id="viser.GuiFormHandle.expand_by_default">
 <span class="sig-name descname"><span class="pre">expand_by_default</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></em><a class="headerlink" href="#viser.GuiFormHandle.expand_by_default" title="Link to this definition">¶</a></dt>
 <dd><p>Whether the folder should be expanded by default.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="viser.GuiGalleryHandle">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">viser.</span></span><span class="sig-name descname"><span class="pre">GuiGalleryHandle</span></span><a class="reference internal" href="../../../_modules/viser/_gui_handles/#GuiGalleryHandle"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#viser.GuiGalleryHandle" title="Link to this definition">¶</a></dt>
+<dd><p>Handle for a gallery of clickable image blocks arranged in a grid.</p>
+<p>The grid’s column count is derived by the client from <code class="docutils literal notranslate"><span class="pre">block_width</span></code> and
+the available width, so the gallery reflows to fill the window.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="viser.GuiGalleryHandle.add_block">
+<span class="sig-name descname"><span class="pre">add_block</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">title</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">subtitle</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">image</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stl</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.14)"><span class="pre">Path</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#bytes" title="(in Python v3.14)"><span class="pre">bytes</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">block_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeout</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">10.0</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#viser.GalleryBlockHandle" title="viser._gui_handles.GalleryBlockHandle"><span class="pre">GalleryBlockHandle</span></a></span></span><a class="reference internal" href="../../../_modules/viser/_gui_handles/#GuiGalleryHandle.add_block"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#viser.GuiGalleryHandle.add_block" title="Link to this definition">¶</a></dt>
+<dd><p>Add a block to the gallery.</p>
+<p>Exactly one of <code class="docutils literal notranslate"><span class="pre">image</span></code> or <code class="docutils literal notranslate"><span class="pre">stl</span></code> must be provided.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>title</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – Title text, shown in the block footer.</p></li>
+<li><p><strong>subtitle</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em> | </em><em>None</em>) – Optional subtitle, shown below the title.</p></li>
+<li><p><strong>image</strong> (<em>ndarray</em><em> | </em><em>None</em>) – Snapshot as an (H, W, 3) or (H, W, 4) uint8 numpy array.</p></li>
+<li><p><strong>stl</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em> | </em><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.14)"><em>Path</em></a><em> | </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#bytes" title="(in Python v3.14)"><em>bytes</em></a><em> | </em><em>None</em>) – Path to (or raw bytes of) an STL mesh. A snapshot is rendered
+from it in the browser; requires a connected client.</p></li>
+<li><p><strong>block_id</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em> | </em><em>None</em>) – Optional stable identifier. Generated if omitted.</p></li>
+<li><p><strong>timeout</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em> | </em><em>None</em>) – Seconds to wait for an STL snapshot before giving up. The
+block is still added; its image stays blank on timeout.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A handle for manipulating the new block.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#viser.GalleryBlockHandle" title="viser._gui_handles.GalleryBlockHandle"><em>GalleryBlockHandle</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="viser.GuiGalleryHandle.remove_block">
+<span class="sig-name descname"><span class="pre">remove_block</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">block</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#viser.GalleryBlockHandle" title="viser._gui_handles.GalleryBlockHandle"><span class="pre">GalleryBlockHandle</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../../../_modules/viser/_gui_handles/#GuiGalleryHandle.remove_block"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#viser.GuiGalleryHandle.remove_block" title="Link to this definition">¶</a></dt>
+<dd><p>Remove a block from the gallery.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>block</strong> (<a class="reference internal" href="#viser.GalleryBlockHandle" title="viser._gui_handles.GalleryBlockHandle"><em>GalleryBlockHandle</em></a><em> | </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – The block handle, or its <code class="docutils literal notranslate"><span class="pre">block_id</span></code>. Unknown ids are ignored.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="viser.GuiGalleryHandle.on_click">
+<span class="sig-name descname"><span class="pre">on_click</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">func</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.14)"><span class="pre">Callable</span></a><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="../../advanced/events/#viser.GalleryBlockEvent" title="viser._gui_handles.GalleryBlockEvent"><span class="pre">GalleryBlockEvent</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">NoneOrCoroutine</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.14)"><span class="pre">Callable</span></a><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="../../advanced/events/#viser.GalleryBlockEvent" title="viser._gui_handles.GalleryBlockEvent"><span class="pre">GalleryBlockEvent</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">NoneOrCoroutine</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../../../_modules/viser/_gui_handles/#GuiGalleryHandle.on_click"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#viser.GuiGalleryHandle.on_click" title="Link to this definition">¶</a></dt>
+<dd><p>Attach a callback for when any block in this gallery is clicked.</p>
+<p>Fires after any per-block callbacks. The clicked block is available as
+<code class="docutils literal notranslate"><span class="pre">event.target</span></code>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<ul class="simple">
+<li><p>If <cite>func</cite> is a regular function (defined with <cite>def</cite>), it will be executed in a thread pool.</p></li>
+<li><p>If <cite>func</cite> is an async function (defined with <cite>async def</cite>), it will be executed in the event loop.</p></li>
+</ul>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>func</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.14)"><em>Callable</em></a><em>[</em><em>[</em><a class="reference internal" href="../../advanced/events/#viser.GalleryBlockEvent" title="viser._gui_handles.GalleryBlockEvent"><em>GalleryBlockEvent</em></a><em>]</em><em>, </em><em>NoneOrCoroutine</em><em>]</em>)</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.14)"><em>Callable</em></a>[[<a class="reference internal" href="../../advanced/events/#viser.GalleryBlockEvent" title="viser._gui_handles.GalleryBlockEvent"><em>GalleryBlockEvent</em></a>], <em>NoneOrCoroutine</em>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="viser.GuiGalleryHandle.remove">
+<span class="sig-name descname"><span class="pre">remove</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span></span><a class="headerlink" href="#viser.GuiGalleryHandle.remove" title="Link to this definition">¶</a></dt>
+<dd><p>Permanently remove this GUI element from the visualizer.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="viser.GuiGalleryHandle.blocks">
+<span class="sig-name descname"><span class="pre">blocks</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">GuiGalleryBlock</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#viser.GuiGalleryHandle.blocks" title="Link to this definition">¶</a></dt>
+<dd><p>Blocks to display, in grid order.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="viser.GuiGalleryHandle.block_width">
+<span class="sig-name descname"><span class="pre">block_width</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></em><a class="headerlink" href="#viser.GuiGalleryHandle.block_width" title="Link to this definition">¶</a></dt>
+<dd><p>Target width of each block in pixels. Determines blocks per row.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="viser.GuiGalleryHandle.block_height">
+<span class="sig-name descname"><span class="pre">block_height</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></em><a class="headerlink" href="#viser.GuiGalleryHandle.block_height" title="Link to this definition">¶</a></dt>
+<dd><p>Height of each block’s snapshot area, in pixels.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="viser.GuiGalleryHandle.gap">
+<span class="sig-name descname"><span class="pre">gap</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></em><a class="headerlink" href="#viser.GuiGalleryHandle.gap" title="Link to this definition">¶</a></dt>
+<dd><p>Gap between blocks, in pixels.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="viser.GuiGalleryHandle.placement">
+<span class="sig-name descname"><span class="pre">placement</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Literal</span><span class="p"><span class="pre">[</span></span><span class="s"><span class="pre">'window'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'inline'</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#viser.GuiGalleryHandle.placement" title="Link to this definition">¶</a></dt>
+<dd><p>Where the gallery renders. ‘window’ covers the viewport as a full-window
+overlay; ‘inline’ renders in its container (a panel tab, folder, or the
+control panel) like any other GUI component.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="viser.GuiGalleryHandle.order">
+<span class="sig-name descname"><span class="pre">order</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></em><a class="headerlink" href="#viser.GuiGalleryHandle.order" title="Link to this definition">¶</a></dt>
+<dd><p>Order value for arranging GUI elements.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="viser.GuiGalleryHandle.label">
+<span class="sig-name descname"><span class="pre">label</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></em><a class="headerlink" href="#viser.GuiGalleryHandle.label" title="Link to this definition">¶</a></dt>
+<dd><p>Label text for the GUI element.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="viser.GuiGalleryHandle.hint">
+<span class="sig-name descname"><span class="pre">hint</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></em><a class="headerlink" href="#viser.GuiGalleryHandle.hint" title="Link to this definition">¶</a></dt>
+<dd><p>Optional hint text for the GUI element.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="viser.GuiGalleryHandle.visible">
+<span class="sig-name descname"><span class="pre">visible</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></em><a class="headerlink" href="#viser.GuiGalleryHandle.visible" title="Link to this definition">¶</a></dt>
+<dd><p>Visibility state of the GUI element.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="viser.GuiGalleryHandle.disabled">
+<span class="sig-name descname"><span class="pre">disabled</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></em><a class="headerlink" href="#viser.GuiGalleryHandle.disabled" title="Link to this definition">¶</a></dt>
+<dd><p>Disabled state of the GUI element.</p>
 </dd></dl>
 
 </dd></dl>
@@ -1661,12 +1975,6 @@ synchronized between all connected clients. When a GUI element is added via
 <dt class="sig sig-object py" id="viser.GuiPlotlyHandle">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">viser.</span></span><span class="sig-name descname"><span class="pre">GuiPlotlyHandle</span></span><a class="reference internal" href="../../../_modules/viser/_gui_handles/#GuiPlotlyHandle"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#viser.GuiPlotlyHandle" title="Link to this definition">¶</a></dt>
 <dd><p>Handle for updating and removing Plotly figures.</p>
-<dl class="py property">
-<dt class="sig sig-object py" id="viser.GuiPlotlyHandle.figure">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">figure</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">go.Figure</span></em><a class="headerlink" href="#viser.GuiPlotlyHandle.figure" title="Link to this definition">¶</a></dt>
-<dd><p>Current Plotly figure. Synchronized automatically when assigned.</p>
-</dd></dl>
-
 <dl class="py method">
 <dt class="sig sig-object py" id="viser.GuiPlotlyHandle.remove">
 <span class="sig-name descname"><span class="pre">remove</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span></span><a class="headerlink" href="#viser.GuiPlotlyHandle.remove" title="Link to this definition">¶</a></dt>
@@ -1694,6 +2002,12 @@ synchronized between all connected clients. When a GUI element is added via
 <dt class="sig sig-object py" id="viser.GuiPlotlyHandle.visible">
 <span class="sig-name descname"><span class="pre">visible</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></em><a class="headerlink" href="#viser.GuiPlotlyHandle.visible" title="Link to this definition">¶</a></dt>
 <dd><p>Visibility state of the plot.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="viser.GuiPlotlyHandle.figure">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">figure</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">go.Figure</span></em><a class="headerlink" href="#viser.GuiPlotlyHandle.figure" title="Link to this definition">¶</a></dt>
+<dd><p>Current Plotly figure. Synchronized automatically when assigned.</p>
 </dd></dl>
 
 </dd></dl>
@@ -3177,6 +3491,16 @@ errors defaults to ‘strict’.</p>
 <li><a class="reference internal" href="#viser.CommandHandle.remove"><code class="docutils literal notranslate"><span class="pre">CommandHandle.remove()</span></code></a></li>
 </ul>
 </li>
+<li><a class="reference internal" href="#viser.GalleryBlockHandle"><code class="docutils literal notranslate"><span class="pre">GalleryBlockHandle</span></code></a><ul>
+<li><a class="reference internal" href="#viser.GalleryBlockHandle.block_id"><code class="docutils literal notranslate"><span class="pre">GalleryBlockHandle.block_id</span></code></a></li>
+<li><a class="reference internal" href="#viser.GalleryBlockHandle.removed"><code class="docutils literal notranslate"><span class="pre">GalleryBlockHandle.removed</span></code></a></li>
+<li><a class="reference internal" href="#viser.GalleryBlockHandle.title"><code class="docutils literal notranslate"><span class="pre">GalleryBlockHandle.title</span></code></a></li>
+<li><a class="reference internal" href="#viser.GalleryBlockHandle.subtitle"><code class="docutils literal notranslate"><span class="pre">GalleryBlockHandle.subtitle</span></code></a></li>
+<li><a class="reference internal" href="#viser.GalleryBlockHandle.set_image"><code class="docutils literal notranslate"><span class="pre">GalleryBlockHandle.set_image()</span></code></a></li>
+<li><a class="reference internal" href="#viser.GalleryBlockHandle.remove"><code class="docutils literal notranslate"><span class="pre">GalleryBlockHandle.remove()</span></code></a></li>
+<li><a class="reference internal" href="#viser.GalleryBlockHandle.on_click"><code class="docutils literal notranslate"><span class="pre">GalleryBlockHandle.on_click()</span></code></a></li>
+</ul>
+</li>
 <li><a class="reference internal" href="#viser.GuiButtonGroupHandle"><code class="docutils literal notranslate"><span class="pre">GuiButtonGroupHandle</span></code></a><ul>
 <li><a class="reference internal" href="#viser.GuiButtonGroupHandle.value"><code class="docutils literal notranslate"><span class="pre">GuiButtonGroupHandle.value</span></code></a></li>
 <li><a class="reference internal" href="#viser.GuiButtonGroupHandle.on_click"><code class="docutils literal notranslate"><span class="pre">GuiButtonGroupHandle.on_click()</span></code></a></li>
@@ -3216,6 +3540,20 @@ errors defaults to ‘strict’.</p>
 <li><a class="reference internal" href="#viser.GuiCheckboxHandle.hint"><code class="docutils literal notranslate"><span class="pre">GuiCheckboxHandle.hint</span></code></a></li>
 <li><a class="reference internal" href="#viser.GuiCheckboxHandle.visible"><code class="docutils literal notranslate"><span class="pre">GuiCheckboxHandle.visible</span></code></a></li>
 <li><a class="reference internal" href="#viser.GuiCheckboxHandle.disabled"><code class="docutils literal notranslate"><span class="pre">GuiCheckboxHandle.disabled</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#viser.GuiColorbarHandle"><code class="docutils literal notranslate"><span class="pre">GuiColorbarHandle</span></code></a><ul>
+<li><a class="reference internal" href="#viser.GuiColorbarHandle.remove"><code class="docutils literal notranslate"><span class="pre">GuiColorbarHandle.remove()</span></code></a></li>
+<li><a class="reference internal" href="#viser.GuiColorbarHandle.order"><code class="docutils literal notranslate"><span class="pre">GuiColorbarHandle.order</span></code></a></li>
+<li><a class="reference internal" href="#viser.GuiColorbarHandle.colors"><code class="docutils literal notranslate"><span class="pre">GuiColorbarHandle.colors</span></code></a></li>
+<li><a class="reference internal" href="#viser.GuiColorbarHandle.vmin"><code class="docutils literal notranslate"><span class="pre">GuiColorbarHandle.vmin</span></code></a></li>
+<li><a class="reference internal" href="#viser.GuiColorbarHandle.vmax"><code class="docutils literal notranslate"><span class="pre">GuiColorbarHandle.vmax</span></code></a></li>
+<li><a class="reference internal" href="#viser.GuiColorbarHandle.label"><code class="docutils literal notranslate"><span class="pre">GuiColorbarHandle.label</span></code></a></li>
+<li><a class="reference internal" href="#viser.GuiColorbarHandle.ticks"><code class="docutils literal notranslate"><span class="pre">GuiColorbarHandle.ticks</span></code></a></li>
+<li><a class="reference internal" href="#viser.GuiColorbarHandle.orientation"><code class="docutils literal notranslate"><span class="pre">GuiColorbarHandle.orientation</span></code></a></li>
+<li><a class="reference internal" href="#viser.GuiColorbarHandle.length"><code class="docutils literal notranslate"><span class="pre">GuiColorbarHandle.length</span></code></a></li>
+<li><a class="reference internal" href="#viser.GuiColorbarHandle.thickness"><code class="docutils literal notranslate"><span class="pre">GuiColorbarHandle.thickness</span></code></a></li>
+<li><a class="reference internal" href="#viser.GuiColorbarHandle.visible"><code class="docutils literal notranslate"><span class="pre">GuiColorbarHandle.visible</span></code></a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#viser.GuiDividerHandle"><code class="docutils literal notranslate"><span class="pre">GuiDividerHandle</span></code></a><ul>
@@ -3269,6 +3607,23 @@ errors defaults to ‘strict’.</p>
 <li><a class="reference internal" href="#viser.GuiFormHandle.label"><code class="docutils literal notranslate"><span class="pre">GuiFormHandle.label</span></code></a></li>
 <li><a class="reference internal" href="#viser.GuiFormHandle.visible"><code class="docutils literal notranslate"><span class="pre">GuiFormHandle.visible</span></code></a></li>
 <li><a class="reference internal" href="#viser.GuiFormHandle.expand_by_default"><code class="docutils literal notranslate"><span class="pre">GuiFormHandle.expand_by_default</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#viser.GuiGalleryHandle"><code class="docutils literal notranslate"><span class="pre">GuiGalleryHandle</span></code></a><ul>
+<li><a class="reference internal" href="#viser.GuiGalleryHandle.add_block"><code class="docutils literal notranslate"><span class="pre">GuiGalleryHandle.add_block()</span></code></a></li>
+<li><a class="reference internal" href="#viser.GuiGalleryHandle.remove_block"><code class="docutils literal notranslate"><span class="pre">GuiGalleryHandle.remove_block()</span></code></a></li>
+<li><a class="reference internal" href="#viser.GuiGalleryHandle.on_click"><code class="docutils literal notranslate"><span class="pre">GuiGalleryHandle.on_click()</span></code></a></li>
+<li><a class="reference internal" href="#viser.GuiGalleryHandle.remove"><code class="docutils literal notranslate"><span class="pre">GuiGalleryHandle.remove()</span></code></a></li>
+<li><a class="reference internal" href="#viser.GuiGalleryHandle.blocks"><code class="docutils literal notranslate"><span class="pre">GuiGalleryHandle.blocks</span></code></a></li>
+<li><a class="reference internal" href="#viser.GuiGalleryHandle.block_width"><code class="docutils literal notranslate"><span class="pre">GuiGalleryHandle.block_width</span></code></a></li>
+<li><a class="reference internal" href="#viser.GuiGalleryHandle.block_height"><code class="docutils literal notranslate"><span class="pre">GuiGalleryHandle.block_height</span></code></a></li>
+<li><a class="reference internal" href="#viser.GuiGalleryHandle.gap"><code class="docutils literal notranslate"><span class="pre">GuiGalleryHandle.gap</span></code></a></li>
+<li><a class="reference internal" href="#viser.GuiGalleryHandle.placement"><code class="docutils literal notranslate"><span class="pre">GuiGalleryHandle.placement</span></code></a></li>
+<li><a class="reference internal" href="#viser.GuiGalleryHandle.order"><code class="docutils literal notranslate"><span class="pre">GuiGalleryHandle.order</span></code></a></li>
+<li><a class="reference internal" href="#viser.GuiGalleryHandle.label"><code class="docutils literal notranslate"><span class="pre">GuiGalleryHandle.label</span></code></a></li>
+<li><a class="reference internal" href="#viser.GuiGalleryHandle.hint"><code class="docutils literal notranslate"><span class="pre">GuiGalleryHandle.hint</span></code></a></li>
+<li><a class="reference internal" href="#viser.GuiGalleryHandle.visible"><code class="docutils literal notranslate"><span class="pre">GuiGalleryHandle.visible</span></code></a></li>
+<li><a class="reference internal" href="#viser.GuiGalleryHandle.disabled"><code class="docutils literal notranslate"><span class="pre">GuiGalleryHandle.disabled</span></code></a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#viser.GuiHtmlHandle"><code class="docutils literal notranslate"><span class="pre">GuiHtmlHandle</span></code></a><ul>
@@ -3343,11 +3698,11 @@ errors defaults to ‘strict’.</p>
 </ul>
 </li>
 <li><a class="reference internal" href="#viser.GuiPlotlyHandle"><code class="docutils literal notranslate"><span class="pre">GuiPlotlyHandle</span></code></a><ul>
-<li><a class="reference internal" href="#viser.GuiPlotlyHandle.figure"><code class="docutils literal notranslate"><span class="pre">GuiPlotlyHandle.figure</span></code></a></li>
 <li><a class="reference internal" href="#viser.GuiPlotlyHandle.remove"><code class="docutils literal notranslate"><span class="pre">GuiPlotlyHandle.remove()</span></code></a></li>
 <li><a class="reference internal" href="#viser.GuiPlotlyHandle.order"><code class="docutils literal notranslate"><span class="pre">GuiPlotlyHandle.order</span></code></a></li>
 <li><a class="reference internal" href="#viser.GuiPlotlyHandle.aspect"><code class="docutils literal notranslate"><span class="pre">GuiPlotlyHandle.aspect</span></code></a></li>
 <li><a class="reference internal" href="#viser.GuiPlotlyHandle.visible"><code class="docutils literal notranslate"><span class="pre">GuiPlotlyHandle.visible</span></code></a></li>
+<li><a class="reference internal" href="#viser.GuiPlotlyHandle.figure"><code class="docutils literal notranslate"><span class="pre">GuiPlotlyHandle.figure</span></code></a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#viser.GuiRgbHandle"><code class="docutils literal notranslate"><span class="pre">GuiRgbHandle</span></code></a><ul>

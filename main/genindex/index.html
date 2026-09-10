@@ -520,6 +520,8 @@
 </li>
         <li><a href="../api/core/scene_api/#viser.SceneApi.add_batched_meshes_trimesh">add_batched_meshes_trimesh() (viser.SceneApi method)</a>
 </li>
+        <li><a href="../api/handles/gui_handles/#viser.GuiGalleryHandle.add_block">add_block() (viser.GuiGalleryHandle method)</a>
+</li>
         <li><a href="../api/core/scene_api/#viser.SceneApi.add_box">add_box() (viser.SceneApi method)</a>
 </li>
         <li><a href="../api/core/gui_api/#viser.GuiApi.add_button">add_button() (viser.GuiApi method)</a>
@@ -529,6 +531,8 @@
         <li><a href="../api/core/scene_api/#viser.SceneApi.add_camera_frustum">add_camera_frustum() (viser.SceneApi method)</a>
 </li>
         <li><a href="../api/core/gui_api/#viser.GuiApi.add_checkbox">add_checkbox() (viser.GuiApi method)</a>
+</li>
+        <li><a href="../api/core/gui_api/#viser.GuiApi.add_colorbar">add_colorbar() (viser.GuiApi method)</a>
 </li>
         <li><a href="../api/core/gui_api/#viser.GuiApi.add_command">add_command() (viser.GuiApi method)</a>
 </li>
@@ -545,6 +549,8 @@
         <li><a href="../api/core/gui_api/#viser.GuiApi.add_form">add_form() (viser.GuiApi method)</a>
 </li>
         <li><a href="../api/core/scene_api/#viser.SceneApi.add_frame">add_frame() (viser.SceneApi method)</a>
+</li>
+        <li><a href="../api/core/gui_api/#viser.GuiApi.add_gallery">add_gallery() (viser.GuiApi method)</a>
 </li>
         <li><a href="../api/core/scene_api/#viser.SceneApi.add_gaussian_splats">add_gaussian_splats() (viser.SceneApi method)</a>
 </li>
@@ -960,10 +966,10 @@
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.ARROW_AUTOFIT_CONTENT_FILLED">ARROW_AUTOFIT_CONTENT_FILLED (viser.Icon attribute)</a>
 </li>
-        <li><a href="../api/advanced/icons/#viser.Icon.ARROW_AUTOFIT_DOWN">ARROW_AUTOFIT_DOWN (viser.Icon attribute)</a>
-</li>
     </ul></td>
     <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="../api/advanced/icons/#viser.Icon.ARROW_AUTOFIT_DOWN">ARROW_AUTOFIT_DOWN (viser.Icon attribute)</a>
+</li>
         <li><a href="../api/advanced/icons/#viser.Icon.ARROW_AUTOFIT_HEIGHT">ARROW_AUTOFIT_HEIGHT (viser.Icon attribute)</a>
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.ARROW_AUTOFIT_LEFT">ARROW_AUTOFIT_LEFT (viser.Icon attribute)</a>
@@ -1792,7 +1798,19 @@
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.BLEACH_OFF">BLEACH_OFF (viser.Icon attribute)</a>
 </li>
+        <li><a href="../api/handles/gui_handles/#viser.GuiGalleryHandle.block_height">block_height (viser.GuiGalleryHandle attribute)</a>
+</li>
+        <li><a href="../api/advanced/events/#viser.GalleryBlockEvent.block_id">block_id (viser.GalleryBlockEvent property)</a>
+
+        <ul>
+          <li><a href="../api/handles/gui_handles/#viser.GalleryBlockHandle.block_id">(viser.GalleryBlockHandle property)</a>
+</li>
+        </ul></li>
+        <li><a href="../api/handles/gui_handles/#viser.GuiGalleryHandle.block_width">block_width (viser.GuiGalleryHandle attribute)</a>
+</li>
         <li><a href="../api/advanced/icons/#viser.Icon.BLOCKQUOTE">BLOCKQUOTE (viser.Icon attribute)</a>
+</li>
+        <li><a href="../api/handles/gui_handles/#viser.GuiGalleryHandle.blocks">blocks (viser.GuiGalleryHandle attribute)</a>
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.BLUETOOTH">BLUETOOTH (viser.Icon attribute)</a>
 </li>
@@ -2146,14 +2164,14 @@
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.BRAND_CUPRA">BRAND_CUPRA (viser.Icon attribute)</a>
 </li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="../api/advanced/icons/#viser.Icon.BRAND_CYPRESS">BRAND_CYPRESS (viser.Icon attribute)</a>
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.BRAND_D3">BRAND_D3 (viser.Icon attribute)</a>
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.BRAND_DAYS_COUNTER">BRAND_DAYS_COUNTER (viser.Icon attribute)</a>
 </li>
-    </ul></td>
-    <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="../api/advanced/icons/#viser.Icon.BRAND_DCOS">BRAND_DCOS (viser.Icon attribute)</a>
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.BRAND_DEBIAN">BRAND_DEBIAN (viser.Icon attribute)</a>
@@ -3532,12 +3550,12 @@
           <li><a href="../api/advanced/uplot/#viser.uplot.Cursor_Drag.click">(viser.uplot.Cursor_Drag attribute)</a>
 </li>
         </ul></li>
-    </ul></td>
-    <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="../api/handles/camera_handles/#viser.CameraHandle.client">client (viser.CameraHandle property)</a>
 
         <ul>
           <li><a href="../api/advanced/events/#viser.CommandEvent.client">(viser.CommandEvent attribute)</a>
+</li>
+          <li><a href="../api/advanced/events/#viser.GalleryBlockEvent.client">(viser.GalleryBlockEvent attribute)</a>
 </li>
           <li><a href="../api/advanced/events/#viser.GuiEvent.client">(viser.GuiEvent attribute)</a>
 </li>
@@ -3554,10 +3572,14 @@
           <li><a href="../api/advanced/events/#viser.TransformControlsEvent.client">(viser.TransformControlsEvent attribute)</a>
 </li>
         </ul></li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="../api/handles/client_handles/#viser.ClientHandle.client_id">client_id (viser.ClientHandle attribute)</a>
 
         <ul>
           <li><a href="../api/advanced/events/#viser.CommandEvent.client_id">(viser.CommandEvent attribute)</a>
+</li>
+          <li><a href="../api/advanced/events/#viser.GalleryBlockEvent.client_id">(viser.GalleryBlockEvent attribute)</a>
 </li>
           <li><a href="../api/advanced/events/#viser.GuiEvent.client_id">(viser.GuiEvent attribute)</a>
 </li>
@@ -3847,6 +3869,8 @@
         <li><a href="../api/handles/scene_handles/#viser.ArrowsHandle.colors">colors (viser.ArrowsHandle attribute)</a>
 
         <ul>
+          <li><a href="../api/handles/gui_handles/#viser.GuiColorbarHandle.colors">(viser.GuiColorbarHandle attribute)</a>
+</li>
           <li><a href="../api/handles/scene_handles/#viser.LineSegmentsHandle.colors">(viser.LineSegmentsHandle attribute)</a>
 </li>
           <li><a href="../api/handles/scene_handles/#viser.PointCloudHandle.colors">(viser.PointCloudHandle attribute)</a>
@@ -4861,6 +4885,8 @@
 </li>
           <li><a href="../api/handles/gui_handles/#viser.GuiFolderSelectButtonHandle.disabled">(viser.GuiFolderSelectButtonHandle attribute)</a>
 </li>
+          <li><a href="../api/handles/gui_handles/#viser.GuiGalleryHandle.disabled">(viser.GuiGalleryHandle attribute)</a>
+</li>
           <li><a href="../api/handles/gui_handles/#viser.GuiInputHandle.disabled">(viser.GuiInputHandle attribute)</a>
 </li>
           <li><a href="../api/handles/gui_handles/#viser.GuiMultiSliderHandle.disabled">(viser.GuiMultiSliderHandle attribute)</a>
@@ -5790,8 +5816,18 @@
   <h2>G</h2>
   <table style="width: 100%" class="indextable genindextable"><tr>
     <td style="width: 33%; vertical-align: top;"><ul>
-        <li><a href="../api/advanced/uplot/#viser.uplot.Axis.gap">gap (viser.uplot.Axis attribute)</a>
+        <li><a href="../api/advanced/events/#viser.GalleryBlockEvent.gallery">gallery (viser.GalleryBlockEvent attribute)</a>
 </li>
+        <li><a href="../api/advanced/events/#viser.GalleryBlockEvent">GalleryBlockEvent (class in viser)</a>
+</li>
+        <li><a href="../api/handles/gui_handles/#viser.GalleryBlockHandle">GalleryBlockHandle (class in viser)</a>
+</li>
+        <li><a href="../api/handles/gui_handles/#viser.GuiGalleryHandle.gap">gap (viser.GuiGalleryHandle attribute)</a>
+
+        <ul>
+          <li><a href="../api/advanced/uplot/#viser.uplot.Axis.gap">(viser.uplot.Axis attribute)</a>
+</li>
+        </ul></li>
         <li><a href="../api/advanced/uplot/#viser.uplot.Series.gaps">gaps (viser.uplot.Series attribute)</a>
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.GARDEN_CART">GARDEN_CART (viser.Icon attribute)</a>
@@ -5936,10 +5972,10 @@
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.GIT_BRANCH_DELETED">GIT_BRANCH_DELETED (viser.Icon attribute)</a>
 </li>
-        <li><a href="../api/advanced/icons/#viser.Icon.GIT_CHERRY_PICK">GIT_CHERRY_PICK (viser.Icon attribute)</a>
-</li>
     </ul></td>
     <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="../api/advanced/icons/#viser.Icon.GIT_CHERRY_PICK">GIT_CHERRY_PICK (viser.Icon attribute)</a>
+</li>
         <li><a href="../api/advanced/icons/#viser.Icon.GIT_COMMIT">GIT_COMMIT (viser.Icon attribute)</a>
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.GIT_COMPARE">GIT_COMPARE (viser.Icon attribute)</a>
@@ -6034,6 +6070,8 @@
 </li>
         <li><a href="../api/handles/gui_handles/#viser.GuiCheckboxHandle">GuiCheckboxHandle (class in viser)</a>
 </li>
+        <li><a href="../api/handles/gui_handles/#viser.GuiColorbarHandle">GuiColorbarHandle (class in viser)</a>
+</li>
         <li><a href="../api/handles/gui_handles/#viser.GuiDividerHandle">GuiDividerHandle (class in viser)</a>
 </li>
         <li><a href="../api/handles/gui_handles/#viser.GuiDropdownHandle">GuiDropdownHandle (class in viser)</a>
@@ -6045,6 +6083,8 @@
         <li><a href="../api/handles/gui_handles/#viser.GuiFolderSelectButtonHandle">GuiFolderSelectButtonHandle (class in viser)</a>
 </li>
         <li><a href="../api/handles/gui_handles/#viser.GuiFormHandle">GuiFormHandle (class in viser)</a>
+</li>
+        <li><a href="../api/handles/gui_handles/#viser.GuiGalleryHandle">GuiGalleryHandle (class in viser)</a>
 </li>
         <li><a href="../api/handles/gui_handles/#viser.GuiHtmlHandle">GuiHtmlHandle (class in viser)</a>
 </li>
@@ -6304,10 +6344,10 @@
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.HEXAGON_LETTER_N">HEXAGON_LETTER_N (viser.Icon attribute)</a>
 </li>
-    </ul></td>
-    <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="../api/advanced/icons/#viser.Icon.HEXAGON_LETTER_O">HEXAGON_LETTER_O (viser.Icon attribute)</a>
 </li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="../api/advanced/icons/#viser.Icon.HEXAGON_LETTER_P">HEXAGON_LETTER_P (viser.Icon attribute)</a>
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.HEXAGON_LETTER_Q">HEXAGON_LETTER_Q (viser.Icon attribute)</a>
@@ -6390,6 +6430,8 @@
           <li><a href="../api/handles/gui_handles/#viser.GuiDropdownHandle.hint">(viser.GuiDropdownHandle attribute)</a>
 </li>
           <li><a href="../api/handles/gui_handles/#viser.GuiFolderSelectButtonHandle.hint">(viser.GuiFolderSelectButtonHandle attribute)</a>
+</li>
+          <li><a href="../api/handles/gui_handles/#viser.GuiGalleryHandle.hint">(viser.GuiGalleryHandle attribute)</a>
 </li>
           <li><a href="../api/handles/gui_handles/#viser.GuiInputHandle.hint">(viser.GuiInputHandle attribute)</a>
 </li>
@@ -6861,6 +6903,8 @@
 </li>
           <li><a href="../api/handles/gui_handles/#viser.GuiCheckboxHandle.label">(viser.GuiCheckboxHandle attribute)</a>
 </li>
+          <li><a href="../api/handles/gui_handles/#viser.GuiColorbarHandle.label">(viser.GuiColorbarHandle attribute)</a>
+</li>
           <li><a href="../api/handles/gui_handles/#viser.GuiDropdownHandle.label">(viser.GuiDropdownHandle attribute)</a>
 </li>
           <li><a href="../api/handles/gui_handles/#viser.GuiFolderHandle.label">(viser.GuiFolderHandle attribute)</a>
@@ -6868,6 +6912,8 @@
           <li><a href="../api/handles/gui_handles/#viser.GuiFolderSelectButtonHandle.label">(viser.GuiFolderSelectButtonHandle attribute)</a>
 </li>
           <li><a href="../api/handles/gui_handles/#viser.GuiFormHandle.label">(viser.GuiFormHandle attribute)</a>
+</li>
+          <li><a href="../api/handles/gui_handles/#viser.GuiGalleryHandle.label">(viser.GuiGalleryHandle attribute)</a>
 </li>
           <li><a href="../api/handles/gui_handles/#viser.GuiImageHandle.label">(viser.GuiImageHandle attribute)</a>
 </li>
@@ -7040,6 +7086,8 @@
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.LEMON_2">LEMON_2 (viser.Icon attribute)</a>
 </li>
+        <li><a href="../api/handles/gui_handles/#viser.GuiColorbarHandle.length">length (viser.GuiColorbarHandle attribute)</a>
+</li>
         <li><a href="../api/advanced/icons/#viser.Icon.LETTER_A">LETTER_A (viser.Icon attribute)</a>
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.LETTER_B">LETTER_B (viser.Icon attribute)</a>
@@ -7076,10 +7124,10 @@
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.LETTER_N">LETTER_N (viser.Icon attribute)</a>
 </li>
-        <li><a href="../api/advanced/icons/#viser.Icon.LETTER_O">LETTER_O (viser.Icon attribute)</a>
-</li>
     </ul></td>
     <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="../api/advanced/icons/#viser.Icon.LETTER_O">LETTER_O (viser.Icon attribute)</a>
+</li>
         <li><a href="../api/advanced/icons/#viser.Icon.LETTER_P">LETTER_P (viser.Icon attribute)</a>
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.LETTER_Q">LETTER_Q (viser.Icon attribute)</a>
@@ -8302,6 +8350,8 @@
 </li>
           <li><a href="../api/handles/scene_handles/#viser.FrameHandle.on_click">(viser.FrameHandle method)</a>
 </li>
+          <li><a href="../api/handles/gui_handles/#viser.GalleryBlockHandle.on_click">(viser.GalleryBlockHandle method)</a>
+</li>
           <li><a href="../api/handles/scene_handles/#viser.GaussianSplatHandle.on_click">(viser.GaussianSplatHandle method)</a>
 </li>
           <li><a href="../api/handles/scene_handles/#viser.GlbHandle.on_click">(viser.GlbHandle method)</a>
@@ -8309,6 +8359,8 @@
           <li><a href="../api/handles/gui_handles/#viser.GuiButtonGroupHandle.on_click">(viser.GuiButtonGroupHandle method)</a>
 </li>
           <li><a href="../api/handles/gui_handles/#viser.GuiButtonHandle.on_click">(viser.GuiButtonHandle method)</a>
+</li>
+          <li><a href="../api/handles/gui_handles/#viser.GuiGalleryHandle.on_click">(viser.GuiGalleryHandle method)</a>
 </li>
           <li><a href="../api/handles/scene_handles/#viser.IcosphereHandle.on_click">(viser.IcosphereHandle method)</a>
 </li>
@@ -8448,6 +8500,8 @@
 </li>
           <li><a href="../api/handles/gui_handles/#viser.GuiCheckboxHandle.order">(viser.GuiCheckboxHandle attribute)</a>
 </li>
+          <li><a href="../api/handles/gui_handles/#viser.GuiColorbarHandle.order">(viser.GuiColorbarHandle attribute)</a>
+</li>
           <li><a href="../api/handles/gui_handles/#viser.GuiDividerHandle.order">(viser.GuiDividerHandle attribute)</a>
 </li>
           <li><a href="../api/handles/gui_handles/#viser.GuiDropdownHandle.order">(viser.GuiDropdownHandle attribute)</a>
@@ -8457,6 +8511,8 @@
           <li><a href="../api/handles/gui_handles/#viser.GuiFolderSelectButtonHandle.order">(viser.GuiFolderSelectButtonHandle attribute)</a>
 </li>
           <li><a href="../api/handles/gui_handles/#viser.GuiFormHandle.order">(viser.GuiFormHandle attribute)</a>
+</li>
+          <li><a href="../api/handles/gui_handles/#viser.GuiGalleryHandle.order">(viser.GuiGalleryHandle attribute)</a>
 </li>
           <li><a href="../api/handles/gui_handles/#viser.GuiHtmlHandle.order">(viser.GuiHtmlHandle attribute)</a>
 </li>
@@ -8494,6 +8550,8 @@
 </li>
         </ul></li>
         <li><a href="../api/advanced/uplot/#viser.uplot.Scale.ori">ori (viser.uplot.Scale attribute)</a>
+</li>
+        <li><a href="../api/handles/gui_handles/#viser.GuiColorbarHandle.orientation">orientation (viser.GuiColorbarHandle attribute)</a>
 </li>
         <li><a href="../api/handles/scene_handles/#viser.FrameHandle.origin_color">origin_color (viser.FrameHandle attribute)</a>
 </li>
@@ -8799,6 +8857,8 @@
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.PLACEHOLDER">PLACEHOLDER (viser.Icon attribute)</a>
 </li>
+        <li><a href="../api/handles/gui_handles/#viser.GuiGalleryHandle.placement">placement (viser.GuiGalleryHandle attribute)</a>
+</li>
         <li><a href="../api/handles/scene_handles/#viser.GridHandle.plane">plane (viser.GridHandle attribute)</a>
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.PLANE">PLANE (viser.Icon attribute)</a>
@@ -8841,10 +8901,10 @@
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.PLAY_VOLLEYBALL">PLAY_VOLLEYBALL (viser.Icon attribute)</a>
 </li>
-        <li><a href="../api/advanced/icons/#viser.Icon.PLAYER_EJECT">PLAYER_EJECT (viser.Icon attribute)</a>
-</li>
     </ul></td>
     <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="../api/advanced/icons/#viser.Icon.PLAYER_EJECT">PLAYER_EJECT (viser.Icon attribute)</a>
+</li>
         <li><a href="../api/advanced/icons/#viser.Icon.PLAYER_EJECT_FILLED">PLAYER_EJECT_FILLED (viser.Icon attribute)</a>
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.PLAYER_PAUSE">PLAYER_PAUSE (viser.Icon attribute)</a>
@@ -9394,6 +9454,8 @@
 </li>
           <li><a href="../api/handles/scene_handles/#viser.FrameHandle.remove">(viser.FrameHandle method)</a>
 </li>
+          <li><a href="../api/handles/gui_handles/#viser.GalleryBlockHandle.remove">(viser.GalleryBlockHandle method)</a>
+</li>
           <li><a href="../api/handles/scene_handles/#viser.GaussianSplatHandle.remove">(viser.GaussianSplatHandle method)</a>
 </li>
           <li><a href="../api/handles/scene_handles/#viser.GlbHandle.remove">(viser.GlbHandle method)</a>
@@ -9408,6 +9470,8 @@
 </li>
           <li><a href="../api/handles/gui_handles/#viser.GuiCheckboxHandle.remove">(viser.GuiCheckboxHandle method)</a>
 </li>
+          <li><a href="../api/handles/gui_handles/#viser.GuiColorbarHandle.remove">(viser.GuiColorbarHandle method)</a>
+</li>
           <li><a href="../api/handles/gui_handles/#viser.GuiDividerHandle.remove">(viser.GuiDividerHandle method)</a>
 </li>
           <li><a href="../api/handles/gui_handles/#viser.GuiDropdownHandle.remove">(viser.GuiDropdownHandle method)</a>
@@ -9417,6 +9481,8 @@
           <li><a href="../api/handles/gui_handles/#viser.GuiFolderSelectButtonHandle.remove">(viser.GuiFolderSelectButtonHandle method)</a>
 </li>
           <li><a href="../api/handles/gui_handles/#viser.GuiFormHandle.remove">(viser.GuiFormHandle method)</a>
+</li>
+          <li><a href="../api/handles/gui_handles/#viser.GuiGalleryHandle.remove">(viser.GuiGalleryHandle method)</a>
 </li>
           <li><a href="../api/handles/gui_handles/#viser.GuiHtmlHandle.remove">(viser.GuiHtmlHandle method)</a>
 </li>
@@ -9487,8 +9553,12 @@
           <li><a href="../api/handles/scene_handles/#viser.TransformControlsHandle.remove">(viser.TransformControlsHandle method)</a>
 </li>
         </ul></li>
+        <li><a href="../api/handles/gui_handles/#viser.GuiGalleryHandle.remove_block">remove_block() (viser.GuiGalleryHandle method)</a>
+</li>
         <li><a href="../api/core/scene_api/#viser.SceneApi.remove_by_name">remove_by_name() (viser.SceneApi method)</a>
 </li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="../api/handles/scene_handles/#viser.BatchedAxesHandle.remove_click_callback">remove_click_callback() (viser.BatchedAxesHandle method)</a>
 
         <ul>
@@ -9519,8 +9589,6 @@
           <li><a href="../api/core/scene_api/#viser.SceneApi.remove_click_callback">(viser.SceneApi method)</a>
 </li>
         </ul></li>
-    </ul></td>
-    <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="../api/handles/scene_handles/#viser.BatchedAxesHandle.remove_drag_callback">remove_drag_callback() (viser.BatchedAxesHandle method)</a>
 
         <ul>
@@ -9587,8 +9655,12 @@
           <li><a href="../api/handles/scene_handles/#viser.TransformControlsHandle.remove_update_callback">(viser.TransformControlsHandle method)</a>
 </li>
         </ul></li>
-        <li><a href="../api/handles/gui_handles/#viser.GuiTabHandle.removed">removed (viser.GuiTabHandle attribute)</a>
+        <li><a href="../api/handles/gui_handles/#viser.GalleryBlockHandle.removed">removed (viser.GalleryBlockHandle property)</a>
+
+        <ul>
+          <li><a href="../api/handles/gui_handles/#viser.GuiTabHandle.removed">(viser.GuiTabHandle attribute)</a>
 </li>
+        </ul></li>
         <li><a href="../api/handles/scene_handles/#viser.ImageHandle.render_height">render_height (viser.ImageHandle attribute)</a>
 </li>
         <li><a href="../api/handles/scene_handles/#viser.ImageHandle.render_width">render_width (viser.ImageHandle attribute)</a>
@@ -10071,6 +10143,8 @@
           <li><a href="../api/handles/gui_handles/#viser.PanelHandle.set_height">(viser.PanelHandle method)</a>
 </li>
         </ul></li>
+        <li><a href="../api/handles/gui_handles/#viser.GalleryBlockHandle.set_image">set_image() (viser.GalleryBlockHandle method)</a>
+</li>
         <li><a href="../api/handles/client_handles/#viser.LocalStorageHandle.set_item">set_item() (viser.LocalStorageHandle method)</a>
 </li>
         <li><a href="../api/core/gui_api/#viser.GuiApi.set_panel_label">set_panel_label() (viser.GuiApi method)</a>
@@ -11015,6 +11089,8 @@
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.SUBTASK">SUBTASK (viser.Icon attribute)</a>
 </li>
+        <li><a href="../api/handles/gui_handles/#viser.GalleryBlockHandle.subtitle">subtitle (viser.GalleryBlockHandle property)</a>
+</li>
         <li><a href="../api/advanced/icons/#viser.Icon.SUM">SUM (viser.Icon attribute)</a>
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.SUM_OFF">SUM_OFF (viser.Icon attribute)</a>
@@ -11146,6 +11222,8 @@
         <li><a href="../api/advanced/events/#viser.CommandEvent.target">target (viser.CommandEvent attribute)</a>
 
         <ul>
+          <li><a href="../api/advanced/events/#viser.GalleryBlockEvent.target">(viser.GalleryBlockEvent attribute)</a>
+</li>
           <li><a href="../api/advanced/events/#viser.GuiEvent.target">(viser.GuiEvent attribute)</a>
 </li>
         </ul></li>
@@ -11244,6 +11322,8 @@
         <li><a href="../api/handles/scene_handles/#viser.CameraFrustumHandle.thickness">thickness (viser.CameraFrustumHandle attribute)</a>
 
         <ul>
+          <li><a href="../api/handles/gui_handles/#viser.GuiColorbarHandle.thickness">(viser.GuiColorbarHandle attribute)</a>
+</li>
           <li><a href="../api/handles/scene_handles/#viser.LineSegmentsHandle.thickness">(viser.LineSegmentsHandle attribute)</a>
 </li>
           <li><a href="../api/handles/scene_handles/#viser.SplineCatmullRomHandle.thickness">(viser.SplineCatmullRomHandle attribute)</a>
@@ -11279,8 +11359,12 @@
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.TICKET_OFF">TICKET_OFF (viser.Icon attribute)</a>
 </li>
-        <li><a href="../api/advanced/uplot/#viser.uplot.Axis.ticks">ticks (viser.uplot.Axis attribute)</a>
+        <li><a href="../api/handles/gui_handles/#viser.GuiColorbarHandle.ticks">ticks (viser.GuiColorbarHandle attribute)</a>
+
+        <ul>
+          <li><a href="../api/advanced/uplot/#viser.uplot.Axis.ticks">(viser.uplot.Axis attribute)</a>
 </li>
+        </ul></li>
         <li><a href="../api/advanced/icons/#viser.Icon.TIE">TIE (viser.Icon attribute)</a>
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.TILDE">TILDE (viser.Icon attribute)</a>
@@ -11297,10 +11381,10 @@
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.TIME_DURATION_15">TIME_DURATION_15 (viser.Icon attribute)</a>
 </li>
-        <li><a href="../api/advanced/icons/#viser.Icon.TIME_DURATION_30">TIME_DURATION_30 (viser.Icon attribute)</a>
-</li>
     </ul></td>
     <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="../api/advanced/icons/#viser.Icon.TIME_DURATION_30">TIME_DURATION_30 (viser.Icon attribute)</a>
+</li>
         <li><a href="../api/advanced/icons/#viser.Icon.TIME_DURATION_45">TIME_DURATION_45 (viser.Icon attribute)</a>
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.TIME_DURATION_5">TIME_DURATION_5 (viser.Icon attribute)</a>
@@ -11327,9 +11411,11 @@
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.TIR">TIR (viser.Icon attribute)</a>
 </li>
-        <li><a href="../api/handles/gui_handles/#viser.GuiUplotHandle.title">title (viser.GuiUplotHandle attribute)</a>
+        <li><a href="../api/handles/gui_handles/#viser.GalleryBlockHandle.title">title (viser.GalleryBlockHandle property)</a>
 
         <ul>
+          <li><a href="../api/handles/gui_handles/#viser.GuiUplotHandle.title">(viser.GuiUplotHandle attribute)</a>
+</li>
           <li><a href="../api/handles/client_handles/#viser.NotificationHandle.title">(viser.NotificationHandle attribute)</a>
 </li>
         </ul></li>
@@ -11755,6 +11841,12 @@
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.VERSIONS_OFF">VERSIONS_OFF (viser.Icon attribute)</a>
 </li>
+        <li><a href="../api/handles/scene_handles/#viser.MeshHandle.vertex_colors">vertex_colors (viser.MeshHandle attribute)</a>
+
+        <ul>
+          <li><a href="../api/handles/scene_handles/#viser.MeshSkinnedHandle.vertex_colors">(viser.MeshSkinnedHandle attribute)</a>
+</li>
+        </ul></li>
         <li><a href="../api/handles/scene_handles/#viser.BatchedMeshHandle.vertices">vertices (viser.BatchedMeshHandle attribute)</a>
 
         <ul>
@@ -11864,6 +11956,8 @@
 </li>
           <li><a href="../api/handles/gui_handles/#viser.GuiCheckboxHandle.visible">(viser.GuiCheckboxHandle attribute)</a>
 </li>
+          <li><a href="../api/handles/gui_handles/#viser.GuiColorbarHandle.visible">(viser.GuiColorbarHandle attribute)</a>
+</li>
           <li><a href="../api/handles/gui_handles/#viser.GuiDividerHandle.visible">(viser.GuiDividerHandle attribute)</a>
 </li>
           <li><a href="../api/handles/gui_handles/#viser.GuiDropdownHandle.visible">(viser.GuiDropdownHandle attribute)</a>
@@ -11873,6 +11967,8 @@
           <li><a href="../api/handles/gui_handles/#viser.GuiFolderSelectButtonHandle.visible">(viser.GuiFolderSelectButtonHandle attribute)</a>
 </li>
           <li><a href="../api/handles/gui_handles/#viser.GuiFormHandle.visible">(viser.GuiFormHandle attribute)</a>
+</li>
+          <li><a href="../api/handles/gui_handles/#viser.GuiGalleryHandle.visible">(viser.GuiGalleryHandle attribute)</a>
 </li>
           <li><a href="../api/handles/gui_handles/#viser.GuiHtmlHandle.visible">(viser.GuiHtmlHandle attribute)</a>
 </li>
@@ -11939,6 +12035,10 @@
           <li><a href="../api/handles/scene_handles/#viser.TransformControlsHandle.visible">(viser.TransformControlsHandle property)</a>
 </li>
         </ul></li>
+        <li><a href="../api/handles/gui_handles/#viser.GuiColorbarHandle.vmax">vmax (viser.GuiColorbarHandle attribute)</a>
+</li>
+        <li><a href="../api/handles/gui_handles/#viser.GuiColorbarHandle.vmin">vmin (viser.GuiColorbarHandle attribute)</a>
+</li>
         <li><a href="../api/advanced/icons/#viser.Icon.VOCABULARY">VOCABULARY (viser.Icon attribute)</a>
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.VOCABULARY_OFF">VOCABULARY_OFF (viser.Icon attribute)</a>

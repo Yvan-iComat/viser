@@ -432,6 +432,7 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">colorsys</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">dataclasses</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">functools</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">math</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">threading</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">uuid</span>
@@ -466,13 +467,16 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">viser._backwards_compat_shims</span><span class="w"> </span><span class="kn">import</span> <span class="n">deprecated_positional_shim</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">.</span><span class="w"> </span><span class="kn">import</span> <span class="n">_messages</span><span class="p">,</span> <span class="n">uplot</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">._assignable_props_api</span><span class="w"> </span><span class="kn">import</span> <span class="n">colors_to_uint8</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">._gui_handles</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">CONTROL_PANEL_ID</span><span class="p">,</span>
     <span class="n">CommandEvent</span><span class="p">,</span>
     <span class="n">CommandHandle</span><span class="p">,</span>
+    <span class="n">GalleryBlockEvent</span><span class="p">,</span>
     <span class="n">GuiButtonGroupHandle</span><span class="p">,</span>
     <span class="n">GuiButtonHandle</span><span class="p">,</span>
     <span class="n">GuiCheckboxHandle</span><span class="p">,</span>
+    <span class="n">GuiColorbarHandle</span><span class="p">,</span>
     <span class="n">GuiContainerProtocol</span><span class="p">,</span>
     <span class="n">GuiDividerHandle</span><span class="p">,</span>
     <span class="n">GuiDropdownHandle</span><span class="p">,</span>
@@ -480,6 +484,7 @@
     <span class="n">GuiFolderHandle</span><span class="p">,</span>
     <span class="n">GuiFolderSelectButtonHandle</span><span class="p">,</span>
     <span class="n">GuiFormHandle</span><span class="p">,</span>
+    <span class="n">GuiGalleryHandle</span><span class="p">,</span>
     <span class="n">GuiHtmlHandle</span><span class="p">,</span>
     <span class="n">GuiImageHandle</span><span class="p">,</span>
     <span class="n">GuiMarkdownHandle</span><span class="p">,</span>
@@ -679,6 +684,33 @@
     <span class="k">return</span> <span class="n">_global_order_counter</span>
 
 
+<span class="k">def</span><span class="w"> </span><span class="nf">_auto_colorbar_ticks</span><span class="p">(</span>
+    <span class="n">vmin</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">vmax</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">num_ticks</span><span class="p">:</span> <span class="nb">int</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span> <span class="o">...</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""Evenly spaced colorbar ticks with labels formatted from the range.</span>
+
+<span class="sd">    Decimal places are chosen from the span rather than fixed, so a 0-to-1</span>
+<span class="sd">    field reads "0.25" while a 0-to-500 field reads "125" instead of</span>
+<span class="sd">    "125.00"."""</span>
+    <span class="k">assert</span> <span class="n">num_ticks</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">"num_ticks cannot be negative."</span>
+    <span class="k">if</span> <span class="n">num_ticks</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">()</span>
+    <span class="n">span</span> <span class="o">=</span> <span class="n">vmax</span> <span class="o">-</span> <span class="n">vmin</span>
+    <span class="c1"># Three significant figures across the span, clamped to something sane. A</span>
+    <span class="c1"># degenerate range (vmin == vmax) has no scale to infer from, so fall back</span>
+    <span class="c1"># to two decimals.</span>
+    <span class="n">decimals</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="nb">min</span><span class="p">(</span><span class="mi">6</span><span class="p">,</span> <span class="nb">max</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span> <span class="o">-</span> <span class="nb">int</span><span class="p">(</span><span class="n">math</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="n">math</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">span</span><span class="p">))))))</span> <span class="k">if</span> <span class="n">span</span> <span class="o">!=</span> <span class="mi">0</span> <span class="k">else</span> <span class="mi">2</span>
+    <span class="p">)</span>
+    <span class="c1"># A degenerate range has one distinct value; emitting `num_ticks` copies of</span>
+    <span class="c1"># it would just be duplicates stacked at the same spot.</span>
+    <span class="k">if</span> <span class="n">num_ticks</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">or</span> <span class="n">span</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">values</span> <span class="o">=</span> <span class="p">[</span><span class="n">vmin</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">values</span> <span class="o">=</span> <span class="p">[</span><span class="n">vmin</span> <span class="o">+</span> <span class="n">span</span> <span class="o">*</span> <span class="n">index</span> <span class="o">/</span> <span class="p">(</span><span class="n">num_ticks</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="k">for</span> <span class="n">index</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_ticks</span><span class="p">)]</span>
+    <span class="k">return</span> <span class="nb">tuple</span><span class="p">((</span><span class="n">value</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">value</span><span class="si">:</span><span class="s2">.</span><span class="si">{</span><span class="n">decimals</span><span class="si">}</span><span class="s2">f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span> <span class="k">for</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">values</span><span class="p">)</span>
+
+
 <span class="nd">@functools</span><span class="o">.</span><span class="n">lru_cache</span><span class="p">(</span><span class="n">maxsize</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">get_type_hints_cached</span><span class="p">(</span><span class="bp">cls</span><span class="p">:</span> <span class="nb">type</span><span class="p">[</span><span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
     <span class="k">return</span> <span class="n">get_type_hints</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span>  <span class="c1"># type: ignore</span>
@@ -770,6 +802,7 @@
         <span class="c1"># restarted server's counter restart would otherwise read as stale).</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_layout_run_id</span> <span class="o">=</span> <span class="n">uuid</span><span class="o">.</span><span class="n">uuid4</span><span class="p">()</span><span class="o">.</span><span class="n">hex</span><span class="p">[:</span><span class="mi">8</span><span class="p">]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_command_handle_from_uuid</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">CommandHandle</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_gallery_handle_from_uuid</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">GuiGalleryHandle</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_current_file_upload_states</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">_FileUploadState</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
 
         <span class="c1"># Set to True when plotly.min.js has been sent to client.</span>
@@ -800,6 +833,12 @@
         <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_websock_interface</span><span class="o">.</span><span class="n">register_handler</span><span class="p">(</span>
             <span class="n">_messages</span><span class="o">.</span><span class="n">CommandTriggerMessage</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_handle_command_trigger</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_websock_interface</span><span class="o">.</span><span class="n">register_handler</span><span class="p">(</span>
+            <span class="n">_messages</span><span class="o">.</span><span class="n">GuiGalleryClickMessage</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_handle_gallery_click</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_websock_interface</span><span class="o">.</span><span class="n">register_handler</span><span class="p">(</span>
+            <span class="n">_messages</span><span class="o">.</span><span class="n">GuiGalleryRenderReplyMessage</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_handle_gallery_render_reply</span>
         <span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_resolve_client</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">client_id</span><span class="p">:</span> <span class="n">ClientId</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ClientHandle</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
@@ -967,6 +1006,44 @@
                 <span class="bp">self</span><span class="o">.</span><span class="n">_thread_executor</span><span class="o">.</span><span class="n">submit</span><span class="p">(</span>
                     <span class="n">cb</span><span class="p">,</span> <span class="n">GuiEvent</span><span class="p">(</span><span class="n">client</span><span class="p">,</span> <span class="n">client_id</span><span class="p">,</span> <span class="n">handle</span><span class="p">)</span>
                 <span class="p">)</span><span class="o">.</span><span class="n">add_done_callback</span><span class="p">(</span><span class="n">print_threadpool_errors</span><span class="p">)</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_handle_gallery_click</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">client_id</span><span class="p">:</span> <span class="n">ClientId</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="n">_messages</span><span class="o">.</span><span class="n">GuiGalleryClickMessage</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Callback for handling gallery block clicks."""</span>
+        <span class="n">gallery</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_gallery_handle_from_uuid</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">message</span><span class="o">.</span><span class="n">uuid</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">gallery</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">gallery</span><span class="o">.</span><span class="n">_impl</span><span class="o">.</span><span class="n">removed</span><span class="p">:</span>
+            <span class="k">return</span>
+
+        <span class="c1"># The block may have been removed between the click and its dispatch.</span>
+        <span class="n">block</span> <span class="o">=</span> <span class="n">gallery</span><span class="o">.</span><span class="n">_block_handles</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">message</span><span class="o">.</span><span class="n">block_id</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">block</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">block</span><span class="o">.</span><span class="n">removed</span><span class="p">:</span>
+            <span class="k">return</span>
+
+        <span class="n">client</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_resolve_client</span><span class="p">(</span><span class="n">client_id</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">client</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span>
+
+        <span class="n">event</span> <span class="o">=</span> <span class="n">GalleryBlockEvent</span><span class="p">(</span>
+            <span class="n">client</span><span class="o">=</span><span class="n">client</span><span class="p">,</span> <span class="n">client_id</span><span class="o">=</span><span class="n">client_id</span><span class="p">,</span> <span class="n">gallery</span><span class="o">=</span><span class="n">gallery</span><span class="p">,</span> <span class="n">target</span><span class="o">=</span><span class="n">block</span>
+        <span class="p">)</span>
+        <span class="c1"># Per-block callbacks fire before gallery-level ones.</span>
+        <span class="k">for</span> <span class="n">cb</span> <span class="ow">in</span> <span class="p">(</span><span class="o">*</span><span class="n">block</span><span class="o">.</span><span class="n">_click_cb</span><span class="p">,</span> <span class="o">*</span><span class="n">gallery</span><span class="o">.</span><span class="n">_gallery_click_cb</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">iscoroutinefunction</span><span class="p">(</span><span class="n">cb</span><span class="p">):</span>
+                <span class="k">await</span> <span class="n">cb</span><span class="p">(</span><span class="n">event</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_thread_executor</span><span class="o">.</span><span class="n">submit</span><span class="p">(</span><span class="n">cb</span><span class="p">,</span> <span class="n">event</span><span class="p">)</span><span class="o">.</span><span class="n">add_done_callback</span><span class="p">(</span>
+                    <span class="n">print_threadpool_errors</span>
+                <span class="p">)</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_handle_gallery_render_reply</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">client_id</span><span class="p">:</span> <span class="n">ClientId</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="n">_messages</span><span class="o">.</span><span class="n">GuiGalleryRenderReplyMessage</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Callback for handling client-rendered STL snapshots."""</span>
+        <span class="n">gallery</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_gallery_handle_from_uuid</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">message</span><span class="o">.</span><span class="n">uuid</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">gallery</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">gallery</span><span class="o">.</span><span class="n">_impl</span><span class="o">.</span><span class="n">removed</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="n">gallery</span><span class="o">.</span><span class="n">_handle_render_reply</span><span class="p">(</span><span class="n">message</span><span class="o">.</span><span class="n">render_uuid</span><span class="p">,</span> <span class="n">message</span><span class="o">.</span><span class="n">_data</span><span class="p">)</span>
 
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_handle_gui_form_submit</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">client_id</span><span class="p">:</span> <span class="n">ClientId</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="n">_messages</span><span class="o">.</span><span class="n">GuiFormSubmitMessage</span>
@@ -1219,6 +1296,23 @@
                 <span class="bp">self</span><span class="o">.</span><span class="n">_thread_executor</span><span class="o">.</span><span class="n">submit</span><span class="p">(</span>
                     <span class="n">cb</span><span class="p">,</span> <span class="n">GuiEvent</span><span class="p">(</span><span class="n">client</span><span class="p">,</span> <span class="n">client_id</span><span class="p">,</span> <span class="n">handle</span><span class="p">)</span>
                 <span class="p">)</span><span class="o">.</span><span class="n">add_done_callback</span><span class="p">(</span><span class="n">print_threadpool_errors</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_container_uuid_from_handle</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">container</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Resolve an explicit container handle to its container uuid.</span>
+
+<span class="sd">        Container handles key themselves into ``_container_handle_from_uuid``</span>
+<span class="sd">        under different attributes (``_id`` for tabs, ``_impl.uuid`` for</span>
+<span class="sd">        folders, ``_uuid`` for the control panel), so match by identity rather</span>
+<span class="sd">        than guessing which attribute to read.</span>
+<span class="sd">        """</span>
+        <span class="k">for</span> <span class="n">uuid_</span><span class="p">,</span> <span class="n">handle</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_container_handle_from_uuid</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">handle</span> <span class="ow">is</span> <span class="n">container</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">uuid_</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">container</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> is not a GUI container of this server. "</span>
+            <span class="s2">"Pass a tab, folder, or the control panel -- or 'window' for a "</span>
+            <span class="s2">"full-window gallery."</span>
+        <span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_get_container_uuid</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">"""Get container ID associated with the current thread.</span>
@@ -2183,6 +2277,101 @@
         <span class="k">return</span> <span class="n">handle</span></div>
 
 
+<div class="viewcode-block" id="GuiApi.add_colorbar">
+<a class="viewcode-back" href="../../../api/core/gui_api/#viser.GuiApi.add_colorbar">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">add_colorbar</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">colors</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">vmin</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
+        <span class="n">vmax</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span>
+        <span class="n">label</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">num_ticks</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">5</span><span class="p">,</span>
+        <span class="n">ticks</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">orientation</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">"vertical"</span><span class="p">,</span> <span class="s2">"horizontal"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"vertical"</span><span class="p">,</span>
+        <span class="n">length</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">220.0</span><span class="p">,</span>
+        <span class="n">thickness</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">22.0</span><span class="p">,</span>
+        <span class="n">order</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">visible</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">GuiColorbarHandle</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Add a colorbar: a gradient bar with labeled tick marks.</span>
+
+<span class="sd">        This is the legend for a scalar field drawn with a colormap -- e.g. a</span>
+<span class="sd">        mesh colored via ``add_mesh_simple(..., vertex_colors=...)``. Pass the</span>
+<span class="sd">        same colormap control points used to color the data.</span>
+
+<span class="sd">        The bar describes the *mapping*, so ``vmin`` / ``vmax`` should be the</span>
+<span class="sd">        domain the colormap was applied over, which is not necessarily the</span>
+<span class="sd">        min and max of the data itself.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            colors: Colormap control points, shape (N, 3) with N &gt;= 2. Integers</span>
+<span class="sd">                are [0,255] and floats are [0,1], as elsewhere in viser. Points</span>
+<span class="sd">                are spaced evenly from `vmin` to `vmax` and interpolated</span>
+<span class="sd">                between, so passing a densely sampled ramp (16+ points) keeps a</span>
+<span class="sd">                curved colormap faithful.</span>
+<span class="sd">            vmin: Data value at the low end of the ramp.</span>
+<span class="sd">            vmax: Data value at the high end of the ramp.</span>
+<span class="sd">            label: Title shown above the bar. None for no title.</span>
+<span class="sd">            num_ticks: Number of evenly spaced ticks to generate between `vmin`</span>
+<span class="sd">                and `vmax`, with labels formatted from the range. Ignored when</span>
+<span class="sd">                `ticks` is given.</span>
+<span class="sd">            ticks: Explicit (value, label) pairs, for units or non-uniform</span>
+<span class="sd">                ticks. Overrides `num_ticks`. Values outside [vmin, vmax] are</span>
+<span class="sd">                not drawn.</span>
+<span class="sd">            orientation: "vertical" puts `vmax` at the top with ticks on the</span>
+<span class="sd">                right; "horizontal" puts `vmax` at the right with ticks below.</span>
+<span class="sd">            length: Length of the bar in pixels (height when vertical).</span>
+<span class="sd">            thickness: Thickness of the bar in pixels (width when vertical).</span>
+<span class="sd">            order: Optional ordering, smallest values will be displayed first.</span>
+<span class="sd">            visible: Whether the component is visible.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A handle that can be used to interact with the GUI element.</span>
+
+<span class="sd">        Example::</span>
+
+<span class="sd">            colorbar = server.gui.add_colorbar(</span>
+<span class="sd">                colors=ramp, vmin=0.0, vmax=100.0, label="Temperature (C)"</span>
+<span class="sd">            )</span>
+<span class="sd">            colorbar.vmax = 120.0  # Every prop is assignable.</span>
+<span class="sd">        """</span>
+        <span class="n">colors_cast</span> <span class="o">=</span> <span class="n">colors_to_uint8</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">colors</span><span class="p">))</span>
+        <span class="n">resolved_ticks</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="nb">tuple</span><span class="p">((</span><span class="nb">float</span><span class="p">(</span><span class="n">value</span><span class="p">),</span> <span class="nb">str</span><span class="p">(</span><span class="n">text</span><span class="p">))</span> <span class="k">for</span> <span class="n">value</span><span class="p">,</span> <span class="n">text</span> <span class="ow">in</span> <span class="n">ticks</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">ticks</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+            <span class="k">else</span> <span class="n">_auto_colorbar_ticks</span><span class="p">(</span><span class="n">vmin</span><span class="p">,</span> <span class="n">vmax</span><span class="p">,</span> <span class="n">num_ticks</span><span class="p">)</span>
+        <span class="p">)</span>
+
+        <span class="n">message</span> <span class="o">=</span> <span class="n">_messages</span><span class="o">.</span><span class="n">GuiColorbarMessage</span><span class="p">(</span>
+            <span class="n">uuid</span><span class="o">=</span><span class="n">_make_uuid</span><span class="p">(),</span>
+            <span class="n">container_uuid</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_container_uuid</span><span class="p">(),</span>
+            <span class="n">props</span><span class="o">=</span><span class="n">_messages</span><span class="o">.</span><span class="n">GuiColorbarProps</span><span class="p">(</span>
+                <span class="n">order</span><span class="o">=</span><span class="n">_apply_default_order</span><span class="p">(</span><span class="n">order</span><span class="p">),</span>
+                <span class="n">colors</span><span class="o">=</span><span class="n">colors_cast</span><span class="p">,</span>
+                <span class="n">vmin</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">vmin</span><span class="p">),</span>
+                <span class="n">vmax</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">vmax</span><span class="p">),</span>
+                <span class="n">label</span><span class="o">=</span><span class="n">label</span><span class="p">,</span>
+                <span class="n">ticks</span><span class="o">=</span><span class="n">resolved_ticks</span><span class="p">,</span>
+                <span class="n">orientation</span><span class="o">=</span><span class="n">orientation</span><span class="p">,</span>
+                <span class="n">length</span><span class="o">=</span><span class="n">length</span><span class="p">,</span>
+                <span class="n">thickness</span><span class="o">=</span><span class="n">thickness</span><span class="p">,</span>
+                <span class="n">visible</span><span class="o">=</span><span class="n">visible</span><span class="p">,</span>
+            <span class="p">),</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_websock_interface</span><span class="o">.</span><span class="n">queue_message</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">GuiColorbarHandle</span><span class="p">(</span>
+            <span class="n">_GuiHandleState</span><span class="p">(</span>
+                <span class="n">message</span><span class="o">.</span><span class="n">uuid</span><span class="p">,</span>
+                <span class="bp">self</span><span class="p">,</span>
+                <span class="kc">None</span><span class="p">,</span>
+                <span class="n">props</span><span class="o">=</span><span class="n">message</span><span class="o">.</span><span class="n">props</span><span class="p">,</span>
+                <span class="n">parent_container_id</span><span class="o">=</span><span class="n">message</span><span class="o">.</span><span class="n">container_uuid</span><span class="p">,</span>
+            <span class="p">),</span>
+        <span class="p">)</span></div>
+
+
 <div class="viewcode-block" id="GuiApi.add_divider">
 <a class="viewcode-back" href="../../../api/core/gui_api/#viser.GuiApi.add_divider">[docs]</a>
     <span class="nd">@deprecated_positional_shim</span>
@@ -2875,6 +3064,120 @@
                 <span class="p">),</span>
             <span class="p">),</span>
         <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="GuiApi.add_gallery">
+<a class="viewcode-back" href="../../../api/core/gui_api/#viser.GuiApi.add_gallery">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">add_gallery</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">label</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">""</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">parent</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">"window"</span><span class="p">]</span>
+        <span class="o">|</span> <span class="n">GuiContainerProtocol</span>
+        <span class="o">|</span> <span class="n">PanelHandle</span>
+        <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="s2">"window"</span><span class="p">,</span>
+        <span class="n">block_width</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">220</span><span class="p">,</span>
+        <span class="n">block_height</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">160</span><span class="p">,</span>
+        <span class="n">gap</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">16</span><span class="p">,</span>
+        <span class="n">hint</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">visible</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">order</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">GuiGalleryHandle</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Add a gallery of clickable image blocks, arranged as a grid.</span>
+
+<span class="sd">        The number of blocks per row is derived by the client from</span>
+<span class="sd">        ``block_width`` and the available width, so the grid reflows to fill</span>
+<span class="sd">        whatever space it is given.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            parent: Where to place the gallery. ``"window"`` (default) renders it</span>
+<span class="sd">                as a full-window overlay covering the viewport. Pass a container</span>
+<span class="sd">                -- a :class:`PanelHandle`, a tab, a folder, or the control panel</span>
+<span class="sd">                -- to render it inline there instead. Inside a ``with`` block on</span>
+<span class="sd">                a container, pass ``parent=None`` to use that context.</span>
+<span class="sd">            block_width: Target width of each block in pixels. Blocks stretch to</span>
+<span class="sd">                fill the row, so the realized width may be slightly larger.</span>
+<span class="sd">            block_height: Height of each block's snapshot area, in pixels.</span>
+<span class="sd">            gap: Gap between blocks, in pixels.</span>
+<span class="sd">            label: Optional title displayed above the grid.</span>
+<span class="sd">            hint: Optional hint to display on hover.</span>
+<span class="sd">            visible: Whether the gallery is visible initially.</span>
+<span class="sd">            order: Optional ordering, smallest values will be displayed first.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A handle used to add, remove, and manage blocks.</span>
+
+<span class="sd">        Example:</span>
+<span class="sd">            &gt;&gt;&gt; # Full-window gallery.</span>
+<span class="sd">            &gt;&gt;&gt; gallery = server.gui.add_gallery(block_width=220)</span>
+<span class="sd">            &gt;&gt;&gt; block = gallery.add_block("Actuator Housing", "Simon Slater", image=arr)</span>
+<span class="sd">            &gt;&gt;&gt;</span>
+<span class="sd">            &gt;&gt;&gt; # Or inside a movable panel.</span>
+<span class="sd">            &gt;&gt;&gt; panel = server.gui.add_panel()</span>
+<span class="sd">            &gt;&gt;&gt; tab = panel.add_tab("Parts")</span>
+<span class="sd">            &gt;&gt;&gt; gallery = server.gui.add_gallery(parent=tab, block_width=140)</span>
+<span class="sd">            &gt;&gt;&gt;</span>
+<span class="sd">            &gt;&gt;&gt; @gallery.on_click</span>
+<span class="sd">            &gt;&gt;&gt; def _(event):</span>
+<span class="sd">            &gt;&gt;&gt;     print("clicked", event.target.title)</span>
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="n">block_width</span> <span class="o">&lt;=</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">block_height</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"`block_width` and `block_height` must be positive."</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">gap</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"`gap` must be non-negative."</span><span class="p">)</span>
+
+        <span class="c1"># A panel is a container for tabs, not for content: resolving one here</span>
+        <span class="c1"># would silently drop the gallery, so point the user at the tab.</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">parent</span><span class="p">,</span> <span class="n">PanelHandle</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+                <span class="s2">"A panel holds tabs, not content directly. Add the gallery to one "</span>
+                <span class="s2">"of its tabs:</span><span class="se">\n</span><span class="s2">"</span>
+                <span class="s2">"    panel = server.gui.add_panel()</span><span class="se">\n</span><span class="s2">"</span>
+                <span class="s1">'    gallery = server.gui.add_gallery(parent=panel.add_tab("Parts"))'</span>
+            <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">parent</span> <span class="o">==</span> <span class="s2">"window"</span><span class="p">:</span>
+            <span class="n">placement</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">"window"</span><span class="p">,</span> <span class="s2">"inline"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"window"</span>
+            <span class="c1"># Galleries render outside the inline GUI tree, so the container is</span>
+            <span class="c1"># only a lifecycle parent; the root keeps it alive for the session.</span>
+            <span class="n">container_uuid</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_container_uuid</span><span class="p">()</span>
+        <span class="k">elif</span> <span class="n">parent</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># Use the ambient `with container:` context.</span>
+            <span class="n">placement</span> <span class="o">=</span> <span class="s2">"inline"</span>
+            <span class="n">container_uuid</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_container_uuid</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">placement</span> <span class="o">=</span> <span class="s2">"inline"</span>
+            <span class="n">container_uuid</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_container_uuid_from_handle</span><span class="p">(</span><span class="n">parent</span><span class="p">)</span>
+
+        <span class="n">message</span> <span class="o">=</span> <span class="n">_messages</span><span class="o">.</span><span class="n">GuiGalleryMessage</span><span class="p">(</span>
+            <span class="n">uuid</span><span class="o">=</span><span class="n">_make_uuid</span><span class="p">(),</span>
+            <span class="n">container_uuid</span><span class="o">=</span><span class="n">container_uuid</span><span class="p">,</span>
+            <span class="n">props</span><span class="o">=</span><span class="n">_messages</span><span class="o">.</span><span class="n">GuiGalleryProps</span><span class="p">(</span>
+                <span class="n">order</span><span class="o">=</span><span class="n">_apply_default_order</span><span class="p">(</span><span class="n">order</span><span class="p">),</span>
+                <span class="n">label</span><span class="o">=</span><span class="n">label</span><span class="p">,</span>
+                <span class="n">hint</span><span class="o">=</span><span class="n">hint</span><span class="p">,</span>
+                <span class="n">visible</span><span class="o">=</span><span class="n">visible</span><span class="p">,</span>
+                <span class="n">disabled</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                <span class="n">blocks</span><span class="o">=</span><span class="p">(),</span>
+                <span class="n">block_width</span><span class="o">=</span><span class="n">block_width</span><span class="p">,</span>
+                <span class="n">block_height</span><span class="o">=</span><span class="n">block_height</span><span class="p">,</span>
+                <span class="n">gap</span><span class="o">=</span><span class="n">gap</span><span class="p">,</span>
+                <span class="n">placement</span><span class="o">=</span><span class="n">placement</span><span class="p">,</span>
+            <span class="p">),</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_websock_interface</span><span class="o">.</span><span class="n">queue_message</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
+
+        <span class="n">handle</span> <span class="o">=</span> <span class="n">GuiGalleryHandle</span><span class="p">(</span>
+            <span class="n">_GuiHandleState</span><span class="p">(</span>
+                <span class="n">message</span><span class="o">.</span><span class="n">uuid</span><span class="p">,</span>
+                <span class="bp">self</span><span class="p">,</span>
+                <span class="kc">None</span><span class="p">,</span>
+                <span class="n">props</span><span class="o">=</span><span class="n">message</span><span class="o">.</span><span class="n">props</span><span class="p">,</span>
+                <span class="n">parent_container_id</span><span class="o">=</span><span class="n">message</span><span class="o">.</span><span class="n">container_uuid</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_gallery_handle_from_uuid</span><span class="p">[</span><span class="n">message</span><span class="o">.</span><span class="n">uuid</span><span class="p">]</span> <span class="o">=</span> <span class="n">handle</span>
+        <span class="k">return</span> <span class="n">handle</span></div>
 
 
 <div class="viewcode-block" id="GuiApi.add_checkbox">

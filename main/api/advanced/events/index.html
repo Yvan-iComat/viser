@@ -467,6 +467,43 @@ values.</p>
 </dd></dl>
 
 <dl class="py class">
+<dt class="sig sig-object py" id="viser.GalleryBlockEvent">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">viser.</span></span><span class="sig-name descname"><span class="pre">GalleryBlockEvent</span></span><a class="reference internal" href="../../../_modules/viser/_gui_handles/#GalleryBlockEvent"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#viser.GalleryBlockEvent" title="Link to this definition">¶</a></dt>
+<dd><p>Information associated with a gallery block click.</p>
+<p>Passed as input to callback functions.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="viser.GalleryBlockEvent.client">
+<span class="sig-name descname"><span class="pre">client</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="../../handles/client_handles/#viser.ClientHandle" title="viser.ClientHandle"><span class="pre">ClientHandle</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></em><a class="headerlink" href="#viser.GalleryBlockEvent.client" title="Link to this definition">¶</a></dt>
+<dd><p>Client that triggered this event.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="viser.GalleryBlockEvent.client_id">
+<span class="sig-name descname"><span class="pre">client_id</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></em><a class="headerlink" href="#viser.GalleryBlockEvent.client_id" title="Link to this definition">¶</a></dt>
+<dd><p>ID of client that triggered this event.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="viser.GalleryBlockEvent.gallery">
+<span class="sig-name descname"><span class="pre">gallery</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="../../handles/gui_handles/#viser.GuiGalleryHandle" title="viser.GuiGalleryHandle"><span class="pre">GuiGalleryHandle</span></a></em><a class="headerlink" href="#viser.GalleryBlockEvent.gallery" title="Link to this definition">¶</a></dt>
+<dd><p>Gallery containing the clicked block.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="viser.GalleryBlockEvent.target">
+<span class="sig-name descname"><span class="pre">target</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="../../handles/gui_handles/#viser.GalleryBlockHandle" title="viser.GalleryBlockHandle"><span class="pre">GalleryBlockHandle</span></a></em><a class="headerlink" href="#viser.GalleryBlockEvent.target" title="Link to this definition">¶</a></dt>
+<dd><p>Block that was clicked.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="viser.GalleryBlockEvent.block_id">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">block_id</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></em><a class="headerlink" href="#viser.GalleryBlockEvent.block_id" title="Link to this definition">¶</a></dt>
+<dd><p>Identifier of the block that was clicked.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
 <dt class="sig sig-object py" id="viser.GuiEvent">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">viser.</span></span><span class="sig-name descname"><span class="pre">GuiEvent</span></span><a class="reference internal" href="../../../_modules/viser/_gui_handles/#GuiEvent"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#viser.GuiEvent" title="Link to this definition">¶</a></dt>
 <dd><p>Information associated with a GUI event, such as an update or click.</p>
@@ -912,6 +949,14 @@ the surrounding update).</p>
 <li><a class="reference internal" href="#viser.CommandEvent.client"><code class="docutils literal notranslate"><span class="pre">CommandEvent.client</span></code></a></li>
 <li><a class="reference internal" href="#viser.CommandEvent.client_id"><code class="docutils literal notranslate"><span class="pre">CommandEvent.client_id</span></code></a></li>
 <li><a class="reference internal" href="#viser.CommandEvent.target"><code class="docutils literal notranslate"><span class="pre">CommandEvent.target</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#viser.GalleryBlockEvent"><code class="docutils literal notranslate"><span class="pre">GalleryBlockEvent</span></code></a><ul>
+<li><a class="reference internal" href="#viser.GalleryBlockEvent.client"><code class="docutils literal notranslate"><span class="pre">GalleryBlockEvent.client</span></code></a></li>
+<li><a class="reference internal" href="#viser.GalleryBlockEvent.client_id"><code class="docutils literal notranslate"><span class="pre">GalleryBlockEvent.client_id</span></code></a></li>
+<li><a class="reference internal" href="#viser.GalleryBlockEvent.gallery"><code class="docutils literal notranslate"><span class="pre">GalleryBlockEvent.gallery</span></code></a></li>
+<li><a class="reference internal" href="#viser.GalleryBlockEvent.target"><code class="docutils literal notranslate"><span class="pre">GalleryBlockEvent.target</span></code></a></li>
+<li><a class="reference internal" href="#viser.GalleryBlockEvent.block_id"><code class="docutils literal notranslate"><span class="pre">GalleryBlockEvent.block_id</span></code></a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#viser.GuiEvent"><code class="docutils literal notranslate"><span class="pre">GuiEvent</span></code></a><ul>

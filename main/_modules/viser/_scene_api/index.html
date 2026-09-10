@@ -449,6 +449,7 @@
 <span class="p">)</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy.typing</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">npt</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing_extensions</span><span class="w"> </span><span class="kn">import</span> <span class="n">Literal</span><span class="p">,</span> <span class="n">Never</span><span class="p">,</span> <span class="n">ParamSpec</span><span class="p">,</span> <span class="n">TypeAlias</span><span class="p">,</span> <span class="n">deprecated</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">viser._backwards_compat_shims</span><span class="w"> </span><span class="kn">import</span> <span class="n">deprecated_positional_shim</span>
@@ -586,6 +587,23 @@
     <span class="n">rgb_fixed</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">channel</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="k">for</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">rgb</span><span class="p">)</span>
     <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">rgb_fixed</span><span class="p">)</span> <span class="o">==</span> <span class="mi">3</span>
     <span class="k">return</span> <span class="n">rgb_fixed</span>  <span class="c1"># type: ignore</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_encode_vertex_colors</span><span class="p">(</span>
+    <span class="n">vertex_colors</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="n">vertices</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">npt</span><span class="o">.</span><span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Canonicalize an optional per-vertex color array to uint8 (V, 3).</span>
+
+<span class="sd">    Shape is validated here rather than only in `MeshProps.__post_init__` so</span>
+<span class="sd">    that a mismatch names the offending argument at the call site."""</span>
+    <span class="k">if</span> <span class="n">vertex_colors</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="n">colors_to_uint8</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">vertex_colors</span><span class="p">))</span>
+    <span class="k">assert</span> <span class="n">out</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">vertices</span><span class="p">)</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="mi">3</span><span class="p">),</span> <span class="p">(</span>
+        <span class="s2">"Shape of vertex_colors should be (V, 3), matching vertices; got "</span>
+        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">out</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2"> for </span><span class="si">{</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">vertices</span><span class="p">)</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2"> vertices."</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">out</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_encode_image_binary</span><span class="p">(</span>
@@ -2649,6 +2667,7 @@
         <span class="n">bone_positions</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">],</span> <span class="o">...</span><span class="p">]</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
         <span class="n">skin_weights</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
         <span class="n">color</span><span class="p">:</span> <span class="n">RgbTupleOrArray</span> <span class="o">=</span> <span class="p">(</span><span class="mi">90</span><span class="p">,</span> <span class="mi">200</span><span class="p">,</span> <span class="mi">255</span><span class="p">),</span>
+        <span class="n">vertex_colors</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">wireframe</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="n">opacity</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">material</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">"standard"</span><span class="p">,</span> <span class="s2">"toon3"</span><span class="p">,</span> <span class="s2">"toon5"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"standard"</span><span class="p">,</span>
@@ -2675,7 +2694,10 @@
 <span class="sd">            skin_weights: A numpy array of skin weights. Should have shape (V, B) where B</span>
 <span class="sd">                is the number of bones. Only the top 4 bone weights for each</span>
 <span class="sd">                vertex will be used.</span>
-<span class="sd">            color: Color of the mesh as an RGB tuple.</span>
+<span class="sd">            color: Color of the mesh as an RGB tuple. Ignored when</span>
+<span class="sd">                `vertex_colors` is set.</span>
+<span class="sd">            vertex_colors: Optional per-vertex colors, shape (V, 3). Interpolated</span>
+<span class="sd">                across each triangle; see `add_mesh_simple` for details.</span>
 <span class="sd">            wireframe: Boolean indicating if the mesh should be rendered as a wireframe.</span>
 <span class="sd">            opacity: Opacity of the mesh. None means opaque.</span>
 <span class="sd">            material: Material type of the mesh ('standard', 'toon3', 'toon5').</span>
@@ -2737,6 +2759,7 @@
                 <span class="n">vertices</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">vertices</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">),</span>
                 <span class="n">faces</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">faces</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">uint32</span><span class="p">),</span>
                 <span class="n">color</span><span class="o">=</span><span class="n">_encode_rgb</span><span class="p">(</span><span class="n">color</span><span class="p">),</span>
+                <span class="n">vertex_colors</span><span class="o">=</span><span class="n">_encode_vertex_colors</span><span class="p">(</span><span class="n">vertex_colors</span><span class="p">,</span> <span class="n">vertices</span><span class="p">),</span>
                 <span class="n">wireframe</span><span class="o">=</span><span class="n">wireframe</span><span class="p">,</span>
                 <span class="n">opacity</span><span class="o">=</span><span class="n">opacity</span><span class="p">,</span>
                 <span class="n">flat_shading</span><span class="o">=</span><span class="n">flat_shading</span><span class="p">,</span>
@@ -2789,6 +2812,7 @@
         <span class="n">faces</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
         <span class="o">*</span><span class="p">,</span>
         <span class="n">color</span><span class="p">:</span> <span class="n">RgbTupleOrArray</span> <span class="o">=</span> <span class="p">(</span><span class="mi">90</span><span class="p">,</span> <span class="mi">200</span><span class="p">,</span> <span class="mi">255</span><span class="p">),</span>
+        <span class="n">vertex_colors</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">wireframe</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="n">opacity</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">material</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">"standard"</span><span class="p">,</span> <span class="s2">"toon3"</span><span class="p">,</span> <span class="s2">"toon5"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"standard"</span><span class="p">,</span>
@@ -2810,7 +2834,15 @@
 <span class="sd">            vertices: A numpy array of vertex positions. Should have shape (V, 3).</span>
 <span class="sd">            faces: A numpy array of faces, where each face is represented by indices of</span>
 <span class="sd">                vertices. Should have shape (F,)</span>
-<span class="sd">            color: Color of the mesh as an RGB tuple.</span>
+<span class="sd">            color: Color of the mesh as an RGB tuple. Ignored when</span>
+<span class="sd">                `vertex_colors` is set.</span>
+<span class="sd">            vertex_colors: Optional per-vertex colors, shape (V, 3). Integers are</span>
+<span class="sd">                interpreted as [0,255] and floats as [0,1], matching `color`. The</span>
+<span class="sd">                rasterizer interpolates these across each triangle, so a field</span>
+<span class="sd">                defined on shared vertices renders as a smooth gradient. Note that</span>
+<span class="sd">                vertices must actually be shared between adjacent faces: a mesh</span>
+<span class="sd">                loaded from STL (or any per-face-duplicated source) has one vertex</span>
+<span class="sd">                per face corner and will render faceted instead.</span>
 <span class="sd">            wireframe: Boolean indicating if the mesh should be rendered as a wireframe.</span>
 <span class="sd">            opacity: Opacity of the mesh. None means opaque.</span>
 <span class="sd">            material: Material type of the mesh ('standard', 'toon3', 'toon5').</span>
@@ -2846,6 +2878,7 @@
                 <span class="n">vertices</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">vertices</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">),</span>
                 <span class="n">faces</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">faces</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">uint32</span><span class="p">),</span>
                 <span class="n">color</span><span class="o">=</span><span class="n">_encode_rgb</span><span class="p">(</span><span class="n">color</span><span class="p">),</span>
+                <span class="n">vertex_colors</span><span class="o">=</span><span class="n">_encode_vertex_colors</span><span class="p">(</span><span class="n">vertex_colors</span><span class="p">,</span> <span class="n">vertices</span><span class="p">),</span>
                 <span class="n">wireframe</span><span class="o">=</span><span class="n">wireframe</span><span class="p">,</span>
                 <span class="n">opacity</span><span class="o">=</span><span class="n">opacity</span><span class="p">,</span>
                 <span class="n">flat_shading</span><span class="o">=</span><span class="n">use_flat_shading</span><span class="p">,</span>

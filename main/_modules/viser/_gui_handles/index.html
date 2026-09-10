@@ -430,9 +430,11 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">base64</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">dataclasses</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">io</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">math</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">threading</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">uuid</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
@@ -469,11 +471,15 @@
     <span class="n">GuiButtonProps</span><span class="p">,</span>
     <span class="n">GuiCheckboxProps</span><span class="p">,</span>
     <span class="n">GuiCloseModalMessage</span><span class="p">,</span>
+    <span class="n">GuiColorbarProps</span><span class="p">,</span>
     <span class="n">GuiDividerProps</span><span class="p">,</span>
     <span class="n">GuiDropdownProps</span><span class="p">,</span>
     <span class="n">GuiFolderProps</span><span class="p">,</span>
     <span class="n">GuiFolderSelectButtonProps</span><span class="p">,</span>
     <span class="n">GuiFormSubmitMessage</span><span class="p">,</span>
+    <span class="n">GuiGalleryBlock</span><span class="p">,</span>
+    <span class="n">GuiGalleryProps</span><span class="p">,</span>
+    <span class="n">GuiGalleryRenderRequestMessage</span><span class="p">,</span>
     <span class="n">GuiHtmlProps</span><span class="p">,</span>
     <span class="n">GuiImageProps</span><span class="p">,</span>
     <span class="n">GuiMarkdownProps</span><span class="p">,</span>
@@ -1434,6 +1440,331 @@
 <span class="sd">        """</span>
         <span class="c1"># This will be stored as an internal property updated by frontend</span>
         <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_impl</span><span class="p">,</span> <span class="s2">"_selected_row"</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="GalleryBlockHandle">
+<a class="viewcode-back" href="../../../api/handles/gui_handles/#viser.GalleryBlockHandle">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">GalleryBlockHandle</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Handle for a single block (card) within a gallery.</span>
+
+<span class="sd">    Blocks are not standalone GUI components: the gallery owns all block state</span>
+<span class="sd">    in its ``blocks`` prop, and this handle is a façade that reads and rewrites</span>
+<span class="sd">    the entry matching its ``block_id``. Mutating a removed block is a no-op.</span>
+<span class="sd">    """</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">gallery</span><span class="p">:</span> <span class="n">GuiGalleryHandle</span><span class="p">,</span> <span class="n">block_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_gallery</span> <span class="o">=</span> <span class="n">gallery</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_block_id</span> <span class="o">=</span> <span class="n">block_id</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_click_cb</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Callable</span><span class="p">[[</span><span class="n">GalleryBlockEvent</span><span class="p">],</span> <span class="kc">None</span> <span class="o">|</span> <span class="n">Coroutine</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">block_id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Stable identifier for this block."""</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_block_id</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">removed</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Whether this block has been removed from its gallery."""</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_gallery</span><span class="o">.</span><span class="n">_find_block</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_block_id</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">title</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Title text shown in the block footer. Synchronized when assigned."""</span>
+        <span class="n">block</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_gallery</span><span class="o">.</span><span class="n">_find_block</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_block_id</span><span class="p">)</span>
+        <span class="k">return</span> <span class="s2">""</span> <span class="k">if</span> <span class="n">block</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">block</span><span class="o">.</span><span class="n">title</span>
+
+    <span class="nd">@title</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">title</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">title</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_gallery</span><span class="o">.</span><span class="n">_mutate_block</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_block_id</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="n">title</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">subtitle</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Optional subtitle shown below the title. Synchronized when assigned."""</span>
+        <span class="n">block</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_gallery</span><span class="o">.</span><span class="n">_find_block</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_block_id</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">block</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">block</span><span class="o">.</span><span class="n">subtitle</span>
+
+    <span class="nd">@subtitle</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">subtitle</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">subtitle</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_gallery</span><span class="o">.</span><span class="n">_mutate_block</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_block_id</span><span class="p">,</span> <span class="n">subtitle</span><span class="o">=</span><span class="n">subtitle</span><span class="p">)</span>
+
+<div class="viewcode-block" id="GalleryBlockHandle.set_image">
+<a class="viewcode-back" href="../../../api/handles/gui_handles/#viser.GalleryBlockHandle.set_image">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">set_image</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">image</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Replace this block's snapshot with a numpy image.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            image: (H, W, 3) or (H, W, 4) uint8 array.</span>
+<span class="sd">        """</span>
+        <span class="n">image_format</span><span class="p">,</span> <span class="n">data</span> <span class="o">=</span> <span class="n">_encode_image_binary</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="s2">"auto"</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_gallery</span><span class="o">.</span><span class="n">_mutate_block</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_block_id</span><span class="p">,</span> <span class="n">_data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="n">_format</span><span class="o">=</span><span class="n">image_format</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="GalleryBlockHandle.remove">
+<a class="viewcode-back" href="../../../api/handles/gui_handles/#viser.GalleryBlockHandle.remove">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">remove</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Remove this block from its gallery."""</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_gallery</span><span class="o">.</span><span class="n">remove_block</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="GalleryBlockHandle.on_click">
+<a class="viewcode-back" href="../../../api/handles/gui_handles/#viser.GalleryBlockHandle.on_click">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">on_click</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">func</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">GalleryBlockEvent</span><span class="p">],</span> <span class="n">NoneOrCoroutine</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">GalleryBlockEvent</span><span class="p">],</span> <span class="n">NoneOrCoroutine</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""Attach a callback for when this block is left clicked.</span>
+
+<span class="sd">        Note:</span>
+<span class="sd">            - If `func` is a regular function (defined with `def`), it will be executed in a thread pool.</span>
+<span class="sd">            - If `func` is an async function (defined with `async def`), it will be executed in the event loop.</span>
+
+<span class="sd">        Example:</span>
+<span class="sd">            &gt;&gt;&gt; @block.on_click</span>
+<span class="sd">            &gt;&gt;&gt; def _(event):</span>
+<span class="sd">            &gt;&gt;&gt;     print("clicked", event.target.title)</span>
+<span class="sd">        """</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_click_cb</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">func</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">func</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="GalleryBlockEvent">
+<a class="viewcode-back" href="../../../api/advanced/events/#viser.GalleryBlockEvent">[docs]</a>
+<span class="nd">@dataclasses</span><span class="o">.</span><span class="n">dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">GalleryBlockEvent</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Information associated with a gallery block click.</span>
+
+<span class="sd">    Passed as input to callback functions."""</span>
+
+    <span class="n">client</span><span class="p">:</span> <span class="n">ClientHandle</span> <span class="o">|</span> <span class="kc">None</span>
+<span class="w">    </span><span class="sd">"""Client that triggered this event."""</span>
+    <span class="n">client_id</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span>
+<span class="w">    </span><span class="sd">"""ID of client that triggered this event."""</span>
+    <span class="n">gallery</span><span class="p">:</span> <span class="n">GuiGalleryHandle</span>
+<span class="w">    </span><span class="sd">"""Gallery containing the clicked block."""</span>
+    <span class="n">target</span><span class="p">:</span> <span class="n">GalleryBlockHandle</span>
+<span class="w">    </span><span class="sd">"""Block that was clicked."""</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">block_id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Identifier of the block that was clicked."""</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">target</span><span class="o">.</span><span class="n">block_id</span></div>
+
+
+
+<div class="viewcode-block" id="GuiGalleryHandle">
+<a class="viewcode-back" href="../../../api/handles/gui_handles/#viser.GuiGalleryHandle">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">GuiGalleryHandle</span><span class="p">(</span><span class="n">_GuiHandle</span><span class="p">[</span><span class="kc">None</span><span class="p">],</span> <span class="n">GuiGalleryProps</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Handle for a gallery of clickable image blocks arranged in a grid.</span>
+
+<span class="sd">    The grid's column count is derived by the client from ``block_width`` and</span>
+<span class="sd">    the available width, so the gallery reflows to fill the window.</span>
+<span class="sd">    """</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">_impl</span><span class="p">:</span> <span class="n">_GuiHandleState</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">impl</span><span class="o">=</span><span class="n">_impl</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_block_handles</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">GalleryBlockHandle</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_gallery_click_cb</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span>
+            <span class="n">Callable</span><span class="p">[[</span><span class="n">GalleryBlockEvent</span><span class="p">],</span> <span class="kc">None</span> <span class="o">|</span> <span class="n">Coroutine</span><span class="p">]</span>
+        <span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="c1"># Pending STL renders, keyed by render_uuid, awaiting a client reply.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pending_renders</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">threading</span><span class="o">.</span><span class="n">Event</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_find_block</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">block_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">GuiGalleryBlock</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">block</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">blocks</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">block</span><span class="o">.</span><span class="n">block_id</span> <span class="o">==</span> <span class="n">block_id</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">block</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_mutate_block</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">block_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">changes</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Rewrite one block in-place, resyncing the whole ``blocks`` prop.</span>
+
+<span class="sd">        Silently ignores unknown ids so callbacks racing a removal are safe.</span>
+<span class="sd">        """</span>
+        <span class="n">new_blocks</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span>
+            <span class="n">dataclasses</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">block</span><span class="p">,</span> <span class="o">**</span><span class="n">changes</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">block</span><span class="o">.</span><span class="n">block_id</span> <span class="o">==</span> <span class="n">block_id</span>
+            <span class="k">else</span> <span class="n">block</span>
+            <span class="k">for</span> <span class="n">block</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">blocks</span>
+        <span class="p">)</span>
+        <span class="c1"># Only assign when something actually matched, so a stale handle does</span>
+        <span class="c1"># not trigger a redundant broadcast.</span>
+        <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="n">block</span><span class="o">.</span><span class="n">block_id</span> <span class="o">==</span> <span class="n">block_id</span> <span class="k">for</span> <span class="n">block</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">blocks</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">blocks</span> <span class="o">=</span> <span class="n">new_blocks</span>
+
+<div class="viewcode-block" id="GuiGalleryHandle.add_block">
+<a class="viewcode-back" href="../../../api/handles/gui_handles/#viser.GuiGalleryHandle.add_block">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">add_block</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">title</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">subtitle</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">image</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">stl</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Path</span> <span class="o">|</span> <span class="nb">bytes</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">block_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="mf">10.0</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">GalleryBlockHandle</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Add a block to the gallery.</span>
+
+<span class="sd">        Exactly one of ``image`` or ``stl`` must be provided.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            title: Title text, shown in the block footer.</span>
+<span class="sd">            subtitle: Optional subtitle, shown below the title.</span>
+<span class="sd">            image: Snapshot as an (H, W, 3) or (H, W, 4) uint8 numpy array.</span>
+<span class="sd">            stl: Path to (or raw bytes of) an STL mesh. A snapshot is rendered</span>
+<span class="sd">                from it in the browser; requires a connected client.</span>
+<span class="sd">            block_id: Optional stable identifier. Generated if omitted.</span>
+<span class="sd">            timeout: Seconds to wait for an STL snapshot before giving up. The</span>
+<span class="sd">                block is still added; its image stays blank on timeout.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A handle for manipulating the new block.</span>
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">image</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">)</span> <span class="o">==</span> <span class="p">(</span><span class="n">stl</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Exactly one of `image` or `stl` must be provided."</span><span class="p">)</span>
+
+        <span class="n">block_id</span> <span class="o">=</span> <span class="n">block_id</span> <span class="k">if</span> <span class="n">block_id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">_make_uuid</span><span class="p">()</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_find_block</span><span class="p">(</span><span class="n">block_id</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Gallery already contains a block with id </span><span class="si">{</span><span class="n">block_id</span><span class="si">!r}</span><span class="s2">."</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">image</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">image_format</span><span class="p">,</span> <span class="n">data</span> <span class="o">=</span> <span class="n">_encode_image_binary</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="s2">"auto"</span><span class="p">)</span>
+            <span class="n">stl_data</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># Snapshot is filled in by the client; start blank. Validate the</span>
+            <span class="c1"># mesh up front so a bad file raises instead of leaving behind a</span>
+            <span class="c1"># permanently blank block.</span>
+            <span class="k">assert</span> <span class="n">stl</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+            <span class="n">image_format</span><span class="p">,</span> <span class="n">data</span> <span class="o">=</span> <span class="s2">"png"</span><span class="p">,</span> <span class="kc">None</span>
+            <span class="n">stl_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_load_stl_bytes</span><span class="p">(</span><span class="n">block_id</span><span class="p">,</span> <span class="n">stl</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">blocks</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">blocks</span> <span class="o">+</span> <span class="p">(</span>
+            <span class="n">GuiGalleryBlock</span><span class="p">(</span>
+                <span class="n">block_id</span><span class="o">=</span><span class="n">block_id</span><span class="p">,</span>
+                <span class="n">title</span><span class="o">=</span><span class="n">title</span><span class="p">,</span>
+                <span class="n">subtitle</span><span class="o">=</span><span class="n">subtitle</span><span class="p">,</span>
+                <span class="n">_data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span>
+                <span class="n">_format</span><span class="o">=</span><span class="n">image_format</span><span class="p">,</span>
+            <span class="p">),</span>
+        <span class="p">)</span>
+        <span class="n">handle</span> <span class="o">=</span> <span class="n">GalleryBlockHandle</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">block_id</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_block_handles</span><span class="p">[</span><span class="n">block_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">handle</span>
+
+        <span class="k">if</span> <span class="n">stl_data</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_request_stl_snapshot</span><span class="p">(</span><span class="n">block_id</span><span class="p">,</span> <span class="n">stl_data</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">handle</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_load_stl_bytes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">block_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">stl</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Path</span> <span class="o">|</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bytes</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Read and validate an STL, raising before any block state is touched."""</span>
+        <span class="n">stl_data</span> <span class="o">=</span> <span class="n">stl</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">stl</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">)</span> <span class="k">else</span> <span class="n">Path</span><span class="p">(</span><span class="n">stl</span><span class="p">)</span><span class="o">.</span><span class="n">read_bytes</span><span class="p">()</span>
+
+        <span class="c1"># Parse to fail fast on malformed input, with a clearer error than the</span>
+        <span class="c1"># browser could give us. trimesh is already a hard dependency.</span>
+        <span class="kn">import</span><span class="w"> </span><span class="nn">trimesh</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">parsed</span> <span class="o">=</span> <span class="n">trimesh</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">io</span><span class="o">.</span><span class="n">BytesIO</span><span class="p">(</span><span class="n">stl_data</span><span class="p">),</span> <span class="n">file_type</span><span class="o">=</span><span class="s2">"stl"</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Could not parse STL for block </span><span class="si">{</span><span class="n">block_id</span><span class="si">!r}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
+
+        <span class="c1"># trimesh doesn't raise on unparseable STL bytes -- it hands back an</span>
+        <span class="c1"># empty Scene. Without this check a malformed file would silently</span>
+        <span class="c1"># become a blank block after the render timeout elapsed.</span>
+        <span class="k">if</span> <span class="n">parsed</span><span class="o">.</span><span class="n">is_empty</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"Could not parse STL for block </span><span class="si">{</span><span class="n">block_id</span><span class="si">!r}</span><span class="s2">: no geometry found."</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="n">stl_data</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_request_stl_snapshot</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">block_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">stl_data</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">,</span> <span class="n">timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Ask a client to render an STL into this block's snapshot."""</span>
+        <span class="n">render_uuid</span> <span class="o">=</span> <span class="n">_make_uuid</span><span class="p">()</span>
+        <span class="n">done</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Event</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pending_renders</span><span class="p">[</span><span class="n">render_uuid</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">block_id</span><span class="p">,</span> <span class="n">done</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_impl</span><span class="o">.</span><span class="n">gui_api</span><span class="o">.</span><span class="n">_websock_interface</span><span class="o">.</span><span class="n">queue_message</span><span class="p">(</span>
+            <span class="n">GuiGalleryRenderRequestMessage</span><span class="p">(</span>
+                <span class="n">uuid</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_impl</span><span class="o">.</span><span class="n">uuid</span><span class="p">,</span>
+                <span class="n">render_uuid</span><span class="o">=</span><span class="n">render_uuid</span><span class="p">,</span>
+                <span class="n">_stl_data</span><span class="o">=</span><span class="n">stl_data</span><span class="p">,</span>
+                <span class="n">width</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">block_width</span><span class="p">,</span>
+                <span class="n">height</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">block_height</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">timeout</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># Wait for the snapshot so callers see a populated block on return.</span>
+            <span class="c1"># A miss is not fatal: the reply still lands if it arrives late.</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">done</span><span class="o">.</span><span class="n">wait</span><span class="p">(</span><span class="n">timeout</span><span class="p">):</span>
+                <span class="n">num_clients</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span>
+                    <span class="nb">getattr</span><span class="p">(</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_impl</span><span class="o">.</span><span class="n">gui_api</span><span class="o">.</span><span class="n">_websock_interface</span><span class="p">,</span>
+                        <span class="s2">"_client_state_from_id"</span><span class="p">,</span>
+                        <span class="p">{},</span>
+                    <span class="p">)</span>
+                <span class="p">)</span>
+                <span class="n">hint</span> <span class="o">=</span> <span class="p">(</span>
+                    <span class="s2">"No client is connected: STL snapshots are rendered in the "</span>
+                    <span class="s2">"browser, so add these blocks from an `on_client_connect` "</span>
+                    <span class="s2">"callback, or pass `image=` instead."</span>
+                    <span class="k">if</span> <span class="n">num_clients</span> <span class="o">==</span> <span class="mi">0</span>
+                    <span class="k">else</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">num_clients</span><span class="si">}</span><span class="s2"> client(s) connected but none replied in "</span>
+                    <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">timeout</span><span class="si">}</span><span class="s2">s; try a longer `timeout`."</span>
+                <span class="p">)</span>
+                <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">"Timed out waiting for STL snapshot of block </span><span class="si">{</span><span class="n">block_id</span><span class="si">!r}</span><span class="s2">. "</span>
+                    <span class="sa">f</span><span class="s2">"The block was added without an image. </span><span class="si">{</span><span class="n">hint</span><span class="si">}</span><span class="s2">"</span>
+                <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_handle_render_reply</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">render_uuid</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="nb">bytes</span> <span class="o">|</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Apply a client-rendered snapshot to its block."""</span>
+        <span class="n">pending</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pending_renders</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">render_uuid</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">pending</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="n">block_id</span><span class="p">,</span> <span class="n">done</span> <span class="o">=</span> <span class="n">pending</span>
+        <span class="k">if</span> <span class="n">data</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_mutate_block</span><span class="p">(</span><span class="n">block_id</span><span class="p">,</span> <span class="n">_data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="n">_format</span><span class="o">=</span><span class="s2">"png"</span><span class="p">)</span>
+        <span class="n">done</span><span class="o">.</span><span class="n">set</span><span class="p">()</span>
+
+<div class="viewcode-block" id="GuiGalleryHandle.remove_block">
+<a class="viewcode-back" href="../../../api/handles/gui_handles/#viser.GuiGalleryHandle.remove_block">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">remove_block</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">block</span><span class="p">:</span> <span class="n">GalleryBlockHandle</span> <span class="o">|</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Remove a block from the gallery.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            block: The block handle, or its ``block_id``. Unknown ids are ignored.</span>
+<span class="sd">        """</span>
+        <span class="n">block_id</span> <span class="o">=</span> <span class="n">block</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">block</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="n">block</span><span class="o">.</span><span class="n">block_id</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">blocks</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">b</span> <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">blocks</span> <span class="k">if</span> <span class="n">b</span><span class="o">.</span><span class="n">block_id</span> <span class="o">!=</span> <span class="n">block_id</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_block_handles</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">block_id</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">clear</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Remove all blocks from the gallery."""</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">blocks</span> <span class="o">=</span> <span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_block_handles</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+
+<div class="viewcode-block" id="GuiGalleryHandle.on_click">
+<a class="viewcode-back" href="../../../api/handles/gui_handles/#viser.GuiGalleryHandle.on_click">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">on_click</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">func</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">GalleryBlockEvent</span><span class="p">],</span> <span class="n">NoneOrCoroutine</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">GalleryBlockEvent</span><span class="p">],</span> <span class="n">NoneOrCoroutine</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""Attach a callback for when any block in this gallery is clicked.</span>
+
+<span class="sd">        Fires after any per-block callbacks. The clicked block is available as</span>
+<span class="sd">        ``event.target``.</span>
+
+<span class="sd">        Note:</span>
+<span class="sd">            - If `func` is a regular function (defined with `def`), it will be executed in a thread pool.</span>
+<span class="sd">            - If `func` is an async function (defined with `async def`), it will be executed in the event loop.</span>
+<span class="sd">        """</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_gallery_click_cb</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">func</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">func</span></div>
+</div>
+
 
 
 <span class="k">class</span><span class="w"> </span><span class="nc">_TabContainerMixin</span><span class="p">:</span>
@@ -2460,6 +2791,17 @@
 <a class="viewcode-back" href="../../../api/handles/gui_handles/#viser.GuiHtmlHandle">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">GuiHtmlHandle</span><span class="p">(</span><span class="n">_GuiHandle</span><span class="p">[</span><span class="kc">None</span><span class="p">],</span> <span class="n">GuiHtmlProps</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""Handling for updating and removing HTML elements."""</span></div>
+
+
+
+<div class="viewcode-block" id="GuiColorbarHandle">
+<a class="viewcode-back" href="../../../api/handles/gui_handles/#viser.GuiColorbarHandle">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">GuiColorbarHandle</span><span class="p">(</span><span class="n">_GuiHandle</span><span class="p">[</span><span class="kc">None</span><span class="p">],</span> <span class="n">GuiColorbarProps</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Handle for updating and removing colorbars.</span>
+
+<span class="sd">    Every prop is assignable, so a colorbar can follow a live colormap or data</span>
+<span class="sd">    range: ``colorbar.colors = new_ramp``, ``colorbar.vmax = 42.0``.</span>
+<span class="sd">    """</span></div>
 
 
 
