@@ -6,6 +6,7 @@ import { OutlinesIfHovered } from "../OutlinesIfHovered";
 import { ViewerContext, ViewerMutable, variantKey } from "../ViewerContext";
 import { useFrame } from "@react-three/fiber";
 import { normalizeScale } from "../utils/normalizeScale";
+import { srgbUint8ToLinearFloat32 } from "../utils/vertexColors";
 
 /**
  * Component for rendering skinned meshes with animations
@@ -107,6 +108,30 @@ export const SkinnedMesh = React.forwardRef<
     message.props.bone_wxyzs,
     message.props.bone_positions,
   ]);
+
+  // Vertex colors get their own pass, keyed only on the color array: folding
+  // them into the memo above would rebuild the skeleton (and force every bone
+  // claim to be re-established) on each recolor.
+  const linearColorsRef = React.useRef<Float32Array | null>(null);
+  React.useMemo(() => {
+    const vertexColors = message.props.vertex_colors;
+    if (vertexColors === null) {
+      geometry.deleteAttribute("color");
+      linearColorsRef.current = null;
+      return;
+    }
+    const previous = linearColorsRef.current;
+    const linear = srgbUint8ToLinearFloat32(vertexColors, previous);
+    linearColorsRef.current = linear;
+    if (linear === previous && geometry.getAttribute("color") !== undefined) {
+      // Same buffer, still bound to this geometry: re-upload in place rather
+      // than swapping in a new attribute, which would orphan the old GL buffer
+      // (see utils/bufferGeometrySync.ts for why that leaks).
+      geometry.getAttribute("color").needsUpdate = true;
+    } else {
+      geometry.setAttribute("color", new THREE.BufferAttribute(linear, 3));
+    }
+  }, [geometry, message.props.vertex_colors]);
 
   // Handle initialization and cleanup.
   // Get mutable once.
@@ -216,7 +241,10 @@ export const SkinnedMesh = React.forwardRef<
         receiveShadow={message.props.receive_shadow === true}
         frustumCulled={false}
       >
-        <ViserStandardMeshMaterial {...message.props} />
+        <ViserStandardMeshMaterial
+          {...message.props}
+          vertexColors={message.props.vertex_colors !== null}
+        />
         <OutlinesIfHovered
           enableCreaseAngle={geometry.attributes.position.count < 1024}
         />

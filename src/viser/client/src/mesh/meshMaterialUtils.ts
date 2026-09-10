@@ -113,6 +113,12 @@ export interface StandardMaterialProps {
   opacity: number | null;
   flat_shading: boolean;
   side: "front" | "back" | "double";
+  /**
+   * Shade from the geometry's `color` attribute instead of the uniform
+   * `color`. The attribute must be linear-space float32 -- see
+   * `utils/vertexColors.ts`.
+   */
+  vertexColors?: boolean;
 }
 
 /**
@@ -122,8 +128,15 @@ export interface StandardMaterialProps {
 export function createStandardMaterial(
   props: StandardMaterialProps,
 ): THREE.Material {
+  const vertexColors = props.vertexColors ?? false;
   const standardArgs = {
-    color: props.color === undefined ? 0xffffff : rgbToInt(props.color),
+    // three MULTIPLIES the vertex color attribute into material.color, so the
+    // uniform color must be white or it would tint the whole gradient.
+    color:
+      vertexColors || props.color === undefined
+        ? 0xffffff
+        : rgbToInt(props.color),
+    vertexColors: vertexColors,
     wireframe: props.wireframe,
     transparent: props.opacity !== null,
     opacity: props.opacity ?? 1.0,

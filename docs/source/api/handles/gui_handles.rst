@@ -14,6 +14,8 @@ GUI Handles
 
 .. autoclass:: viser.GuiCheckboxHandle
 
+.. autoclass:: viser.GuiColorbarHandle
+
 .. autoclass:: viser.GuiDividerHandle
 
 .. autoclass:: viser.GuiDropdownHandle

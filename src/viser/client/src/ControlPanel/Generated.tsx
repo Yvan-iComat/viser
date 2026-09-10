@@ -28,6 +28,7 @@ import FolderSelectButtonComponent from "../components/FolderSelectButton";
 import ProgressBarComponent from "../components/ProgressBar";
 import ImageComponent from "../components/Image";
 import HtmlComponent from "../components/Html";
+import ColorbarComponent from "../components/Colorbar";
 import TableDataComponent from "../components/TableData";
 import GalleryComponent from "../components/Gallery";
 import DividerComponent from "../components/Divider";
@@ -182,6 +183,8 @@ function GeneratedInput(props: {
       return <MarkdownComponent {...conf} />;
     case "GuiHtmlMessage":
       return <HtmlComponent {...conf} />;
+    case "GuiColorbarMessage":
+      return <ColorbarComponent {...conf} />;
     case "GuiDividerMessage":
       return <DividerComponent {...conf} />;
     case "GuiPlotlyMessage":

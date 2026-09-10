@@ -5,6 +5,7 @@ import builtins
 import colorsys
 import dataclasses
 import functools
+import math
 import threading
 import time
 import uuid
@@ -39,6 +40,7 @@ from viser import theme
 from viser._backwards_compat_shims import deprecated_positional_shim
 
 from . import _messages, uplot
+from ._assignable_props_api import colors_to_uint8
 from ._gui_handles import (
     CONTROL_PANEL_ID,
     CommandEvent,
@@ -47,6 +49,7 @@ from ._gui_handles import (
     GuiButtonGroupHandle,
     GuiButtonHandle,
     GuiCheckboxHandle,
+    GuiColorbarHandle,
     GuiContainerProtocol,
     GuiDividerHandle,
     GuiDropdownHandle,
@@ -252,6 +255,33 @@ def _apply_default_order(order: float | None) -> float:
     global _global_order_counter
     _global_order_counter += 1
     return _global_order_counter
+
+
+def _auto_colorbar_ticks(
+    vmin: float, vmax: float, num_ticks: int
+) -> Tuple[Tuple[float, str], ...]:
+    """Evenly spaced colorbar ticks with labels formatted from the range.
+
+    Decimal places are chosen from the span rather than fixed, so a 0-to-1
+    field reads "0.25" while a 0-to-500 field reads "125" instead of
+    "125.00"."""
+    assert num_ticks >= 0, "num_ticks cannot be negative."
+    if num_ticks == 0:
+        return ()
+    span = vmax - vmin
+    # Three significant figures across the span, clamped to something sane. A
+    # degenerate range (vmin == vmax) has no scale to infer from, so fall back
+    # to two decimals.
+    decimals = (
+        min(6, max(0, 2 - int(math.floor(math.log10(abs(span)))))) if span != 0 else 2
+    )
+    # A degenerate range has one distinct value; emitting `num_ticks` copies of
+    # it would just be duplicates stacked at the same spot.
+    if num_ticks == 1 or span == 0:
+        values = [vmin]
+    else:
+        values = [vmin + span * index / (num_ticks - 1) for index in range(num_ticks)]
+    return tuple((value, f"{value:.{decimals}f}") for value in values)
 
 
 @functools.lru_cache(maxsize=None)
@@ -1778,6 +1808,98 @@ class GuiApi:
             ),
         )
         return handle
+
+    def add_colorbar(
+        self,
+        colors: np.ndarray,
+        *,
+        vmin: float = 0.0,
+        vmax: float = 1.0,
+        label: str | None = None,
+        num_ticks: int = 5,
+        ticks: Sequence[tuple[float, str]] | None = None,
+        orientation: Literal["vertical", "horizontal"] = "vertical",
+        length: float = 220.0,
+        thickness: float = 22.0,
+        order: float | None = None,
+        visible: bool = True,
+    ) -> GuiColorbarHandle:
+        """Add a colorbar: a gradient bar with labeled tick marks.
+
+        This is the legend for a scalar field drawn with a colormap -- e.g. a
+        mesh colored via ``add_mesh_simple(..., vertex_colors=...)``. Pass the
+        same colormap control points used to color the data.
+
+        The bar describes the *mapping*, so ``vmin`` / ``vmax`` should be the
+        domain the colormap was applied over, which is not necessarily the
+        min and max of the data itself.
+
+        Args:
+            colors: Colormap control points, shape (N, 3) with N >= 2. Integers
+                are [0,255] and floats are [0,1], as elsewhere in viser. Points
+                are spaced evenly from `vmin` to `vmax` and interpolated
+                between, so passing a densely sampled ramp (16+ points) keeps a
+                curved colormap faithful.
+            vmin: Data value at the low end of the ramp.
+            vmax: Data value at the high end of the ramp.
+            label: Title shown above the bar. None for no title.
+            num_ticks: Number of evenly spaced ticks to generate between `vmin`
+                and `vmax`, with labels formatted from the range. Ignored when
+                `ticks` is given.
+            ticks: Explicit (value, label) pairs, for units or non-uniform
+                ticks. Overrides `num_ticks`. Values outside [vmin, vmax] are
+                not drawn.
+            orientation: "vertical" puts `vmax` at the top with ticks on the
+                right; "horizontal" puts `vmax` at the right with ticks below.
+            length: Length of the bar in pixels (height when vertical).
+            thickness: Thickness of the bar in pixels (width when vertical).
+            order: Optional ordering, smallest values will be displayed first.
+            visible: Whether the component is visible.
+
+        Returns:
+            A handle that can be used to interact with the GUI element.
+
+        Example::
+
+            colorbar = server.gui.add_colorbar(
+                colors=ramp, vmin=0.0, vmax=100.0, label="Temperature (C)"
+            )
+            colorbar.vmax = 120.0  # Every prop is assignable.
+        """
+        colors_cast = colors_to_uint8(np.asarray(colors))
+        resolved_ticks = (
+            tuple((float(value), str(text)) for value, text in ticks)
+            if ticks is not None
+            else _auto_colorbar_ticks(vmin, vmax, num_ticks)
+        )
+
+        message = _messages.GuiColorbarMessage(
+            uuid=_make_uuid(),
+            container_uuid=self._get_container_uuid(),
+            props=_messages.GuiColorbarProps(
+                order=_apply_default_order(order),
+                colors=colors_cast,
+                vmin=float(vmin),
+                vmax=float(vmax),
+                label=label,
+                ticks=resolved_ticks,
+                orientation=orientation,
+                length=length,
+                thickness=thickness,
+                visible=visible,
+            ),
+        )
+        self._websock_interface.queue_message(message)
+
+        return GuiColorbarHandle(
+            _GuiHandleState(
+                message.uuid,
+                self,
+                None,
+                props=message.props,
+                parent_container_id=message.container_uuid,
+            ),
+        )
 
     @deprecated_positional_shim
     def add_divider(

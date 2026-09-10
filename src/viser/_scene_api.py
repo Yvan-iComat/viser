@@ -22,6 +22,7 @@ from typing import (
 )
 
 import numpy as np
+import numpy.typing as npt
 from typing_extensions import Literal, Never, ParamSpec, TypeAlias, deprecated
 
 from viser._backwards_compat_shims import deprecated_positional_shim
@@ -159,6 +160,23 @@ def _encode_rgb(rgb: RgbTupleOrArray) -> tuple[int, int, int]:
     rgb_fixed = tuple(channel(value) for value in rgb)
     assert len(rgb_fixed) == 3
     return rgb_fixed  # type: ignore
+
+
+def _encode_vertex_colors(
+    vertex_colors: np.ndarray | None, vertices: np.ndarray
+) -> npt.NDArray[np.uint8] | None:
+    """Canonicalize an optional per-vertex color array to uint8 (V, 3).
+
+    Shape is validated here rather than only in `MeshProps.__post_init__` so
+    that a mismatch names the offending argument at the call site."""
+    if vertex_colors is None:
+        return None
+    out = colors_to_uint8(np.asarray(vertex_colors))
+    assert out.shape == (np.asarray(vertices).shape[0], 3), (
+        "Shape of vertex_colors should be (V, 3), matching vertices; got "
+        f"{out.shape} for {np.asarray(vertices).shape[0]} vertices."
+    )
+    return out
 
 
 def _encode_image_binary(
@@ -2146,6 +2164,7 @@ class SceneApi:
         bone_positions: tuple[tuple[float, float, float], ...] | np.ndarray,
         skin_weights: np.ndarray,
         color: RgbTupleOrArray = (90, 200, 255),
+        vertex_colors: np.ndarray | None = None,
         wireframe: bool = False,
         opacity: float | None = None,
         material: Literal["standard", "toon3", "toon5"] = "standard",
@@ -2172,7 +2191,10 @@ class SceneApi:
             skin_weights: A numpy array of skin weights. Should have shape (V, B) where B
                 is the number of bones. Only the top 4 bone weights for each
                 vertex will be used.
-            color: Color of the mesh as an RGB tuple.
+            color: Color of the mesh as an RGB tuple. Ignored when
+                `vertex_colors` is set.
+            vertex_colors: Optional per-vertex colors, shape (V, 3). Interpolated
+                across each triangle; see `add_mesh_simple` for details.
             wireframe: Boolean indicating if the mesh should be rendered as a wireframe.
             opacity: Opacity of the mesh. None means opaque.
             material: Material type of the mesh ('standard', 'toon3', 'toon5').
@@ -2234,6 +2256,7 @@ class SceneApi:
                 vertices=np.asarray(vertices, dtype=np.float32),
                 faces=np.asarray(faces, dtype=np.uint32),
                 color=_encode_rgb(color),
+                vertex_colors=_encode_vertex_colors(vertex_colors, vertices),
                 wireframe=wireframe,
                 opacity=opacity,
                 flat_shading=flat_shading,
@@ -2283,6 +2306,7 @@ class SceneApi:
         faces: np.ndarray,
         *,
         color: RgbTupleOrArray = (90, 200, 255),
+        vertex_colors: np.ndarray | None = None,
         wireframe: bool = False,
         opacity: float | None = None,
         material: Literal["standard", "toon3", "toon5"] = "standard",
@@ -2304,7 +2328,15 @@ class SceneApi:
             vertices: A numpy array of vertex positions. Should have shape (V, 3).
             faces: A numpy array of faces, where each face is represented by indices of
                 vertices. Should have shape (F,)
-            color: Color of the mesh as an RGB tuple.
+            color: Color of the mesh as an RGB tuple. Ignored when
+                `vertex_colors` is set.
+            vertex_colors: Optional per-vertex colors, shape (V, 3). Integers are
+                interpreted as [0,255] and floats as [0,1], matching `color`. The
+                rasterizer interpolates these across each triangle, so a field
+                defined on shared vertices renders as a smooth gradient. Note that
+                vertices must actually be shared between adjacent faces: a mesh
+                loaded from STL (or any per-face-duplicated source) has one vertex
+                per face corner and will render faceted instead.
             wireframe: Boolean indicating if the mesh should be rendered as a wireframe.
             opacity: Opacity of the mesh. None means opaque.
             material: Material type of the mesh ('standard', 'toon3', 'toon5').
@@ -2340,6 +2372,7 @@ class SceneApi:
                 vertices=np.asarray(vertices, dtype=np.float32),
                 faces=np.asarray(faces, dtype=np.uint32),
                 color=_encode_rgb(color),
+                vertex_colors=_encode_vertex_colors(vertex_colors, vertices),
                 wireframe=wireframe,
                 opacity=opacity,
                 flat_shading=use_flat_shading,

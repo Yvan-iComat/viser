@@ -965,6 +965,22 @@ class CylinderMessage(_CreateSceneNodeMessage):
     props: CylinderProps
 
 
+def _assert_vertex_colors_shape(
+    vertices: npt.NDArray[np.float32],
+    vertex_colors: Optional[npt.NDArray[np.uint8]],
+) -> None:
+    """Shared shape/dtype check for the optional per-vertex color attribute.
+    Shared because `SkinnedMeshProps` overrides `MeshProps.__post_init__`
+    rather than extending it."""
+    if vertex_colors is None:
+        return
+    assert vertex_colors.shape == (vertices.shape[0], 3), (
+        "Shape of vertex_colors should be (V, 3), matching vertices; got "
+        f"{vertex_colors.shape} for {vertices.shape[0]} vertices."
+    )
+    assert vertex_colors.dtype == np.uint8
+
+
 @dataclasses.dataclass
 class MeshProps:
     vertices: npt.NDArray[np.float32]
@@ -975,6 +991,12 @@ class MeshProps:
     vertices. Should have shape (F, 3). """
     color: Tuple[int, int, int]
     """Color of the mesh as RGB integers. """
+    vertex_colors: Optional[npt.NDArray[np.uint8]]
+    """Optional per-vertex colors as RGB integers, shape (V, 3). Colors are
+    interpolated across each triangle by the rasterizer, which gives smooth
+    gradients when adjacent faces share vertices. Values are interpreted as
+    sRGB (same convention as `color`) and converted to linear on the client.
+    When set, `color` is ignored. None means use the uniform `color`. """
     wireframe: bool
     """Boolean indicating if the mesh should be rendered as a wireframe.
     """
@@ -1000,6 +1022,7 @@ class MeshProps:
         # Check shapes.
         assert self.vertices.shape[-1] == 3
         assert self.faces.shape[-1] == 3
+        _assert_vertex_colors_shape(self.vertices, self.vertex_colors)
 
 
 @dataclasses.dataclass
@@ -1132,6 +1155,7 @@ class SkinnedMeshProps(MeshProps):
             == self.skin_weights.shape
             == (self.vertices.shape[0], 4)
         )
+        _assert_vertex_colors_shape(self.vertices, self.vertex_colors)
 
 
 @dataclasses.dataclass
@@ -1694,6 +1718,50 @@ class GuiHtmlProps:
 class GuiHtmlMessage(_CreateGuiComponentMessage):
     container_uuid: str
     props: GuiHtmlProps
+
+
+@dataclasses.dataclass
+class GuiColorbarProps:
+    order: float
+    """Order value for arranging GUI elements. """
+    colors: npt.NDArray[np.uint8]
+    """Colormap control points as RGB integers, shape (N, 3), N >= 2. Spaced
+    evenly from `vmin` to `vmax` and interpolated between."""
+    vmin: float
+    """Data value at the low end of the ramp."""
+    vmax: float
+    """Data value at the high end of the ramp."""
+    label: Optional[str]
+    """Title shown above the bar. None for no title."""
+    ticks: Tuple[Tuple[float, str], ...]
+    """Tick marks as (data value, label) pairs. Values outside [vmin, vmax]
+    are not drawn."""
+    orientation: Literal["vertical", "horizontal"]
+    """Bar direction. Vertical puts `vmax` at the top and ticks on the right;
+    horizontal puts `vmax` at the right and ticks below."""
+    length: float
+    """Length of the bar in pixels (height when vertical, width when
+    horizontal)."""
+    thickness: float
+    """Thickness of the bar in pixels (width when vertical, height when
+    horizontal)."""
+    visible: bool
+    """Visibility state of the colorbar."""
+
+    def __post_init__(self):
+        assert self.colors.ndim == 2 and self.colors.shape[-1] == 3, (
+            f"Shape of colors should be (N, 3); got {self.colors.shape}."
+        )
+        assert self.colors.shape[0] >= 2, (
+            "A colorbar needs at least two control points to interpolate."
+        )
+        assert self.colors.dtype == np.uint8
+
+
+@dataclasses.dataclass
+class GuiColorbarMessage(_CreateGuiComponentMessage):
+    container_uuid: str
+    props: GuiColorbarProps
 
 
 @dataclasses.dataclass

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import abc
 from functools import cached_property
-from typing import Any, Dict, Generic, Protocol, TypeVar, get_type_hints
+from typing import Any, Dict, Generic, Optional, Protocol, TypeVar, get_type_hints
 
 import numpy as np
 import numpy.typing as npt
@@ -56,6 +56,14 @@ class AssignablePropsBase(Generic[TImpl]):
             return np.asarray(value).astype(np.float64)
         elif hint == npt.NDArray[np.uint8] and "color" in prop_name:
             return colors_to_uint8(value)
+        elif hint == Optional[npt.NDArray[np.uint8]] and "color" in prop_name:
+            # Nullable color arrays (e.g. `MeshProps.vertex_colors`) need the
+            # same [0,1]-float -> [0,255]-uint8 canonicalization as the
+            # non-nullable ones. Without this branch the assignment falls
+            # through to the generic ndarray path below, which either stores a
+            # float array on the wire (when the current value is None) or
+            # truncates floats to zero via `astype(uint8)`.
+            return None if value is None else colors_to_uint8(np.asarray(value))
         if isinstance(value, np.ndarray):
             return value
 

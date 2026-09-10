@@ -16,22 +16,30 @@ export type { StandardMaterialProps } from "./meshMaterialUtils";
  * R3F manages lifecycle -- no manual disposal needed.
  */
 export function ViserStandardMeshMaterial(props: StandardMaterialProps) {
-  const color = props.color === undefined ? 0xffffff : rgbToInt(props.color);
+  const vertexColors = props.vertexColors ?? false;
+  // three MULTIPLIES the vertex color attribute into material.color, so the
+  // uniform color must be white or it would tint the whole gradient.
+  const color =
+    vertexColors || props.color === undefined
+      ? 0xffffff
+      : rgbToInt(props.color);
   const transparent = props.opacity !== null;
   const opacity = props.opacity ?? 1.0;
   const side = sideMap[props.side];
 
   // Force material recreation when shader-affecting properties change.
   // R3F's applyProps sets properties but doesn't set needsUpdate, so
-  // Three.js won't recompile shaders for flatShading/side changes or
-  // re-sort render passes for transparent changes.
-  const materialKey = `${transparent}-${props.flat_shading}-${side}-${props.wireframe}`;
+  // Three.js won't recompile shaders for flatShading/side/vertexColors changes
+  // (vertexColors toggles the USE_COLOR define) or re-sort render passes for
+  // transparent changes.
+  const materialKey = `${transparent}-${props.flat_shading}-${side}-${props.wireframe}-${vertexColors}`;
 
   if (props.material === "standard" || props.wireframe) {
     return (
       <meshStandardMaterial
         key={materialKey}
         color={color}
+        vertexColors={vertexColors}
         wireframe={props.wireframe}
         transparent={transparent}
         opacity={opacity}
@@ -45,6 +53,7 @@ export function ViserStandardMeshMaterial(props: StandardMaterialProps) {
         key={materialKey}
         gradientMap={GRADIENT_MAP_3}
         color={color}
+        vertexColors={vertexColors}
         wireframe={props.wireframe}
         transparent={transparent}
         opacity={opacity}
@@ -57,6 +66,7 @@ export function ViserStandardMeshMaterial(props: StandardMaterialProps) {
         key={materialKey}
         gradientMap={GRADIENT_MAP_5}
         color={color}
+        vertexColors={vertexColors}
         wireframe={props.wireframe}
         transparent={transparent}
         opacity={opacity}

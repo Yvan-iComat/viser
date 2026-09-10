@@ -281,6 +281,7 @@ export interface MeshMessage {
     vertices: Float32Array;
     faces: Uint32Array;
     color: [number, number, number];
+    vertex_colors: Uint8Array<ArrayBuffer> | null;
     wireframe: boolean;
     opacity: number | null;
     flat_shading: boolean;
@@ -373,6 +374,7 @@ export interface SkinnedMeshMessage {
     vertices: Float32Array;
     faces: Uint32Array;
     color: [number, number, number];
+    vertex_colors: Uint8Array<ArrayBuffer> | null;
     wireframe: boolean;
     opacity: number | null;
     flat_shading: boolean;
@@ -649,6 +651,27 @@ export interface GuiHtmlMessage {
   uuid: string;
   container_uuid: string;
   props: { order: number; content: string; visible: boolean };
+}
+/** GuiColorbarMessage(uuid: 'str', container_uuid: 'str', props: 'GuiColorbarProps')
+ *
+ * (automatically generated)
+ */
+export interface GuiColorbarMessage {
+  type: "GuiColorbarMessage";
+  uuid: string;
+  container_uuid: string;
+  props: {
+    order: number;
+    colors: Uint8Array<ArrayBuffer>;
+    vmin: number;
+    vmax: number;
+    label: string | null;
+    ticks: [number, string][];
+    orientation: "vertical" | "horizontal";
+    length: number;
+    thickness: number;
+    visible: boolean;
+  };
 }
 /** GuiDividerMessage(uuid: 'str', container_uuid: 'str', props: 'GuiDividerProps')
  *
@@ -2381,6 +2404,7 @@ export type Message =
   | GuiFormMessage
   | GuiMarkdownMessage
   | GuiHtmlMessage
+  | GuiColorbarMessage
   | GuiDividerMessage
   | GuiProgressBarMessage
   | GuiPlotlyMessage
@@ -2511,6 +2535,7 @@ export type GuiComponentMessage =
   | GuiFormMessage
   | GuiMarkdownMessage
   | GuiHtmlMessage
+  | GuiColorbarMessage
   | GuiDividerMessage
   | GuiProgressBarMessage
   | GuiPlotlyMessage
@@ -2573,6 +2598,7 @@ const typeSetGuiComponentMessage = new Set([
   "GuiFormMessage",
   "GuiMarkdownMessage",
   "GuiHtmlMessage",
+  "GuiColorbarMessage",
   "GuiDividerMessage",
   "GuiProgressBarMessage",
   "GuiPlotlyMessage",
@@ -3018,6 +3044,10 @@ export const SceneNodePropsSchema: {
       kind: "color",
       tsType: "[number, number, number]",
     },
+    vertex_colors: {
+      kind: "default",
+      tsType: "(Uint8Array<ArrayBuffer> | null)",
+    },
     wireframe: {
       kind: "boolean",
       tsType: "boolean",
@@ -3209,6 +3239,10 @@ export const SceneNodePropsSchema: {
     color: {
       kind: "color",
       tsType: "[number, number, number]",
+    },
+    vertex_colors: {
+      kind: "default",
+      tsType: "(Uint8Array<ArrayBuffer> | null)",
     },
     wireframe: {
       kind: "boolean",

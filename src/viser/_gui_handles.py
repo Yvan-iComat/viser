@@ -44,6 +44,7 @@ from ._messages import (
     GuiButtonProps,
     GuiCheckboxProps,
     GuiCloseModalMessage,
+    GuiColorbarProps,
     GuiDividerProps,
     GuiDropdownProps,
     GuiFolderProps,
@@ -2217,6 +2218,14 @@ class GuiMarkdownHandle(_GuiHandle[None], GuiMarkdownProps):
 
 class GuiHtmlHandle(_GuiHandle[None], GuiHtmlProps):
     """Handling for updating and removing HTML elements."""
+
+
+class GuiColorbarHandle(_GuiHandle[None], GuiColorbarProps):
+    """Handle for updating and removing colorbars.
+
+    Every prop is assignable, so a colorbar can follow a live colormap or data
+    range: ``colorbar.colors = new_ramp``, ``colorbar.vmax = 42.0``.
+    """
 
 
 class GuiDividerHandle(_GuiHandle[None], GuiDividerProps):
