@@ -45,7 +45,6 @@ is_playing = False
 
 def play_loop():
     """Advance the timeline value by one step every PLAY_STEP_DELAY seconds."""
-    global is_playing
     while is_playing:
         next_value = timeline.value + TIMELINE_STEP
         if next_value > TIMELINE_MAX:
