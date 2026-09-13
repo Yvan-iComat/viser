@@ -894,8 +894,10 @@
                             <span class="n">print_threadpool_errors</span>
                         <span class="p">)</span>
 
-            <span class="c1"># Handle play button click</span>
+            <span class="c1"># Handle play/pause button click. The client sends the new toggle</span>
+            <span class="c1"># state, so `play: False` means the user paused.</span>
             <span class="k">if</span> <span class="s2">"play"</span> <span class="ow">in</span> <span class="n">message</span><span class="o">.</span><span class="n">updates</span><span class="p">:</span>
+                <span class="n">timeline</span><span class="o">.</span><span class="n">_playing</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="n">message</span><span class="o">.</span><span class="n">updates</span><span class="p">[</span><span class="s2">"play"</span><span class="p">])</span>
                 <span class="n">event</span> <span class="o">=</span> <span class="n">GuiEvent</span><span class="p">(</span>
                     <span class="n">client_id</span><span class="o">=</span><span class="n">client_id</span><span class="p">,</span>
                     <span class="n">client</span><span class="o">=</span><span class="n">client</span><span class="p">,</span>
