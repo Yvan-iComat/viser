@@ -1234,6 +1234,13 @@ export function FrameSynchronizedMessageHandler() {
           const orderUpdates: Record<string, number> = {};
           const panelSnapshot = viewer.useGui.get().panels;
           for (const { uuid, updates } of guiUpdates) {
+            // The timeline widget lives in its own store slice (not
+            // configStore), and its value/visibility updates also arrive as
+            // GuiUpdateMessages. Route those to updateTimeline.
+            if (uuid === "__timeline__") {
+              viewer.guiActions.updateTimeline(updates);
+              continue;
+            }
             // Standalone panels live in their own store (not configStore), and
             // their tab/visibility updates also arrive as GuiUpdateMessages.
             // Route those to updatePanel.

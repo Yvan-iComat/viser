@@ -184,6 +184,7 @@ export interface GuiActions {
   addModal: (config: GuiModalMessage) => void;
   removeModal: (id: string) => void;
   setTimeline: (config: TimelineMessage | null) => void;
+  updateTimeline: (updates: { [key: string]: any }) => void;
   setToolbarConfig: (config: ToolbarConfig | null) => void;
   addPanel: (config: GuiPanelMessage) => void;
   updatePanel: (id: string, updates: { [key: string]: any }) => void;
@@ -396,6 +397,28 @@ export function useGuiState(initialServer: string) {
         }));
       },
       setTimeline: (timeline) => store.set({ timeline }),
+      updateTimeline: (updates) => {
+        store.set((state) => {
+          if (state.timeline === null) {
+            console.error(
+              "Tried to update timeline, but no timeline is active",
+              updates,
+            );
+            return {};
+          }
+          const { visible, ...valueUpdates } = updates;
+          return {
+            timeline: {
+              ...state.timeline,
+              ...valueUpdates,
+              props:
+                visible === undefined
+                  ? state.timeline.props
+                  : { ...state.timeline.props, visible },
+            },
+          };
+        });
+      },
       setToolbarConfig: (toolbarConfig) => store.set({ toolbarConfig }),
       addPanel: (config) => {
         store.set((state) => ({

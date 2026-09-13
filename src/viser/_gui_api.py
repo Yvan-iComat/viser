@@ -465,8 +465,10 @@ class GuiApi:
                             print_threadpool_errors
                         )
 
-            # Handle play button click
+            # Handle play/pause button click. The client sends the new toggle
+            # state, so `play: False` means the user paused.
             if "play" in message.updates:
+                timeline._playing = bool(message.updates["play"])
                 event = GuiEvent(
                     client_id=client_id,
                     client=client,

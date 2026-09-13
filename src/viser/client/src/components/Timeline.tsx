@@ -48,16 +48,17 @@ function TimelineSliderInner({ value, props }: TimelineMessage) {
     });
   };
 
-  // Handle play button click
+  // Handle play/pause button click. The button toggles, so the new state is
+  // sent along: `play: false` is the pause signal.
   const handlePlayClick = () => {
     const newPlayingState = !isPlaying;
     setIsPlaying(newPlayingState);
 
-    // Send play event to Python
+    // Send play/pause event to Python
     messageSender({
       type: "GuiUpdateMessage",
       uuid: "__timeline__",
-      updates: { play: true },
+      updates: { play: newPlayingState },
     });
   };
 

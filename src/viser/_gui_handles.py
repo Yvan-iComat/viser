@@ -2089,6 +2089,7 @@ class TimelineHandle:
     _update_callbacks: list[Callable[[GuiEvent], None | Coroutine]]
     _play_callbacks: list[Callable[[GuiEvent], None | Coroutine]]
     _removed: bool = False
+    _playing: bool = False
 
     @property
     def value(self) -> float:
@@ -2102,6 +2103,16 @@ class TimelineHandle:
         self._gui_api._websock_interface.queue_message(
             GuiUpdateMessage("__timeline__", {"value": value})
         )
+
+    @property
+    def playing(self) -> bool:
+        """Whether the play button is currently in its "playing" state.
+
+        Updated from the client each time the play/pause button is toggled,
+        before :meth:`on_play` callbacks run -- so a callback can read this to
+        tell a play click from a pause click.
+        """
+        return self._playing
 
     @property
     def visible(self) -> bool:
@@ -2133,7 +2144,10 @@ class TimelineHandle:
     def on_play(
         self, func: Callable[[GuiEvent], None | Coroutine]
     ) -> Callable[[GuiEvent], None | Coroutine]:
-        """Attach callback for when play button is clicked.
+        """Attach callback for when the play/pause button is clicked.
+
+        Fires on both play and pause clicks; read :attr:`playing` inside the
+        callback to tell them apart.
 
         Args:
             func: Callback function. Takes GuiEvent with client info.
