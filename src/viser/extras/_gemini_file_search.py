@@ -6,6 +6,7 @@ from __future__ import annotations
 import io
 import mimetypes
 import time
+import warnings
 from pathlib import Path
 from typing import TYPE_CHECKING, Iterator, Sequence
 
@@ -21,6 +22,13 @@ DEFAULT_SYSTEM_INSTRUCTION = (
     "answer, say so instead of guessing. Answer concisely, in markdown."
 )
 DEFAULT_DOC_SUFFIXES = (".pdf", ".docx", ".txt", ".md", ".csv", ".pptx", ".xlsx")
+# Multimodal (text + images in documents). "models/gemini-embedding-001" is
+# the text-only alternative.
+DEFAULT_EMBEDDING_MODEL = "models/gemini-embedding-2"
+
+
+def _short_model_name(name: str) -> str:
+    return name[len("models/") :] if name.startswith("models/") else name
 
 
 def _default_client() -> Client:
@@ -67,13 +75,18 @@ class GeminiFileSearch:
         >>>
         >>> rag = GeminiFileSearch("my-docs")
         >>> rag.index_folder(Path("manuals"))
-        >>> chat = server.gui.add_chat("Document Assistant")
-        >>> rag.connect(chat)
+        >>> panel = server.gui.add_panel()
+        >>> chat = server.gui.add_chat(parent=panel.add_tab("Assistant"))
+        >>> rag.connect(chat)  # Also adds a "Documents" tab to the panel.
 
     Args:
         store: Display name of the File Search store; created if missing.
         model: Gemini model used to answer. Must support File Search.
-        embedding_model: Embedding model for a newly created store.
+        embedding_model: Embedding model used to index documents, e.g.
+            ``"models/gemini-embedding-2"`` (multimodal) or
+            ``"models/gemini-embedding-001"`` (text only). It is fixed when a
+            store is created: an existing store keeps its own model, so use a
+            new ``store`` name to switch.
         system_instruction: System prompt for answers.
         client: Optional preconfigured ``google.genai.Client``.
     """
@@ -83,29 +96,47 @@ class GeminiFileSearch:
         store: str = "viser-studio-docs",
         *,
         model: str = "gemini-3.8-flash",
-        embedding_model: str = "models/gemini-embedding-001",
+        embedding_model: str = DEFAULT_EMBEDDING_MODEL,
         system_instruction: str = DEFAULT_SYSTEM_INSTRUCTION,
         client: Client | None = None,
     ) -> None:
         self.client: Client = _default_client() if client is None else client
         self.model = model
         self.system_instruction = system_instruction
-        self._store_name = self._get_or_create_store(store, embedding_model)
+        self._store_name, self._embedding_model = self._get_or_create_store(
+            store, embedding_model
+        )
 
     @property
     def store_name(self) -> str:
         """Resource name of the File Search store, e.g. ``fileSearchStores/abc``."""
         return self._store_name
 
-    def _get_or_create_store(self, display_name: str, embedding_model: str) -> str:
+    @property
+    def embedding_model(self) -> str:
+        """Embedding model the store indexes documents with."""
+        return self._embedding_model
+
+    def _get_or_create_store(
+        self, display_name: str, embedding_model: str
+    ) -> tuple[str, str]:
         for store in self.client.file_search_stores.list():
-            if store.display_name == display_name and store.name is not None:
-                return store.name
+            if store.display_name != display_name or store.name is None:
+                continue
+            actual = store.embedding_model or embedding_model
+            if _short_model_name(actual) != _short_model_name(embedding_model):
+                warnings.warn(
+                    f"File Search store {display_name!r} was created with "
+                    f"{actual!r}, not {embedding_model!r}; the embedding model "
+                    "can't be changed. Use a new store name to switch.",
+                    stacklevel=3,
+                )
+            return store.name, actual
         store = self.client.file_search_stores.create(
             config={"display_name": display_name, "embedding_model": embedding_model}
         )
         assert store.name is not None
-        return store.name
+        return store.name, store.embedding_model or embedding_model
 
     def documents(self) -> list[types.Document]:
         """Documents currently in the store."""
@@ -246,9 +277,18 @@ class GeminiFileSearch:
         from google.genai import types  # pyright: ignore[reportMissingImports]
 
         docs = self.documents()
+        embedding = f"*Embedding model: `{_short_model_name(self._embedding_model)}`*"
         if len(docs) == 0:
-            return "*No documents yet. Attach a PDF to a chat message to add one.*"
-        lines = [f"**{len(docs)} document(s) in the knowledge base:**", ""]
+            return (
+                "*No documents yet. Attach a PDF to a chat message to add one.*"
+                f"\n\n{embedding}"
+            )
+        lines = [
+            embedding,
+            "",
+            f"**{len(docs)} document(s) in the knowledge base:**",
+            "",
+        ]
         for d in docs:
             active = d.state == types.DocumentState.STATE_ACTIVE
             lines.append(f"- {d.display_name}" + ("" if active else f" ({d.state})"))
@@ -298,15 +338,45 @@ class GeminiFileSearch:
     def connect(
         self,
         chat: viser.GuiChatHandle,
+        *,
+        show_documents: bool = True,
         document_list: viser.GuiMarkdownHandle | None = None,
-    ) -> None:
+    ) -> viser.GuiMarkdownHandle | None:
         """Answer every message submitted to ``chat`` from the documents.
 
         Args:
             chat: Chat to answer.
-            document_list: Optional markdown element kept updated with the
-                list of indexed documents.
+            show_documents: Add a "Documents" tab listing the indexed
+                documents (and the embedding model), next to the chat's own
+                tab. Requires the chat to be in a tab, e.g. of a panel from
+                :meth:`viser.GuiApi.add_panel`; otherwise a warning is issued
+                and no tab is added.
+            document_list: Markdown element to keep updated with the document
+                list instead, for custom placement. Takes precedence over
+                ``show_documents``.
+
+        Returns:
+            The markdown element showing the document list, if any.
         """
+        if document_list is None and show_documents:
+            document_list = self._add_documents_tab(chat)
         if document_list is not None:
             document_list.content = self.documents_markdown()
         chat.on_submit(lambda event: self.answer(event, document_list))
+        return document_list
+
+    def _add_documents_tab(
+        self, chat: viser.GuiChatHandle
+    ) -> viser.GuiMarkdownHandle | None:
+        gui_api = chat._impl.gui_api
+        container = gui_api._resolve_container_handle(chat._impl.parent_container_id)
+        if not isinstance(container, viser.GuiTabHandle):
+            warnings.warn(
+                "show_documents=True needs the chat to be in a tab (e.g. "
+                "`add_chat(parent=panel.add_tab(...))`); no Documents tab added. "
+                "Pass show_documents=False, or document_list= for custom placement.",
+                stacklevel=3,
+            )
+            return None
+        with container._parent.add_tab("Documents", viser.Icon.FILES):
+            return gui_api.add_markdown("")

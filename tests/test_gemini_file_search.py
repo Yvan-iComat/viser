@@ -47,7 +47,11 @@ class _Stores:
 
     def create(self, *, config: dict) -> Any:
         self.created.append(config)
-        return types.FileSearchStore(name=STORE, display_name=config["display_name"])
+        return types.FileSearchStore(
+            name=STORE,
+            display_name=config["display_name"],
+            embedding_model=config["embedding_model"],
+        )
 
     def upload_to_file_search_store(
         self, *, file_search_store_name: str, file: Any, config: dict
@@ -126,6 +130,36 @@ def test_store_is_reused_or_created() -> None:
     existing = _Client([types.FileSearchStore(name=STORE, display_name="docs")])
     _rag(existing)
     assert existing.file_search_stores.created == []
+
+
+def test_embedding_model() -> None:
+    # New stores default to the multimodal Gemini Embedding 2.
+    client = _Client()
+    rag = _rag(client)
+    assert client.file_search_stores.created[0]["embedding_model"] == (
+        "models/gemini-embedding-2"
+    )
+    assert rag.embedding_model == "models/gemini-embedding-2"
+    assert "gemini-embedding-2" in rag.documents_markdown()
+
+    # An existing store keeps its model; asking for another one warns.
+    old = types.FileSearchStore(
+        name=STORE, display_name="docs", embedding_model="models/gemini-embedding-001"
+    )
+    with pytest.warns(UserWarning, match="can't be changed"):
+        rag = _rag(_Client([old]))
+    assert rag.embedding_model == "models/gemini-embedding-001"
+
+    # Matching models (with or without the "models/" prefix) don't warn.
+    import warnings
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        GeminiFileSearch(
+            "docs",
+            embedding_model="gemini-embedding-001",
+            client=_Client([old]),  # type: ignore[arg-type]
+        )
 
 
 def test_index_folder_skips_indexed_and_unsupported(tmp_path: Path) -> None:
