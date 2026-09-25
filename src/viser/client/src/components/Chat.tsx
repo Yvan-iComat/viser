@@ -33,6 +33,61 @@ type Upload = GuiChatSubmitMessage["attachments"][number];
 /** Total attachment size per submission. The websocket caps messages at 50 MB. */
 const MAX_ATTACHMENT_BYTES = 20 * 1024 * 1024;
 const THUMBNAIL_SIZE = 256;
+/** Smallest height the chat shrinks to when filling a short panel. */
+const MIN_FILL_HEIGHT = 240;
+
+/** Height that makes the chat fill its container's scroll viewport.
+ *
+ * Panel bodies (and the control panel) wrap content in a Mantine ScrollArea,
+ * so CSS `height: 100%` has nothing definite to resolve against. Instead,
+ * measure: the viewport height minus everything else in the scrolled content
+ * (padding, sibling components) is the space left for the chat.
+ *
+ * In a content-sized container (an un-resized floating panel) the viewport
+ * equals the content, so this is a fixed point at the current height and the
+ * `initial` height is kept. In a fixed-height one (docked or resized panel)
+ * the chat grows or shrinks with it, down to MIN_FILL_HEIGHT.
+ *
+ * Also returns a negative top margin that absorbs the container's top padding
+ * when the chat is its first child, so the chat sits flush under the tab strip. */
+function useFillHeight(
+  ref: React.RefObject<HTMLDivElement | null>,
+  initial: number,
+  enabled: boolean,
+) {
+  const [height, setHeight] = useState(initial);
+  const [marginTop, setMarginTop] = useState(0);
+  useEffect(() => {
+    const root = ref.current;
+    const viewport = root?.closest<HTMLElement>(".mantine-ScrollArea-viewport");
+    const content = viewport?.firstElementChild;
+    if (!enabled || !root || !viewport || !(content instanceof HTMLElement))
+      return;
+    const parent = root.parentElement;
+    if (parent !== null && parent.firstElementChild === root) {
+      setMarginTop(-(parseFloat(getComputedStyle(parent).paddingTop) || 0));
+    }
+    const update = () => {
+      // Fractional rects, floored once: integer offset/client heights round
+      // independently and can overshoot the viewport by a pixel.
+      const other =
+        content.getBoundingClientRect().height -
+        root.getBoundingClientRect().height;
+      const target = Math.max(
+        MIN_FILL_HEIGHT,
+        Math.floor(viewport.getBoundingClientRect().height - other),
+      );
+      // Tolerance avoids a resize-observer ping-pong on sub-pixel rounding.
+      setHeight((h) => (Math.abs(h - target) < 1 ? h : target));
+    };
+    const observer = new ResizeObserver(update);
+    observer.observe(viewport);
+    observer.observe(content);
+    update();
+    return () => observer.disconnect();
+  }, [ref, enabled]);
+  return { height, marginTop };
+}
 
 /** Downscale an image to a small JPEG preview, or null if it can't be decoded. */
 async function makeThumbnail(
@@ -351,6 +406,12 @@ export default function ChatComponent({ uuid, props }: GuiChatMessage) {
   const [dragOver, setDragOver] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const { height, marginTop } = useFillHeight(
+    rootRef,
+    props.height,
+    props.visible,
+  );
 
   // Sent unthrottled: the shared throttled sender coalesces to the latest
   // message, which could drop a submission. Read at call time, since the
@@ -424,9 +485,22 @@ export default function ChatComponent({ uuid, props }: GuiChatMessage) {
 
   return (
     <Box
-      px="xs"
-      pb="xs"
-      style={{ width: "100%" }}
+      ref={rootRef}
+      style={{
+        position: "relative",
+        width: "100%",
+        height,
+        marginTop,
+        display: "flex",
+        flexDirection: "column",
+        overflow: "hidden",
+        background: "var(--mantine-color-body)",
+        // The panel already frames its content; only outline drag targets.
+        outline: dragOver
+          ? "1px dashed var(--mantine-primary-color-filled)"
+          : undefined,
+        outlineOffset: -1,
+      }}
       onDragOver={(e) => {
         if (!e.dataTransfer.types.includes("Files")) return;
         e.preventDefault();
@@ -440,200 +514,187 @@ export default function ChatComponent({ uuid, props }: GuiChatMessage) {
         void addFiles(Array.from(e.dataTransfer.files));
       }}
     >
-      <Box
-        style={{
-          position: "relative",
-          height: props.height,
-          display: "flex",
-          flexDirection: "column",
-          overflow: "hidden",
-          borderRadius: 8,
-          border: `1px ${dragOver ? "dashed var(--mantine-primary-color-filled)" : "solid var(--mantine-color-default-border)"}`,
-          background: "var(--mantine-color-body)",
-        }}
+      {/* Header. */}
+      <Group
+        gap={4}
+        px={6}
+        py={4}
+        wrap="nowrap"
+        style={{ background: "var(--mantine-color-default-hover)" }}
       >
-        {/* Header. */}
-        <Group
-          gap={4}
-          px={6}
-          py={4}
-          wrap="nowrap"
-          style={{ background: "var(--mantine-color-default-hover)" }}
-        >
-          <Tooltip label="Conversations" openDelay={500}>
-            <ActionIcon
-              variant="subtle"
-              color="gray"
-              aria-label="Show conversations"
-              onClick={() => setHistoryOpen(true)}
-            >
-              <IconMenu2 size={18} />
-            </ActionIcon>
-          </Tooltip>
-          <Text fz="sm" fw={600} truncate="end" style={{ flex: 1 }}>
-            {props.label}
-          </Text>
-          <Tooltip label="New conversation" openDelay={500}>
-            <ActionIcon
-              variant="subtle"
-              color="gray"
-              aria-label="New conversation"
-              disabled={locked || props.messages.length === 0}
-              onClick={() => sendAction("new")}
-            >
-              <IconPlus size={18} />
-            </ActionIcon>
-          </Tooltip>
-        </Group>
+        <Tooltip label="Conversations" openDelay={500}>
+          <ActionIcon
+            variant="subtle"
+            color="gray"
+            aria-label="Show conversations"
+            onClick={() => setHistoryOpen(true)}
+          >
+            <IconMenu2 size={18} />
+          </ActionIcon>
+        </Tooltip>
+        <Text fz="sm" fw={600} truncate="end" style={{ flex: 1 }}>
+          {props.label}
+        </Text>
+        <Tooltip label="New conversation" openDelay={500}>
+          <ActionIcon
+            variant="subtle"
+            color="gray"
+            aria-label="New conversation"
+            disabled={locked || props.messages.length === 0}
+            onClick={() => sendAction("new")}
+          >
+            <IconPlus size={18} />
+          </ActionIcon>
+        </Tooltip>
+      </Group>
 
-        {/* Messages, or the greeting while the conversation is empty. */}
-        <Box
-          ref={scrollRef}
-          px="sm"
-          py="sm"
-          style={{ flex: 1, overflowY: "auto" }}
-        >
-          {empty ? (
-            <Stack gap="xs" h="100%">
-              <Title order={3}>{props.greeting}</Title>
-              {props.subtitle !== "" && <Text fz="sm">{props.subtitle}</Text>}
-              <Stack gap={6} align="flex-start" mt="xs">
-                {props.suggestions.map((s) => (
-                  <Button
-                    key={s}
-                    size="xs"
-                    radius="xl"
-                    variant="default"
-                    disabled={locked}
-                    onClick={() => submit(s)}
-                  >
-                    {s}
-                  </Button>
-                ))}
-              </Stack>
-              {props.disclaimer !== null && (
-                <Box mt="auto">
-                  <Text fz="sm" fw={600}>
-                    Just FYI…
-                  </Text>
-                  <Text fz="xs" c="dimmed">
-                    {props.disclaimer}
-                  </Text>
-                </Box>
-              )}
-            </Stack>
-          ) : (
-            <Stack gap="md">
-              {props.messages.map((m) => (
-                <ChatBubble key={m.message_id} entry={m} />
+      {/* Messages, or the greeting while the conversation is empty. */}
+      <Box
+        ref={scrollRef}
+        px="sm"
+        py="sm"
+        style={{ flex: 1, overflowY: "auto" }}
+      >
+        {empty ? (
+          <Stack gap="xs" h="100%">
+            <Title order={3}>{props.greeting}</Title>
+            {props.subtitle !== "" && <Text fz="sm">{props.subtitle}</Text>}
+            <Stack gap={6} align="flex-start" mt="xs">
+              {props.suggestions.map((s) => (
+                <Button
+                  key={s}
+                  size="xs"
+                  radius="xl"
+                  variant="default"
+                  disabled={locked}
+                  onClick={() => submit(s)}
+                >
+                  {s}
+                </Button>
               ))}
-              {props.streaming_text !== null && props.streaming_text !== "" ? (
-                <AssistantText text={props.streaming_text} />
-              ) : (
-                props.busy && <Loader type="dots" size="sm" color="gray" />
-              )}
             </Stack>
-          )}
-        </Box>
-
-        {/* Input. */}
-        <Box
-          px={6}
-          py={6}
-          style={{ background: "var(--mantine-color-default-hover)" }}
-        >
-          {uploads.length > 0 && (
-            <Group gap={4} mb={6}>
-              {uploads.map((u, i) => (
-                <AttachmentChip
-                  key={i}
-                  name={u.name}
-                  thumbnail={u._thumbnail}
-                  onRemove={() =>
-                    setUploads((prev) => prev.filter((_, j) => j !== i))
-                  }
-                />
-              ))}
-            </Group>
-          )}
-          {error !== null && (
-            <Text fz="xs" c="red" mb={4}>
-              {error}
-            </Text>
-          )}
-          <Group gap={4} wrap="nowrap" align="flex-end">
-            <Tooltip label="Attach files" openDelay={500}>
-              <ActionIcon
-                variant="subtle"
-                color="gray"
-                aria-label="Attach files"
-                disabled={props.disabled}
-                onClick={() => fileInputRef.current?.click()}
-                mb={4}
-              >
-                <IconPaperclip size={18} />
-              </ActionIcon>
-            </Tooltip>
-            <input
-              ref={fileInputRef}
-              type="file"
-              multiple
-              hidden
-              onChange={(e) => {
-                void addFiles(Array.from(e.target.files ?? []));
-                e.target.value = ""; // Allow re-selecting the same file.
-              }}
-            />
-            <Textarea
-              style={{ flex: 1 }}
-              size="sm"
-              autosize
-              minRows={2}
-              maxRows={6}
-              placeholder={props.placeholder}
-              disabled={props.disabled}
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              onKeyDown={(e) => {
-                // Enter sends, Shift+Enter inserts a newline. Skip while an IME
-                // composition is active, where Enter confirms the composition.
-                if (
-                  e.key === "Enter" &&
-                  !e.shiftKey &&
-                  !e.nativeEvent.isComposing
-                ) {
-                  e.preventDefault();
-                  submit(text);
-                }
-              }}
-              onPaste={(e) => {
-                const files = Array.from(e.clipboardData.files);
-                if (files.length === 0) return;
-                e.preventDefault();
-                void addFiles(files);
-              }}
-            />
-            <ActionIcon
-              size="lg"
-              variant="filled"
-              aria-label="Send"
-              disabled={!canSend}
-              onClick={() => submit(text)}
-              mb={2}
-            >
-              <IconSend2 size={18} />
-            </ActionIcon>
-          </Group>
-        </Box>
-
-        {historyOpen && (
-          <HistoryDrawer
-            props={props}
-            send={sendAction}
-            onClose={() => setHistoryOpen(false)}
-          />
+            {props.disclaimer !== null && (
+              <Box mt="auto">
+                <Text fz="sm" fw={600}>
+                  Just FYI…
+                </Text>
+                <Text fz="xs" c="dimmed">
+                  {props.disclaimer}
+                </Text>
+              </Box>
+            )}
+          </Stack>
+        ) : (
+          <Stack gap="md">
+            {props.messages.map((m) => (
+              <ChatBubble key={m.message_id} entry={m} />
+            ))}
+            {props.streaming_text !== null && props.streaming_text !== "" ? (
+              <AssistantText text={props.streaming_text} />
+            ) : (
+              props.busy && <Loader type="dots" size="sm" color="gray" />
+            )}
+          </Stack>
         )}
       </Box>
+
+      {/* Input. */}
+      <Box
+        px={6}
+        py={6}
+        style={{ background: "var(--mantine-color-default-hover)" }}
+      >
+        {uploads.length > 0 && (
+          <Group gap={4} mb={6}>
+            {uploads.map((u, i) => (
+              <AttachmentChip
+                key={i}
+                name={u.name}
+                thumbnail={u._thumbnail}
+                onRemove={() =>
+                  setUploads((prev) => prev.filter((_, j) => j !== i))
+                }
+              />
+            ))}
+          </Group>
+        )}
+        {error !== null && (
+          <Text fz="xs" c="red" mb={4}>
+            {error}
+          </Text>
+        )}
+        <Group gap={4} wrap="nowrap" align="flex-end">
+          <Tooltip label="Attach files" openDelay={500}>
+            <ActionIcon
+              variant="subtle"
+              color="gray"
+              aria-label="Attach files"
+              disabled={props.disabled}
+              onClick={() => fileInputRef.current?.click()}
+              mb={4}
+            >
+              <IconPaperclip size={18} />
+            </ActionIcon>
+          </Tooltip>
+          <input
+            ref={fileInputRef}
+            type="file"
+            multiple
+            hidden
+            onChange={(e) => {
+              void addFiles(Array.from(e.target.files ?? []));
+              e.target.value = ""; // Allow re-selecting the same file.
+            }}
+          />
+          <Textarea
+            style={{ flex: 1 }}
+            size="sm"
+            autosize
+            minRows={2}
+            maxRows={6}
+            placeholder={props.placeholder}
+            disabled={props.disabled}
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            onKeyDown={(e) => {
+              // Enter sends, Shift+Enter inserts a newline. Skip while an IME
+              // composition is active, where Enter confirms the composition.
+              if (
+                e.key === "Enter" &&
+                !e.shiftKey &&
+                !e.nativeEvent.isComposing
+              ) {
+                e.preventDefault();
+                submit(text);
+              }
+            }}
+            onPaste={(e) => {
+              const files = Array.from(e.clipboardData.files);
+              if (files.length === 0) return;
+              e.preventDefault();
+              void addFiles(files);
+            }}
+          />
+          <ActionIcon
+            size="lg"
+            variant="filled"
+            aria-label="Send"
+            disabled={!canSend}
+            onClick={() => submit(text)}
+            mb={2}
+          >
+            <IconSend2 size={18} />
+          </ActionIcon>
+        </Group>
+      </Box>
+
+      {historyOpen && (
+        <HistoryDrawer
+          props={props}
+          send={sendAction}
+          onClose={() => setHistoryOpen(false)}
+        />
+      )}
     </Box>
   );
 }

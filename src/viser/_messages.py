@@ -2523,7 +2523,8 @@ class GuiChatProps(GuiBaseProps):
     placeholder: str
     """Placeholder text for the input box."""
     height: int
-    """Height of the chat widget, in pixels."""
+    """Height of the chat widget in pixels when its container sizes to its
+    content. In a fixed-height container, the chat fills it instead."""
     messages: Tuple[GuiChatEntry, ...]
     """Messages of the active conversation, oldest first."""
     streaming_text: Optional[str]

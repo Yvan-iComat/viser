@@ -2758,7 +2758,10 @@ class GuiApi:
             disclaimer: Optional notice shown above the input while the
                 conversation is empty.
             placeholder: Placeholder text for the input box.
-            height: Height of the widget, in pixels.
+            height: Height of the widget in pixels while its container sizes
+                itself to its content (e.g. a floating panel that hasn't been
+                resized). In a fixed-height container -- a docked or resized
+                panel -- the chat grows or shrinks to fill it instead.
             store: Where conversations are saved. Defaults to an in-memory
                 store; pass ``ConversationStore("some/dir")`` to persist them
                 as JSON files.

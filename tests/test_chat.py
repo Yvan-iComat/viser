@@ -22,7 +22,11 @@ def _submit(
         chat._handle_submit(None, 0, text, attachments or [])  # type: ignore[arg-type]
         await asyncio.gather(*chat._tasks)
 
-    asyncio.run(run())
+    # Own thread: Playwright's sync API (e2e tests in the same session) leaves
+    # an event loop running on the main thread, which asyncio.run() rejects.
+    thread = threading.Thread(target=lambda: asyncio.run(run()))
+    thread.start()
+    thread.join()
 
 
 def test_store_roundtrip_with_attachments(tmp_path: Path) -> None:
