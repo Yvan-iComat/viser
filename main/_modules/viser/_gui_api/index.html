@@ -369,6 +369,7 @@
 </li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../../../api/advanced/">Advanced API</a><input class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" role="switch" type="checkbox"/><label for="toctree-checkbox-8"><div class="visually-hidden">Toggle navigation of Advanced API</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../../../api/advanced/events/">Events</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/advanced/chat/">Chat Conversations</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../api/advanced/icons/">Icons</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../api/advanced/theme/">Theme Configuration</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../api/advanced/uplot/">uPlot Types</a></li>
@@ -378,7 +379,7 @@
 <li class="toctree-l1 has-children"><a class="reference internal" href="../../../api/auxiliary/">Auxiliary API</a><input class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" role="switch" type="checkbox"/><label for="toctree-checkbox-9"><div class="visually-hidden">Toggle navigation of Auxiliary API</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../../../api/auxiliary/transforms/">Transforms</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../api/auxiliary/infrastructure/">Communication</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../../api/auxiliary/extras/">Record3D + URDF Helpers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/auxiliary/extras/">Extras: Record3D, URDF, and Gemini File Search Helpers</a></li>
 </ul>
 </li>
 </ul>
@@ -468,6 +469,7 @@
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">.</span><span class="w"> </span><span class="kn">import</span> <span class="n">_messages</span><span class="p">,</span> <span class="n">uplot</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">._assignable_props_api</span><span class="w"> </span><span class="kn">import</span> <span class="n">colors_to_uint8</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">._chat</span><span class="w"> </span><span class="kn">import</span> <span class="n">ChatAttachment</span><span class="p">,</span> <span class="n">ConversationStore</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">._gui_handles</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">CONTROL_PANEL_ID</span><span class="p">,</span>
     <span class="n">CommandEvent</span><span class="p">,</span>
@@ -475,6 +477,7 @@
     <span class="n">GalleryBlockEvent</span><span class="p">,</span>
     <span class="n">GuiButtonGroupHandle</span><span class="p">,</span>
     <span class="n">GuiButtonHandle</span><span class="p">,</span>
+    <span class="n">GuiChatHandle</span><span class="p">,</span>
     <span class="n">GuiCheckboxHandle</span><span class="p">,</span>
     <span class="n">GuiColorbarHandle</span><span class="p">,</span>
     <span class="n">GuiContainerProtocol</span><span class="p">,</span>
@@ -803,6 +806,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_layout_run_id</span> <span class="o">=</span> <span class="n">uuid</span><span class="o">.</span><span class="n">uuid4</span><span class="p">()</span><span class="o">.</span><span class="n">hex</span><span class="p">[:</span><span class="mi">8</span><span class="p">]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_command_handle_from_uuid</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">CommandHandle</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_gallery_handle_from_uuid</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">GuiGalleryHandle</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_chat_handle_from_uuid</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">GuiChatHandle</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_current_file_upload_states</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">_FileUploadState</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
 
         <span class="c1"># Set to True when plotly.min.js has been sent to client.</span>
@@ -839,6 +843,12 @@
         <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_websock_interface</span><span class="o">.</span><span class="n">register_handler</span><span class="p">(</span>
             <span class="n">_messages</span><span class="o">.</span><span class="n">GuiGalleryRenderReplyMessage</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_handle_gallery_render_reply</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_websock_interface</span><span class="o">.</span><span class="n">register_handler</span><span class="p">(</span>
+            <span class="n">_messages</span><span class="o">.</span><span class="n">GuiChatSubmitMessage</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_handle_chat_submit</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_websock_interface</span><span class="o">.</span><span class="n">register_handler</span><span class="p">(</span>
+            <span class="n">_messages</span><span class="o">.</span><span class="n">GuiChatActionMessage</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_handle_chat_action</span>
         <span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_resolve_client</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">client_id</span><span class="p">:</span> <span class="n">ClientId</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ClientHandle</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
@@ -1046,6 +1056,42 @@
         <span class="k">if</span> <span class="n">gallery</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">gallery</span><span class="o">.</span><span class="n">_impl</span><span class="o">.</span><span class="n">removed</span><span class="p">:</span>
             <span class="k">return</span>
         <span class="n">gallery</span><span class="o">.</span><span class="n">_handle_render_reply</span><span class="p">(</span><span class="n">message</span><span class="o">.</span><span class="n">render_uuid</span><span class="p">,</span> <span class="n">message</span><span class="o">.</span><span class="n">_data</span><span class="p">)</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_handle_chat_submit</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">client_id</span><span class="p">:</span> <span class="n">ClientId</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="n">_messages</span><span class="o">.</span><span class="n">GuiChatSubmitMessage</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Callback for chat messages submitted by a client."""</span>
+        <span class="n">chat</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_chat_handle_from_uuid</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">message</span><span class="o">.</span><span class="n">uuid</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">chat</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">chat</span><span class="o">.</span><span class="n">_impl</span><span class="o">.</span><span class="n">removed</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="n">client</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_resolve_client</span><span class="p">(</span><span class="n">client_id</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">client</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="n">attachments</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">upload</span> <span class="ow">in</span> <span class="n">message</span><span class="o">.</span><span class="n">attachments</span><span class="p">:</span>
+            <span class="c1"># Nested dataclasses arrive from msgpack as plain dicts.</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">upload</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+                <span class="n">upload</span> <span class="o">=</span> <span class="n">_messages</span><span class="o">.</span><span class="n">GuiChatUpload</span><span class="p">(</span><span class="o">**</span><span class="n">upload</span><span class="p">)</span>
+            <span class="n">attachments</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="n">ChatAttachment</span><span class="p">(</span>
+                    <span class="n">name</span><span class="o">=</span><span class="n">upload</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+                    <span class="n">mime_type</span><span class="o">=</span><span class="n">upload</span><span class="o">.</span><span class="n">mime_type</span><span class="p">,</span>
+                    <span class="n">data</span><span class="o">=</span><span class="nb">bytes</span><span class="p">(</span><span class="n">upload</span><span class="o">.</span><span class="n">_data</span><span class="p">),</span>
+                    <span class="n">thumbnail</span><span class="o">=</span><span class="kc">None</span>
+                    <span class="k">if</span> <span class="n">upload</span><span class="o">.</span><span class="n">_thumbnail</span> <span class="ow">is</span> <span class="kc">None</span>
+                    <span class="k">else</span> <span class="nb">bytes</span><span class="p">(</span><span class="n">upload</span><span class="o">.</span><span class="n">_thumbnail</span><span class="p">),</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+        <span class="n">chat</span><span class="o">.</span><span class="n">_handle_submit</span><span class="p">(</span><span class="n">client</span><span class="p">,</span> <span class="n">client_id</span><span class="p">,</span> <span class="n">message</span><span class="o">.</span><span class="n">text</span><span class="p">,</span> <span class="n">attachments</span><span class="p">)</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_handle_chat_action</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">client_id</span><span class="p">:</span> <span class="n">ClientId</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="n">_messages</span><span class="o">.</span><span class="n">GuiChatActionMessage</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Callback for chat history actions (new/open/delete/rename)."""</span>
+        <span class="n">chat</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_chat_handle_from_uuid</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">message</span><span class="o">.</span><span class="n">uuid</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">chat</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">chat</span><span class="o">.</span><span class="n">_impl</span><span class="o">.</span><span class="n">removed</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="n">chat</span><span class="o">.</span><span class="n">_handle_action</span><span class="p">(</span><span class="n">message</span><span class="o">.</span><span class="n">action</span><span class="p">,</span> <span class="n">message</span><span class="o">.</span><span class="n">conversation_id</span><span class="p">,</span> <span class="n">message</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
 
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_handle_gui_form_submit</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">client_id</span><span class="p">:</span> <span class="n">ClientId</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="n">_messages</span><span class="o">.</span><span class="n">GuiFormSubmitMessage</span>
@@ -3179,6 +3225,139 @@
             <span class="p">)</span>
         <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_gallery_handle_from_uuid</span><span class="p">[</span><span class="n">message</span><span class="o">.</span><span class="n">uuid</span><span class="p">]</span> <span class="o">=</span> <span class="n">handle</span>
+        <span class="k">return</span> <span class="n">handle</span></div>
+
+
+<div class="viewcode-block" id="GuiApi.add_chat">
+<a class="viewcode-back" href="../../../api/core/gui_api/#viser.GuiApi.add_chat">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">add_chat</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">label</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"AI Assistant"</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">greeting</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"Hi there!"</span><span class="p">,</span>
+        <span class="n">subtitle</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"What are we tackling today?"</span><span class="p">,</span>
+        <span class="n">suggestions</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">(),</span>
+        <span class="n">disclaimer</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">placeholder</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"Ask anything…"</span><span class="p">,</span>
+        <span class="n">height</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">560</span><span class="p">,</span>
+        <span class="n">models</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">(),</span>
+        <span class="n">model</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">store</span><span class="p">:</span> <span class="n">ConversationStore</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">parent</span><span class="p">:</span> <span class="n">GuiContainerProtocol</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">visible</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">order</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">GuiChatHandle</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Add an AI-assistant style chat: a message list, a text box that</span>
+<span class="sd">        accepts pasted or dropped images and documents, and a history drawer</span>
+<span class="sd">        of saved conversations.</span>
+
+<span class="sd">        The chat does not generate replies itself. Attach a callback with</span>
+<span class="sd">        :meth:`GuiChatHandle.on_submit` and answer with</span>
+<span class="sd">        :meth:`GuiChatHandle.add_message` or :meth:`GuiChatHandle.stream`.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            label: Title shown in the chat header.</span>
+<span class="sd">            greeting: Heading shown while the conversation is empty.</span>
+<span class="sd">            subtitle: Text shown below the greeting.</span>
+<span class="sd">            suggestions: Suggested prompts, shown as clickable chips while the</span>
+<span class="sd">                conversation is empty. Clicking one submits it.</span>
+<span class="sd">            disclaimer: Optional notice shown above the input while the</span>
+<span class="sd">                conversation is empty.</span>
+<span class="sd">            placeholder: Placeholder text for the input box.</span>
+<span class="sd">            height: Height of the widget in pixels while its container sizes</span>
+<span class="sd">                itself to its content (e.g. a floating panel that hasn't been</span>
+<span class="sd">                resized). In a fixed-height container -- a docked or resized</span>
+<span class="sd">                panel -- the chat grows or shrinks to fill it instead.</span>
+<span class="sd">            models: AI models the user can choose from, through a settings</span>
+<span class="sd">                button in the chat header. Read the choice from</span>
+<span class="sd">                ``event.model`` in :meth:`GuiChatHandle.on_submit`. The list</span>
+<span class="sd">                can be changed later through ``chat.models``.</span>
+<span class="sd">            model: Initially selected model. Defaults to the first of</span>
+<span class="sd">                ``models``.</span>
+<span class="sd">            store: Where conversations are saved. Defaults to an in-memory</span>
+<span class="sd">                store; pass ``ConversationStore("some/dir")`` to persist them</span>
+<span class="sd">                as JSON files.</span>
+<span class="sd">            parent: Container to place the chat in, e.g. a panel tab. Defaults</span>
+<span class="sd">                to the current ``with`` container.</span>
+<span class="sd">            visible: Whether the chat is visible initially.</span>
+<span class="sd">            order: Optional ordering, smallest values will be displayed first.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A handle used to answer messages and manage conversations.</span>
+
+<span class="sd">        Example:</span>
+<span class="sd">            &gt;&gt;&gt; panel = server.gui.add_panel()</span>
+<span class="sd">            &gt;&gt;&gt; chat = server.gui.add_chat(parent=panel.add_tab("Assistant"))</span>
+<span class="sd">            &gt;&gt;&gt;</span>
+<span class="sd">            &gt;&gt;&gt; @chat.on_submit</span>
+<span class="sd">            &gt;&gt;&gt; def _(event: viser.ChatSubmitEvent) -&gt; None:</span>
+<span class="sd">            &gt;&gt;&gt;     with event.chat.stream() as reply:</span>
+<span class="sd">            &gt;&gt;&gt;         for token in my_llm(event.conversation.messages):</span>
+<span class="sd">            &gt;&gt;&gt;             reply.write(token)</span>
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="n">height</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"`height` must be positive."</span><span class="p">)</span>
+        <span class="n">models</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">models</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">model</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">model</span> <span class="o">=</span> <span class="n">models</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">models</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="s2">""</span>
+        <span class="k">elif</span> <span class="n">model</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">models</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"`model` </span><span class="si">{</span><span class="n">model</span><span class="si">!r}</span><span class="s2"> is not in `models` </span><span class="si">{</span><span class="n">models</span><span class="si">!r}</span><span class="s2">."</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">parent</span><span class="p">,</span> <span class="n">PanelHandle</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+                <span class="s2">"A panel holds tabs, not content directly. Add the chat to one "</span>
+                <span class="s2">"of its tabs:</span><span class="se">\n</span><span class="s2">"</span>
+                <span class="s2">"    panel = server.gui.add_panel()</span><span class="se">\n</span><span class="s2">"</span>
+                <span class="s1">'    chat = server.gui.add_chat(parent=panel.add_tab("Assistant"))'</span>
+            <span class="p">)</span>
+        <span class="n">container_uuid</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_get_container_uuid</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">parent</span> <span class="ow">is</span> <span class="kc">None</span>
+            <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">_container_uuid_from_handle</span><span class="p">(</span><span class="n">parent</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="n">store</span> <span class="o">=</span> <span class="n">ConversationStore</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span> <span class="k">if</span> <span class="n">store</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">store</span>
+
+        <span class="n">message</span> <span class="o">=</span> <span class="n">_messages</span><span class="o">.</span><span class="n">GuiChatMessage</span><span class="p">(</span>
+            <span class="n">uuid</span><span class="o">=</span><span class="n">_make_uuid</span><span class="p">(),</span>
+            <span class="n">container_uuid</span><span class="o">=</span><span class="n">container_uuid</span><span class="p">,</span>
+            <span class="n">props</span><span class="o">=</span><span class="n">_messages</span><span class="o">.</span><span class="n">GuiChatProps</span><span class="p">(</span>
+                <span class="n">order</span><span class="o">=</span><span class="n">_apply_default_order</span><span class="p">(</span><span class="n">order</span><span class="p">),</span>
+                <span class="n">label</span><span class="o">=</span><span class="n">label</span><span class="p">,</span>
+                <span class="n">hint</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                <span class="n">visible</span><span class="o">=</span><span class="n">visible</span><span class="p">,</span>
+                <span class="n">disabled</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                <span class="n">greeting</span><span class="o">=</span><span class="n">greeting</span><span class="p">,</span>
+                <span class="n">subtitle</span><span class="o">=</span><span class="n">subtitle</span><span class="p">,</span>
+                <span class="n">suggestions</span><span class="o">=</span><span class="nb">tuple</span><span class="p">(</span><span class="n">suggestions</span><span class="p">),</span>
+                <span class="n">disclaimer</span><span class="o">=</span><span class="n">disclaimer</span><span class="p">,</span>
+                <span class="n">placeholder</span><span class="o">=</span><span class="n">placeholder</span><span class="p">,</span>
+                <span class="n">height</span><span class="o">=</span><span class="n">height</span><span class="p">,</span>
+                <span class="n">messages</span><span class="o">=</span><span class="p">(),</span>
+                <span class="n">streaming_text</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                <span class="n">busy</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                <span class="n">conversations</span><span class="o">=</span><span class="nb">tuple</span><span class="p">(</span>
+                    <span class="n">_messages</span><span class="o">.</span><span class="n">GuiChatConversationInfo</span><span class="p">(</span>
+                        <span class="n">c</span><span class="o">.</span><span class="n">conversation_id</span><span class="p">,</span> <span class="n">c</span><span class="o">.</span><span class="n">title</span><span class="p">,</span> <span class="n">c</span><span class="o">.</span><span class="n">updated_at</span>
+                    <span class="p">)</span>
+                    <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">store</span><span class="o">.</span><span class="n">list_conversations</span><span class="p">()</span>
+                <span class="p">),</span>
+                <span class="n">active_conversation_id</span><span class="o">=</span><span class="s2">""</span><span class="p">,</span>
+                <span class="n">models</span><span class="o">=</span><span class="n">models</span><span class="p">,</span>
+                <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span>
+            <span class="p">),</span>
+        <span class="p">)</span>
+        <span class="n">handle</span> <span class="o">=</span> <span class="n">GuiChatHandle</span><span class="p">(</span>
+            <span class="n">_GuiHandleState</span><span class="p">(</span>
+                <span class="n">message</span><span class="o">.</span><span class="n">uuid</span><span class="p">,</span>
+                <span class="bp">self</span><span class="p">,</span>
+                <span class="kc">None</span><span class="p">,</span>
+                <span class="n">props</span><span class="o">=</span><span class="n">message</span><span class="o">.</span><span class="n">props</span><span class="p">,</span>
+                <span class="n">parent_container_id</span><span class="o">=</span><span class="n">message</span><span class="o">.</span><span class="n">container_uuid</span><span class="p">,</span>
+            <span class="p">),</span>
+            <span class="n">store</span><span class="o">=</span><span class="n">store</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">message</span><span class="o">.</span><span class="n">props</span><span class="o">.</span><span class="n">active_conversation_id</span> <span class="o">=</span> <span class="n">handle</span><span class="o">.</span><span class="n">conversation</span><span class="o">.</span><span class="n">conversation_id</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_websock_interface</span><span class="o">.</span><span class="n">queue_message</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_chat_handle_from_uuid</span><span class="p">[</span><span class="n">message</span><span class="o">.</span><span class="n">uuid</span><span class="p">]</span> <span class="o">=</span> <span class="n">handle</span>
         <span class="k">return</span> <span class="n">handle</span></div>
 
 

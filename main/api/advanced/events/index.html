@@ -12,7 +12,7 @@
         gtag('js', new Date());
         gtag('config', 'G-RRGY51J5ZH');
     </script>
-    <link rel="index" title="Index" href="../../../genindex/" /><link rel="search" title="Search" href="../../../search/" /><link rel="next" title="Icons" href="../icons/" /><link rel="prev" title="Advanced API" href="../" />
+    <link rel="index" title="Index" href="../../../genindex/" /><link rel="search" title="Search" href="../../../search/" /><link rel="next" title="Chat Conversations" href="../chat/" /><link rel="prev" title="Advanced API" href="../" />
 
     <!-- Generated with Sphinx 8.0.2 and Furo 2024.08.06 -->
         <title>Events - viser</title>
@@ -370,6 +370,7 @@
 </li>
 <li class="toctree-l1 current has-children"><a class="reference internal" href="../">Advanced API</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" role="switch" type="checkbox"/><label for="toctree-checkbox-8"><div class="visually-hidden">Toggle navigation of Advanced API</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
 <li class="toctree-l2 current current-page"><a class="current reference internal" href="#">Events</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chat/">Chat Conversations</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../icons/">Icons</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../theme/">Theme Configuration</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../uplot/">uPlot Types</a></li>
@@ -379,7 +380,7 @@
 <li class="toctree-l1 has-children"><a class="reference internal" href="../../auxiliary/">Auxiliary API</a><input class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" role="switch" type="checkbox"/><label for="toctree-checkbox-9"><div class="visually-hidden">Toggle navigation of Auxiliary API</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../../auxiliary/transforms/">Transforms</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../auxiliary/infrastructure/">Communication</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../auxiliary/extras/">Record3D + URDF Helpers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../auxiliary/extras/">Extras: Record3D, URDF, and Gemini File Search Helpers</a></li>
 </ul>
 </li>
 </ul>
@@ -435,6 +436,52 @@
 <h1>Events<a class="headerlink" href="#events" title="Link to this heading">¶</a></h1>
 <p>We define a small set of event types, which are passed to callback functions
 when events like clicks or GUI updates are triggered.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="viser.ChatSubmitEvent">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">viser.</span></span><span class="sig-name descname"><span class="pre">ChatSubmitEvent</span></span><a class="reference internal" href="../../../_modules/viser/_gui_handles/#ChatSubmitEvent"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#viser.ChatSubmitEvent" title="Link to this definition">¶</a></dt>
+<dd><p>Information associated with a chat message submitted by a user.</p>
+<p>Passed as input to <a class="reference internal" href="../../handles/gui_handles/#viser.GuiChatHandle.on_submit" title="viser.GuiChatHandle.on_submit"><code class="xref py py-meth docutils literal notranslate"><span class="pre">GuiChatHandle.on_submit()</span></code></a> callbacks.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="viser.ChatSubmitEvent.client">
+<span class="sig-name descname"><span class="pre">client</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="../../handles/client_handles/#viser.ClientHandle" title="viser.ClientHandle"><span class="pre">ClientHandle</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></em><a class="headerlink" href="#viser.ChatSubmitEvent.client" title="Link to this definition">¶</a></dt>
+<dd><p>Client that submitted the message.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="viser.ChatSubmitEvent.client_id">
+<span class="sig-name descname"><span class="pre">client_id</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></em><a class="headerlink" href="#viser.ChatSubmitEvent.client_id" title="Link to this definition">¶</a></dt>
+<dd><p>ID of the client that submitted the message.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="viser.ChatSubmitEvent.chat">
+<span class="sig-name descname"><span class="pre">chat</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="../../handles/gui_handles/#viser.GuiChatHandle" title="viser.GuiChatHandle"><span class="pre">GuiChatHandle</span></a></em><a class="headerlink" href="#viser.ChatSubmitEvent.chat" title="Link to this definition">¶</a></dt>
+<dd><p>Chat the message was submitted to.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="viser.ChatSubmitEvent.conversation">
+<span class="sig-name descname"><span class="pre">conversation</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="../chat/#viser.Conversation" title="viser.Conversation"><span class="pre">Conversation</span></a></em><a class="headerlink" href="#viser.ChatSubmitEvent.conversation" title="Link to this definition">¶</a></dt>
+<dd><p>Conversation the message was appended to. Its <code class="docutils literal notranslate"><span class="pre">messages</span></code> list holds
+the full history, including the submitted message.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="viser.ChatSubmitEvent.message">
+<span class="sig-name descname"><span class="pre">message</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="../chat/#viser.ChatMessage" title="viser.ChatMessage"><span class="pre">ChatMessage</span></a></em><a class="headerlink" href="#viser.ChatSubmitEvent.message" title="Link to this definition">¶</a></dt>
+<dd><p>The submitted user message.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="viser.ChatSubmitEvent.model">
+<span class="sig-name descname"><span class="pre">model</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></em><a class="headerlink" href="#viser.ChatSubmitEvent.model" title="Link to this definition">¶</a></dt>
+<dd><p>Model selected in the chat when the message was submitted (empty if
+the chat has no models). Captured at submission, so it stays stable even
+if the user switches models while the reply is generated.</p>
+</dd></dl>
+
+</dd></dl>
+
 <dl class="py class">
 <dt class="sig sig-object py" id="viser.CommandEvent">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">viser.</span></span><span class="sig-name descname"><span class="pre">CommandEvent</span></span><a class="reference internal" href="../../../_modules/viser/_gui_handles/#CommandEvent"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#viser.CommandEvent" title="Link to this definition">¶</a></dt>
@@ -887,12 +934,12 @@ the surrounding update).</p>
       <footer>
         
         <div class="related-pages">
-          <a class="next-page" href="../icons/">
+          <a class="next-page" href="../chat/">
               <div class="page-info">
                 <div class="context">
                   <span>Next</span>
                 </div>
-                <div class="title">Icons</div>
+                <div class="title">Chat Conversations</div>
               </div>
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
             </a>
@@ -945,6 +992,15 @@ the surrounding update).</p>
           <div class="toc-tree">
             <ul>
 <li><a class="reference internal" href="#">Events</a><ul>
+<li><a class="reference internal" href="#viser.ChatSubmitEvent"><code class="docutils literal notranslate"><span class="pre">ChatSubmitEvent</span></code></a><ul>
+<li><a class="reference internal" href="#viser.ChatSubmitEvent.client"><code class="docutils literal notranslate"><span class="pre">ChatSubmitEvent.client</span></code></a></li>
+<li><a class="reference internal" href="#viser.ChatSubmitEvent.client_id"><code class="docutils literal notranslate"><span class="pre">ChatSubmitEvent.client_id</span></code></a></li>
+<li><a class="reference internal" href="#viser.ChatSubmitEvent.chat"><code class="docutils literal notranslate"><span class="pre">ChatSubmitEvent.chat</span></code></a></li>
+<li><a class="reference internal" href="#viser.ChatSubmitEvent.conversation"><code class="docutils literal notranslate"><span class="pre">ChatSubmitEvent.conversation</span></code></a></li>
+<li><a class="reference internal" href="#viser.ChatSubmitEvent.message"><code class="docutils literal notranslate"><span class="pre">ChatSubmitEvent.message</span></code></a></li>
+<li><a class="reference internal" href="#viser.ChatSubmitEvent.model"><code class="docutils literal notranslate"><span class="pre">ChatSubmitEvent.model</span></code></a></li>
+</ul>
+</li>
 <li><a class="reference internal" href="#viser.CommandEvent"><code class="docutils literal notranslate"><span class="pre">CommandEvent</span></code></a><ul>
 <li><a class="reference internal" href="#viser.CommandEvent.client"><code class="docutils literal notranslate"><span class="pre">CommandEvent.client</span></code></a></li>
 <li><a class="reference internal" href="#viser.CommandEvent.client_id"><code class="docutils literal notranslate"><span class="pre">CommandEvent.client_id</span></code></a></li>

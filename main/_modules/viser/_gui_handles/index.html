@@ -369,6 +369,7 @@
 </li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../../../api/advanced/">Advanced API</a><input class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" role="switch" type="checkbox"/><label for="toctree-checkbox-8"><div class="visually-hidden">Toggle navigation of Advanced API</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../../../api/advanced/events/">Events</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/advanced/chat/">Chat Conversations</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../api/advanced/icons/">Icons</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../api/advanced/theme/">Theme Configuration</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../api/advanced/uplot/">uPlot Types</a></li>
@@ -378,7 +379,7 @@
 <li class="toctree-l1 has-children"><a class="reference internal" href="../../../api/auxiliary/">Auxiliary API</a><input class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" role="switch" type="checkbox"/><label for="toctree-checkbox-9"><div class="visually-hidden">Toggle navigation of Auxiliary API</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../../../api/auxiliary/transforms/">Transforms</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../api/auxiliary/infrastructure/">Communication</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../../api/auxiliary/extras/">Record3D + URDF Helpers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/auxiliary/extras/">Extras: Record3D, URDF, and Gemini File Search Helpers</a></li>
 </ul>
 </li>
 </ul>
@@ -429,6 +430,7 @@
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">base64</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">contextlib</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">dataclasses</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">io</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
@@ -446,6 +448,7 @@
     <span class="n">Callable</span><span class="p">,</span>
     <span class="n">Generic</span><span class="p">,</span>
     <span class="n">Iterable</span><span class="p">,</span>
+    <span class="n">Iterator</span><span class="p">,</span>
     <span class="n">Literal</span><span class="p">,</span>
     <span class="n">Sequence</span><span class="p">,</span>
     <span class="n">Tuple</span><span class="p">,</span>
@@ -459,6 +462,13 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing_extensions</span><span class="w"> </span><span class="kn">import</span> <span class="n">Protocol</span><span class="p">,</span> <span class="n">Self</span><span class="p">,</span> <span class="n">TypeAlias</span><span class="p">,</span> <span class="n">override</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">._assignable_props_api</span><span class="w"> </span><span class="kn">import</span> <span class="n">AssignablePropsBase</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">._chat</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">ChatAttachment</span><span class="p">,</span>
+    <span class="n">ChatMessage</span><span class="p">,</span>
+    <span class="n">ChatRole</span><span class="p">,</span>
+    <span class="n">Conversation</span><span class="p">,</span>
+    <span class="n">ConversationStore</span><span class="p">,</span>
+<span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">._icons</span><span class="w"> </span><span class="kn">import</span> <span class="n">svg_from_icon</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">._icons_enum</span><span class="w"> </span><span class="kn">import</span> <span class="n">IconName</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">._messages</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
@@ -469,6 +479,10 @@
     <span class="n">GuiBaseProps</span><span class="p">,</span>
     <span class="n">GuiButtonGroupProps</span><span class="p">,</span>
     <span class="n">GuiButtonProps</span><span class="p">,</span>
+    <span class="n">GuiChatAttachment</span><span class="p">,</span>
+    <span class="n">GuiChatConversationInfo</span><span class="p">,</span>
+    <span class="n">GuiChatEntry</span><span class="p">,</span>
+    <span class="n">GuiChatProps</span><span class="p">,</span>
     <span class="n">GuiCheckboxProps</span><span class="p">,</span>
     <span class="n">GuiCloseModalMessage</span><span class="p">,</span>
     <span class="n">GuiColorbarProps</span><span class="p">,</span>
@@ -511,7 +525,7 @@
     <span class="n">TimelineRemoveMessage</span><span class="p">,</span>
 <span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">._scene_api</span><span class="w"> </span><span class="kn">import</span> <span class="n">_encode_image_binary</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">._threadpool_exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="n">print_task_error</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">._threadpool_exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="n">print_awaited_callback_error</span><span class="p">,</span> <span class="n">print_task_error</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.infra</span><span class="w"> </span><span class="kn">import</span> <span class="n">ClientId</span>
 
 <span class="k">if</span> <span class="n">TYPE_CHECKING</span><span class="p">:</span>
@@ -1764,6 +1778,351 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_gallery_click_cb</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">func</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">func</span></div>
 </div>
+
+
+
+<div class="viewcode-block" id="ChatSubmitEvent">
+<a class="viewcode-back" href="../../../api/advanced/events/#viser.ChatSubmitEvent">[docs]</a>
+<span class="nd">@dataclasses</span><span class="o">.</span><span class="n">dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">ChatSubmitEvent</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Information associated with a chat message submitted by a user.</span>
+
+<span class="sd">    Passed as input to :meth:`GuiChatHandle.on_submit` callbacks."""</span>
+
+    <span class="n">client</span><span class="p">:</span> <span class="n">ClientHandle</span> <span class="o">|</span> <span class="kc">None</span>
+<span class="w">    </span><span class="sd">"""Client that submitted the message."""</span>
+    <span class="n">client_id</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span>
+<span class="w">    </span><span class="sd">"""ID of the client that submitted the message."""</span>
+    <span class="n">chat</span><span class="p">:</span> <span class="n">GuiChatHandle</span>
+<span class="w">    </span><span class="sd">"""Chat the message was submitted to."""</span>
+    <span class="n">conversation</span><span class="p">:</span> <span class="n">Conversation</span>
+<span class="w">    </span><span class="sd">"""Conversation the message was appended to. Its ``messages`` list holds</span>
+<span class="sd">    the full history, including the submitted message."""</span>
+    <span class="n">message</span><span class="p">:</span> <span class="n">ChatMessage</span>
+<span class="w">    </span><span class="sd">"""The submitted user message."""</span>
+    <span class="n">model</span><span class="p">:</span> <span class="nb">str</span>
+<span class="w">    </span><span class="sd">"""Model selected in the chat when the message was submitted (empty if</span>
+<span class="sd">    the chat has no models). Captured at submission, so it stays stable even</span>
+<span class="sd">    if the user switches models while the reply is generated."""</span></div>
+
+
+
+<div class="viewcode-block" id="ChatStream">
+<a class="viewcode-back" href="../../../api/handles/gui_handles/#viser.ChatStream">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ChatStream</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""An assistant reply being written incrementally.</span>
+
+<span class="sd">    Created by :meth:`GuiChatHandle.stream`; the text is committed to the</span>
+<span class="sd">    conversation when the ``with`` block exits."""</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">chat</span><span class="p">:</span> <span class="n">GuiChatHandle</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_chat</span> <span class="o">=</span> <span class="n">chat</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_parts</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">text</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Text written so far."""</span>
+        <span class="k">return</span> <span class="s2">""</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_parts</span><span class="p">)</span>
+
+<div class="viewcode-block" id="ChatStream.write">
+<a class="viewcode-back" href="../../../api/handles/gui_handles/#viser.ChatStream.write">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">write</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">delta</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Append text to the reply and display it."""</span>
+        <span class="k">if</span> <span class="n">delta</span> <span class="o">==</span> <span class="s2">""</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">delta</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_chat</span><span class="o">.</span><span class="n">_set_props</span><span class="p">(</span><span class="n">streaming_text</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">text</span><span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="GuiChatHandle">
+<a class="viewcode-back" href="../../../api/handles/gui_handles/#viser.GuiChatHandle">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">GuiChatHandle</span><span class="p">(</span><span class="n">_GuiHandle</span><span class="p">[</span><span class="kc">None</span><span class="p">],</span> <span class="n">GuiChatProps</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Handle for an AI-assistant style chat.</span>
+
+<span class="sd">    The chat only transports messages: attach a callback with</span>
+<span class="sd">    :meth:`on_submit` to generate replies, using :meth:`add_message` or</span>
+<span class="sd">    :meth:`stream`. Conversations are persisted through a</span>
+<span class="sd">    :class:`ConversationStore`, and can be browsed from the history drawer.</span>
+<span class="sd">    """</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">_impl</span><span class="p">:</span> <span class="n">_GuiHandleState</span><span class="p">,</span> <span class="n">store</span><span class="p">:</span> <span class="n">ConversationStore</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">impl</span><span class="o">=</span><span class="n">_impl</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_store</span> <span class="o">=</span> <span class="n">store</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_conversation</span> <span class="o">=</span> <span class="n">Conversation</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_lock</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">RLock</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_submit_cb</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Callable</span><span class="p">[[</span><span class="n">ChatSubmitEvent</span><span class="p">],</span> <span class="kc">None</span> <span class="o">|</span> <span class="n">Coroutine</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="c1"># Strong references to in-flight reply tasks, so they aren't GC'd.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_tasks</span><span class="p">:</span> <span class="nb">set</span><span class="p">[</span><span class="n">asyncio</span><span class="o">.</span><span class="n">Task</span><span class="p">[</span><span class="kc">None</span><span class="p">]]</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">store</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ConversationStore</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Store used to persist conversations."""</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_store</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">conversation</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Conversation</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Conversation currently displayed."""</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_conversation</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_set_props</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">changes</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Assign several props in one update message, so clients apply them</span>
+<span class="sd">        together (e.g. committing a streamed reply and clearing the stream)."""</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_impl</span><span class="o">.</span><span class="n">removed</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">changes</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_impl</span><span class="o">.</span><span class="n">props</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_impl</span><span class="o">.</span><span class="n">gui_api</span><span class="o">.</span><span class="n">_websock_interface</span><span class="o">.</span><span class="n">queue_message</span><span class="p">(</span>
+            <span class="n">GuiUpdateMessage</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_impl</span><span class="o">.</span><span class="n">uuid</span><span class="p">,</span> <span class="n">changes</span><span class="p">)</span>
+        <span class="p">)</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_entry</span><span class="p">(</span><span class="n">message</span><span class="p">:</span> <span class="n">ChatMessage</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">GuiChatEntry</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">GuiChatEntry</span><span class="p">(</span>
+            <span class="n">message_id</span><span class="o">=</span><span class="n">message</span><span class="o">.</span><span class="n">message_id</span><span class="p">,</span>
+            <span class="n">role</span><span class="o">=</span><span class="n">message</span><span class="o">.</span><span class="n">role</span><span class="p">,</span>
+            <span class="n">text</span><span class="o">=</span><span class="n">message</span><span class="o">.</span><span class="n">text</span><span class="p">,</span>
+            <span class="n">attachments</span><span class="o">=</span><span class="nb">tuple</span><span class="p">(</span>
+                <span class="n">GuiChatAttachment</span><span class="p">(</span><span class="n">a</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">a</span><span class="o">.</span><span class="n">mime_type</span><span class="p">,</span> <span class="n">a</span><span class="o">.</span><span class="n">thumbnail</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">message</span><span class="o">.</span><span class="n">attachments</span>
+            <span class="p">),</span>
+            <span class="n">timestamp</span><span class="o">=</span><span class="n">message</span><span class="o">.</span><span class="n">timestamp</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_conversation_infos</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">GuiChatConversationInfo</span><span class="p">,</span> <span class="o">...</span><span class="p">]:</span>
+        <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span>
+            <span class="n">GuiChatConversationInfo</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">conversation_id</span><span class="p">,</span> <span class="n">c</span><span class="o">.</span><span class="n">title</span><span class="p">,</span> <span class="n">c</span><span class="o">.</span><span class="n">updated_at</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_store</span><span class="o">.</span><span class="n">list_conversations</span><span class="p">()</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_sync</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">conversations</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">extra</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Push the active conversation (and optionally the history list)."""</span>
+        <span class="n">changes</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">"messages"</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_entry</span><span class="p">(</span><span class="n">m</span><span class="p">)</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_conversation</span><span class="o">.</span><span class="n">messages</span><span class="p">),</span>
+            <span class="s2">"active_conversation_id"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_conversation</span><span class="o">.</span><span class="n">conversation_id</span><span class="p">,</span>
+            <span class="o">**</span><span class="n">extra</span><span class="p">,</span>
+        <span class="p">}</span>
+        <span class="k">if</span> <span class="n">conversations</span><span class="p">:</span>
+            <span class="n">changes</span><span class="p">[</span><span class="s2">"conversations"</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_conversation_infos</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_set_props</span><span class="p">(</span><span class="o">**</span><span class="n">changes</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_commit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="n">ChatMessage</span><span class="p">,</span> <span class="o">**</span><span class="n">extra</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_lock</span><span class="p">:</span>
+            <span class="n">is_first</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_conversation</span><span class="o">.</span><span class="n">messages</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_conversation</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_store</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_conversation</span><span class="p">)</span>
+            <span class="c1"># The history list only changes when a conversation is first</span>
+            <span class="c1"># saved (which also sets its title) -- i.e. on its first message.</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_sync</span><span class="p">(</span><span class="n">conversations</span><span class="o">=</span><span class="n">is_first</span><span class="p">,</span> <span class="o">**</span><span class="n">extra</span><span class="p">)</span>
+
+<div class="viewcode-block" id="GuiChatHandle.add_message">
+<a class="viewcode-back" href="../../../api/handles/gui_handles/#viser.GuiChatHandle.add_message">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">add_message</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">role</span><span class="p">:</span> <span class="n">ChatRole</span><span class="p">,</span>
+        <span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">attachments</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">ChatAttachment</span><span class="p">]</span> <span class="o">=</span> <span class="p">(),</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ChatMessage</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Append a message to the active conversation and save it.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            role: ``"assistant"``, ``"user"``, or ``"system"``.</span>
+<span class="sd">            text: Message text. Assistant and system messages render as markdown.</span>
+<span class="sd">            attachments: Optional files attached to the message.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            The appended message.</span>
+<span class="sd">        """</span>
+        <span class="n">message</span> <span class="o">=</span> <span class="n">ChatMessage</span><span class="p">(</span><span class="n">role</span><span class="o">=</span><span class="n">role</span><span class="p">,</span> <span class="n">text</span><span class="o">=</span><span class="n">text</span><span class="p">,</span> <span class="n">attachments</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="n">attachments</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_commit</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">message</span></div>
+
+
+<div class="viewcode-block" id="GuiChatHandle.stream">
+<a class="viewcode-back" href="../../../api/handles/gui_handles/#viser.GuiChatHandle.stream">[docs]</a>
+    <span class="nd">@contextlib</span><span class="o">.</span><span class="n">contextmanager</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">stream</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">role</span><span class="p">:</span> <span class="n">ChatRole</span> <span class="o">=</span> <span class="s2">"assistant"</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="n">ChatStream</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""Stream a reply into the chat, e.g. token by token from an LLM.</span>
+
+<span class="sd">        The text is displayed as it is written, and appended to the active</span>
+<span class="sd">        conversation when the block exits (also on error, if any text was</span>
+<span class="sd">        written).</span>
+
+<span class="sd">        Example:</span>
+<span class="sd">            &gt;&gt;&gt; with chat.stream() as reply:</span>
+<span class="sd">            &gt;&gt;&gt;     for token in llm_tokens():</span>
+<span class="sd">            &gt;&gt;&gt;         reply.write(token)</span>
+<span class="sd">        """</span>
+        <span class="n">reply</span> <span class="o">=</span> <span class="n">ChatStream</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_set_props</span><span class="p">(</span><span class="n">streaming_text</span><span class="o">=</span><span class="s2">""</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">yield</span> <span class="n">reply</span>
+        <span class="k">finally</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">reply</span><span class="o">.</span><span class="n">text</span> <span class="o">!=</span> <span class="s2">""</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_commit</span><span class="p">(</span>
+                    <span class="n">ChatMessage</span><span class="p">(</span><span class="n">role</span><span class="o">=</span><span class="n">role</span><span class="p">,</span> <span class="n">text</span><span class="o">=</span><span class="n">reply</span><span class="o">.</span><span class="n">text</span><span class="p">),</span> <span class="n">streaming_text</span><span class="o">=</span><span class="kc">None</span>
+                <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_set_props</span><span class="p">(</span><span class="n">streaming_text</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="GuiChatHandle.new_conversation">
+<a class="viewcode-back" href="../../../api/handles/gui_handles/#viser.GuiChatHandle.new_conversation">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">new_conversation</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Conversation</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Start a new, empty conversation and display it.</span>
+
+<span class="sd">        The conversation is only saved once it has a message."""</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_lock</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_conversation</span> <span class="o">=</span> <span class="n">Conversation</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_sync</span><span class="p">()</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_conversation</span></div>
+
+
+<div class="viewcode-block" id="GuiChatHandle.open_conversation">
+<a class="viewcode-back" href="../../../api/handles/gui_handles/#viser.GuiChatHandle.open_conversation">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">open_conversation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">conversation_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Conversation</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Load a saved conversation and display it.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            KeyError: If no conversation with this id exists.</span>
+<span class="sd">        """</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_lock</span><span class="p">:</span>
+            <span class="n">conversation</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_store</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">conversation_id</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">conversation</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"No conversation with id </span><span class="si">{</span><span class="n">conversation_id</span><span class="si">!r}</span><span class="s2">."</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_conversation</span> <span class="o">=</span> <span class="n">conversation</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_sync</span><span class="p">()</span>
+            <span class="k">return</span> <span class="n">conversation</span></div>
+
+
+<div class="viewcode-block" id="GuiChatHandle.delete_conversation">
+<a class="viewcode-back" href="../../../api/handles/gui_handles/#viser.GuiChatHandle.delete_conversation">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">delete_conversation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">conversation_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Delete a saved conversation. If it is displayed, a new one is started."""</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_lock</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_store</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">conversation_id</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">conversation_id</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">_conversation</span><span class="o">.</span><span class="n">conversation_id</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_conversation</span> <span class="o">=</span> <span class="n">Conversation</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_sync</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="GuiChatHandle.rename_conversation">
+<a class="viewcode-back" href="../../../api/handles/gui_handles/#viser.GuiChatHandle.rename_conversation">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">rename_conversation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">conversation_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">title</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Change the title of a saved conversation. Unknown ids are ignored."""</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_lock</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">conversation_id</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">_conversation</span><span class="o">.</span><span class="n">conversation_id</span><span class="p">:</span>
+                <span class="n">conversation</span><span class="p">:</span> <span class="n">Conversation</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_conversation</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">conversation</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_store</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">conversation_id</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">conversation</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">conversation</span><span class="o">.</span><span class="n">messages</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">return</span>
+            <span class="n">conversation</span><span class="o">.</span><span class="n">title</span> <span class="o">=</span> <span class="n">title</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="ow">or</span> <span class="n">conversation</span><span class="o">.</span><span class="n">title</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_store</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">conversation</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_set_props</span><span class="p">(</span><span class="n">conversations</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_conversation_infos</span><span class="p">())</span></div>
+
+
+    <span class="nd">@override</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_on_prop_assigned</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="c1"># Keep the selection valid when the model list changes.</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="o">==</span> <span class="s2">"models"</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">models</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">models</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">models</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="s2">""</span>
+
+<div class="viewcode-block" id="GuiChatHandle.on_submit">
+<a class="viewcode-back" href="../../../api/handles/gui_handles/#viser.GuiChatHandle.on_submit">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">on_submit</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">func</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">ChatSubmitEvent</span><span class="p">],</span> <span class="n">NoneOrCoroutine</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">ChatSubmitEvent</span><span class="p">],</span> <span class="n">NoneOrCoroutine</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""Attach a callback for when the user submits a message.</span>
+
+<span class="sd">        By the time the callback runs, the user's message has been appended to</span>
+<span class="sd">        ``event.conversation`` and displayed. The chat shows a busy state</span>
+<span class="sd">        (and blocks new submissions) until all callbacks return.</span>
+
+<span class="sd">        Note:</span>
+<span class="sd">            - If `func` is a regular function (defined with `def`), it will be executed in a thread pool.</span>
+<span class="sd">            - If `func` is an async function (defined with `async def`), it will be executed in the event loop.</span>
+
+<span class="sd">        Example:</span>
+<span class="sd">            &gt;&gt;&gt; @chat.on_submit</span>
+<span class="sd">            &gt;&gt;&gt; def _(event: viser.ChatSubmitEvent) -&gt; None:</span>
+<span class="sd">            &gt;&gt;&gt;     event.chat.add_message("assistant", f"You said: {event.message.text}")</span>
+<span class="sd">        """</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_submit_cb</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">func</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">func</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_handle_submit</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">client</span><span class="p">:</span> <span class="n">ClientHandle</span><span class="p">,</span>
+        <span class="n">client_id</span><span class="p">:</span> <span class="n">ClientId</span><span class="p">,</span>
+        <span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">attachments</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">ChatAttachment</span><span class="p">],</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Record a client submission, then run the callbacks in the background."""</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">busy</span> <span class="ow">or</span> <span class="p">(</span><span class="n">text</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="o">==</span> <span class="s2">""</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">attachments</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">):</span>
+            <span class="k">return</span>
+        <span class="n">message</span> <span class="o">=</span> <span class="n">ChatMessage</span><span class="p">(</span><span class="n">role</span><span class="o">=</span><span class="s2">"user"</span><span class="p">,</span> <span class="n">text</span><span class="o">=</span><span class="n">text</span><span class="p">,</span> <span class="n">attachments</span><span class="o">=</span><span class="n">attachments</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_commit</span><span class="p">(</span><span class="n">message</span><span class="p">,</span> <span class="n">busy</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">event</span> <span class="o">=</span> <span class="n">ChatSubmitEvent</span><span class="p">(</span>
+            <span class="n">client</span><span class="o">=</span><span class="n">client</span><span class="p">,</span>
+            <span class="n">client_id</span><span class="o">=</span><span class="n">client_id</span><span class="p">,</span>
+            <span class="n">chat</span><span class="o">=</span><span class="bp">self</span><span class="p">,</span>
+            <span class="n">conversation</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_conversation</span><span class="p">,</span>
+            <span class="n">message</span><span class="o">=</span><span class="n">message</span><span class="p">,</span>
+            <span class="n">model</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="c1"># Run as a task: awaiting here would block this client's websocket</span>
+        <span class="c1"># handler, so history actions couldn't be processed during a reply.</span>
+        <span class="n">task</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">get_running_loop</span><span class="p">()</span><span class="o">.</span><span class="n">create_task</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_run_submit_callbacks</span><span class="p">(</span><span class="n">event</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_tasks</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">task</span><span class="p">)</span>
+        <span class="n">task</span><span class="o">.</span><span class="n">add_done_callback</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_tasks</span><span class="o">.</span><span class="n">discard</span><span class="p">)</span>
+        <span class="n">task</span><span class="o">.</span><span class="n">add_done_callback</span><span class="p">(</span><span class="n">print_task_error</span><span class="p">)</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_run_submit_callbacks</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">:</span> <span class="n">ChatSubmitEvent</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">gui_api</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_impl</span><span class="o">.</span><span class="n">gui_api</span>
+        <span class="n">loop</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">get_running_loop</span><span class="p">()</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">cb</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_submit_cb</span><span class="p">:</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">iscoroutinefunction</span><span class="p">(</span><span class="n">cb</span><span class="p">):</span>
+                        <span class="k">await</span> <span class="n">cb</span><span class="p">(</span><span class="n">event</span><span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="k">await</span> <span class="n">loop</span><span class="o">.</span><span class="n">run_in_executor</span><span class="p">(</span><span class="n">gui_api</span><span class="o">.</span><span class="n">_thread_executor</span><span class="p">,</span> <span class="n">cb</span><span class="p">,</span> <span class="n">event</span><span class="p">)</span>
+                <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                    <span class="n">print_awaited_callback_error</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+        <span class="k">finally</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_set_props</span><span class="p">(</span><span class="n">busy</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">streaming_text</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_handle_action</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">action</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">"new"</span><span class="p">,</span> <span class="s2">"open"</span><span class="p">,</span> <span class="s2">"delete"</span><span class="p">,</span> <span class="s2">"rename"</span><span class="p">,</span> <span class="s2">"set_model"</span><span class="p">],</span>
+        <span class="n">conversation_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">value</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">action</span> <span class="o">==</span> <span class="s2">"set_model"</span><span class="p">:</span>
+            <span class="c1"># Only models offered by the server can be selected.</span>
+            <span class="k">if</span> <span class="n">value</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">models</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">value</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Ignoring selection of unknown model </span><span class="si">{</span><span class="n">value</span><span class="si">!r}</span><span class="s2">."</span><span class="p">)</span>
+            <span class="k">return</span>
+        <span class="c1"># Switching conversations mid-reply would send the reply to the wrong</span>
+        <span class="c1"># place; the client disables history while busy, this is the backstop.</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">busy</span> <span class="ow">and</span> <span class="n">action</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"new"</span><span class="p">,</span> <span class="s2">"open"</span><span class="p">,</span> <span class="s2">"delete"</span><span class="p">):</span>
+            <span class="k">return</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">action</span> <span class="o">==</span> <span class="s2">"new"</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">new_conversation</span><span class="p">()</span>
+            <span class="k">elif</span> <span class="n">action</span> <span class="o">==</span> <span class="s2">"open"</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">open_conversation</span><span class="p">(</span><span class="n">conversation_id</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">action</span> <span class="o">==</span> <span class="s2">"delete"</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">delete_conversation</span><span class="p">(</span><span class="n">conversation_id</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">action</span> <span class="o">==</span> <span class="s2">"rename"</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">rename_conversation</span><span class="p">(</span><span class="n">conversation_id</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+        <span class="k">except</span> <span class="p">(</span><span class="ne">KeyError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Chat history action </span><span class="si">{</span><span class="n">action</span><span class="si">!r}</span><span class="s2"> failed: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span></div>
 
 
 

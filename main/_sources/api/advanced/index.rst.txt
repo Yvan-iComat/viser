@@ -7,6 +7,7 @@ Advanced features for complex applications.
    :maxdepth: 1
 
    events
+   chat
    icons
    theme
    uplot

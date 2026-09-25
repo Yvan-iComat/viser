@@ -12,10 +12,10 @@
         gtag('js', new Date());
         gtag('config', 'G-RRGY51J5ZH');
     </script>
-    <link rel="index" title="Index" href="../../../genindex/" /><link rel="search" title="Search" href="../../../search/" /><link rel="next" title="Auxiliary API" href="../../auxiliary/" /><link rel="prev" title="uPlot Types" href="../uplot/" />
+    <link rel="index" title="Index" href="../../../genindex/" /><link rel="search" title="Search" href="../../../search/" /><link rel="next" title="Icons" href="../icons/" /><link rel="prev" title="Events" href="../events/" />
 
     <!-- Generated with Sphinx 8.0.2 and Furo 2024.08.06 -->
-        <title>State Serializer - viser</title>
+        <title>Chat Conversations - viser</title>
       <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
     <link rel="stylesheet" type="text/css" href="../../../_static/styles/furo.css?v=354aac6f" />
     <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css?v=76b2166b" />
@@ -193,7 +193,7 @@
           <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
         </button>
       </div>
-      <label class="toc-overlay-icon toc-header-icon no-toc" for="__toc">
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
         <div class="visually-hidden">Toggle table of contents sidebar</div>
         <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
       </label>
@@ -370,11 +370,11 @@
 </li>
 <li class="toctree-l1 current has-children"><a class="reference internal" href="../">Advanced API</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" role="switch" type="checkbox"/><label for="toctree-checkbox-8"><div class="visually-hidden">Toggle navigation of Advanced API</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="../events/">Events</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chat/">Chat Conversations</a></li>
+<li class="toctree-l2 current current-page"><a class="current reference internal" href="#">Chat Conversations</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../icons/">Icons</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../theme/">Theme Configuration</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../uplot/">uPlot Types</a></li>
-<li class="toctree-l2 current current-page"><a class="current reference internal" href="#">State Serializer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../state_serializer/">State Serializer</a></li>
 </ul>
 </li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../../auxiliary/">Auxiliary API</a><input class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" role="switch" type="checkbox"/><label for="toctree-checkbox-9"><div class="visually-hidden">Toggle navigation of Auxiliary API</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
@@ -412,7 +412,7 @@
         </a>
         <div class="content-icon-container">
           <div class="view-this-page">
-  <a class="muted-link" href="../../../_sources/api/advanced/state_serializer.rst.txt" title="View this page">
+  <a class="muted-link" href="../../../_sources/api/advanced/chat.rst.txt" title="View this page">
     <svg><use href="#svg-eye"></use></svg>
     <span class="visually-hidden">View this page</span>
   </a>
@@ -426,27 +426,173 @@
               <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
             </button>
           </div>
-          <label class="toc-overlay-icon toc-content-icon no-toc" for="__toc">
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
             <div class="visually-hidden">Toggle table of contents sidebar</div>
             <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
           </label>
         </div>
         <article role="main" id="furo-main-content">
-          <section id="state-serializer">
-<h1>State Serializer<a class="headerlink" href="#state-serializer" title="Link to this heading">¶</a></h1>
+          <section id="chat-conversations">
+<h1>Chat Conversations<a class="headerlink" href="#chat-conversations" title="Link to this heading">¶</a></h1>
+<p>Data types used by <a class="reference internal" href="../../core/gui_api/#viser.GuiApi.add_chat" title="viser.GuiApi.add_chat"><code class="xref py py-meth docutils literal notranslate"><span class="pre">viser.GuiApi.add_chat()</span></code></a> to represent and persist
+conversations. See <a class="reference internal" href="../../handles/gui_handles/#viser.GuiChatHandle" title="viser.GuiChatHandle"><code class="xref py py-class docutils literal notranslate"><span class="pre">viser.GuiChatHandle</span></code></a> for the chat widget itself.</p>
 <dl class="py class">
-<dt class="sig sig-object py">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">viser.infra.</span></span><span class="sig-name descname"><span class="pre">StateSerializer</span></span><a class="reference internal" href="../../../_modules/viser/infra/_infra/#StateSerializer"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
-<dd><p>Handle for serializing messages. In Viser, this is used to save the
-scene state so it can be shared/embedded in static webpages.</p>
+<dt class="sig sig-object py" id="viser.ChatMessage">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">viser.</span></span><span class="sig-name descname"><span class="pre">ChatMessage</span></span><a class="reference internal" href="../../../_modules/viser/_chat/#ChatMessage"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#viser.ChatMessage" title="Link to this definition">¶</a></dt>
+<dd><p>A single message in a conversation.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="viser.ChatMessage.role">
+<span class="sig-name descname"><span class="pre">role</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Literal" title="(in Python v3.14)"><span class="pre">Literal</span></a><span class="p"><span class="pre">[</span></span><span class="s"><span class="pre">'user'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'assistant'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'system'</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#viser.ChatMessage.role" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="viser.ChatMessage.text">
+<span class="sig-name descname"><span class="pre">text</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></em><a class="headerlink" href="#viser.ChatMessage.text" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="viser.ChatMessage.attachments">
+<span class="sig-name descname"><span class="pre">attachments</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.14)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#viser.ChatAttachment" title="viser._chat.ChatAttachment"><span class="pre">ChatAttachment</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#viser.ChatMessage.attachments" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="viser.ChatMessage.message_id">
+<span class="sig-name descname"><span class="pre">message_id</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></em><a class="headerlink" href="#viser.ChatMessage.message_id" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="viser.ChatMessage.timestamp">
+<span class="sig-name descname"><span class="pre">timestamp</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></em><a class="headerlink" href="#viser.ChatMessage.timestamp" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="viser.ChatAttachment">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">viser.</span></span><span class="sig-name descname"><span class="pre">ChatAttachment</span></span><a class="reference internal" href="../../../_modules/viser/_chat/#ChatAttachment"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#viser.ChatAttachment" title="Link to this definition">¶</a></dt>
+<dd><p>A file attached to a chat message.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="viser.ChatAttachment.name">
+<span class="sig-name descname"><span class="pre">name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></em><a class="headerlink" href="#viser.ChatAttachment.name" title="Link to this definition">¶</a></dt>
+<dd><p>File name.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="viser.ChatAttachment.mime_type">
+<span class="sig-name descname"><span class="pre">mime_type</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></em><a class="headerlink" href="#viser.ChatAttachment.mime_type" title="Link to this definition">¶</a></dt>
+<dd><p>MIME type, e.g. <code class="docutils literal notranslate"><span class="pre">&quot;image/png&quot;</span></code> or <code class="docutils literal notranslate"><span class="pre">&quot;application/pdf&quot;</span></code>.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="viser.ChatAttachment.data">
+<span class="sig-name descname"><span class="pre">data</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#bytes" title="(in Python v3.14)"><span class="pre">bytes</span></a></em><a class="headerlink" href="#viser.ChatAttachment.data" title="Link to this definition">¶</a></dt>
+<dd><p>Raw file contents.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="viser.ChatAttachment.thumbnail">
+<span class="sig-name descname"><span class="pre">thumbnail</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#bytes" title="(in Python v3.14)"><span class="pre">bytes</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#viser.ChatAttachment.thumbnail" title="Link to this definition">¶</a></dt>
+<dd><p>Small JPEG preview for images, used for display only.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="viser.ChatAttachment.is_image">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">is_image</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></em><a class="headerlink" href="#viser.ChatAttachment.is_image" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="viser.Conversation">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">viser.</span></span><span class="sig-name descname"><span class="pre">Conversation</span></span><a class="reference internal" href="../../../_modules/viser/_chat/#Conversation"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#viser.Conversation" title="Link to this definition">¶</a></dt>
+<dd><p>An ordered list of chat messages, with a title.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="viser.Conversation.conversation_id">
+<span class="sig-name descname"><span class="pre">conversation_id</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></em><a class="headerlink" href="#viser.Conversation.conversation_id" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="viser.Conversation.title">
+<span class="sig-name descname"><span class="pre">title</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'New</span> <span class="pre">conversation'</span></em><a class="headerlink" href="#viser.Conversation.title" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="viser.Conversation.messages">
+<span class="sig-name descname"><span class="pre">messages</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.14)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#viser.ChatMessage" title="viser._chat.ChatMessage"><span class="pre">ChatMessage</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#viser.Conversation.messages" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="viser.Conversation.created_at">
+<span class="sig-name descname"><span class="pre">created_at</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></em><a class="headerlink" href="#viser.Conversation.created_at" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="viser.Conversation.updated_at">
+<span class="sig-name descname"><span class="pre">updated_at</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></em><a class="headerlink" href="#viser.Conversation.updated_at" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
 <dl class="py method">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">insert_sleep</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">duration</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../../../_modules/viser/infra/_infra/#StateSerializer.insert_sleep"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
-<dd><p>Insert a sleep into the recorded file. This can be useful for
-dynamic 3D data.</p>
+<dt class="sig sig-object py" id="viser.Conversation.append">
+<span class="sig-name descname"><span class="pre">append</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">message</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#viser.ChatMessage" title="viser._chat.ChatMessage"><span class="pre">ChatMessage</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../../../_modules/viser/_chat/#Conversation.append"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#viser.Conversation.append" title="Link to this definition">¶</a></dt>
+<dd><p>Append a message, deriving the title from the first user message.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>duration</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a>)</p>
+<dd class="field-odd"><p><strong>message</strong> (<a class="reference internal" href="#viser.ChatMessage" title="viser._chat.ChatMessage"><em>ChatMessage</em></a>)</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="viser.ConversationStore">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">viser.</span></span><span class="sig-name descname"><span class="pre">ConversationStore</span></span><a class="reference internal" href="../../../_modules/viser/_chat/#ConversationStore"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#viser.ConversationStore" title="Link to this definition">¶</a></dt>
+<dd><p>Saves conversations as JSON files in a directory.</p>
+<p>Each conversation is stored as <code class="docutils literal notranslate"><span class="pre">&lt;directory&gt;/&lt;conversation_id&gt;.json</span></code>;
+attachment bytes live next to it in <code class="docutils literal notranslate"><span class="pre">&lt;directory&gt;/&lt;conversation_id&gt;/</span></code>.
+Pass <code class="docutils literal notranslate"><span class="pre">directory=None</span></code> to keep conversations in memory only.</p>
+<dl class="py property">
+<dt class="sig sig-object py" id="viser.ConversationStore.directory">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">directory</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.14)"><span class="pre">Path</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></em><a class="headerlink" href="#viser.ConversationStore.directory" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="viser.ConversationStore.list_conversations">
+<span class="sig-name descname"><span class="pre">list_conversations</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.14)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#viser.Conversation" title="viser._chat.Conversation"><span class="pre">Conversation</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../../../_modules/viser/_chat/#ConversationStore.list_conversations"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#viser.ConversationStore.list_conversations" title="Link to this definition">¶</a></dt>
+<dd><p>All saved conversations, most recently updated first.</p>
+<p>Only titles and timestamps are guaranteed to be populated; call
+<a class="reference internal" href="#viser.ConversationStore.load" title="viser.ConversationStore.load"><code class="xref py py-meth docutils literal notranslate"><span class="pre">load()</span></code></a> to get the full message list.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.14)">list</a>[<a class="reference internal" href="#viser.Conversation" title="viser._chat.Conversation"><em>Conversation</em></a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="viser.ConversationStore.load">
+<span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">conversation_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#viser.Conversation" title="viser._chat.Conversation"><span class="pre">Conversation</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../../../_modules/viser/_chat/#ConversationStore.load"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#viser.ConversationStore.load" title="Link to this definition">¶</a></dt>
+<dd><p>Load a conversation, or return None if it doesn’t exist.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>conversation_id</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>)</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#viser.Conversation" title="viser._chat.Conversation"><em>Conversation</em></a> | None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="viser.ConversationStore.save">
+<span class="sig-name descname"><span class="pre">save</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">conversation</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#viser.Conversation" title="viser._chat.Conversation"><span class="pre">Conversation</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../../../_modules/viser/_chat/#ConversationStore.save"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#viser.ConversationStore.save" title="Link to this definition">¶</a></dt>
+<dd><p>Create or overwrite a conversation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>conversation</strong> (<a class="reference internal" href="#viser.Conversation" title="viser._chat.Conversation"><em>Conversation</em></a>)</p>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
 <dd class="field-even"><p>None</p>
@@ -455,53 +601,12 @@ dynamic 3D data.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">serialize</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#bytes" title="(in Python v3.14)"><span class="pre">bytes</span></a></span></span><a class="reference internal" href="../../../_modules/viser/infra/_infra/#StateSerializer.serialize"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
-<dd><p>Serialize saved messages. Should only be called once. Our convention
-is to write this binary format to a file with a <code class="docutils literal notranslate"><span class="pre">.viser</span></code> extension,
-for example via <code class="docutils literal notranslate"><span class="pre">pathlib.Path(&quot;file.viser&quot;).write_bytes(...)</span></code>.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p>The recording as bytes.</p>
-</dd>
-<dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#bytes" title="(in Python v3.14)">bytes</a></p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">as_html</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dark_mode</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></span><a class="reference internal" href="../../../_modules/viser/infra/_infra/#StateSerializer.as_html"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
-<dd><p>Get a standalone HTML string for the serialized scene.</p>
-<p>Returns a self-contained HTML document that can be saved to a file
-or embedded in other contexts.</p>
+<dt class="sig sig-object py" id="viser.ConversationStore.delete">
+<span class="sig-name descname"><span class="pre">delete</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">conversation_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../../../_modules/viser/_chat/#ConversationStore.delete"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#viser.ConversationStore.delete" title="Link to this definition">¶</a></dt>
+<dd><p>Delete a conversation and its attachments. Unknown ids are ignored.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>dark_mode</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a>) – Use dark color scheme.</p>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>A complete HTML document as a string.</p>
-</dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)">str</a></p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">show</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">height</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">400</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dark_mode</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../../../_modules/viser/infra/_infra/#StateSerializer.show"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
-<dd><p>Display the serialized scene in a Jupyter notebook or web browser.</p>
-<p>In Jupyter notebooks/labs, displays an inline IFrame. When running as a
-script, opens the visualization in the default web browser.</p>
-<p>See also <code class="xref py py-meth docutils literal notranslate"><span class="pre">viser.ViserServer.show()</span></code>.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>height</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.14)"><em>int</em></a>) – Height of the embedded viewer in pixels.</p></li>
-<li><p><strong>dark_mode</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a>) – Use dark color scheme.</p></li>
-</ul>
+<dd class="field-odd"><p><strong>conversation_id</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>)</p>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
 <dd class="field-even"><p>None</p>
@@ -518,23 +623,23 @@ script, opens the visualization in the default web browser.</p>
       <footer>
         
         <div class="related-pages">
-          <a class="next-page" href="../../auxiliary/">
+          <a class="next-page" href="../icons/">
               <div class="page-info">
                 <div class="context">
                   <span>Next</span>
                 </div>
-                <div class="title">Auxiliary API</div>
+                <div class="title">Icons</div>
               </div>
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
             </a>
-          <a class="prev-page" href="../uplot/">
+          <a class="prev-page" href="../events/">
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
               <div class="page-info">
                 <div class="context">
                   <span>Previous</span>
                 </div>
                 
-                <div class="title">uPlot Types</div>
+                <div class="title">Events</div>
                 
               </div>
             </a>
@@ -563,8 +668,59 @@ script, opens the visualization in the default web browser.</p>
         
       </footer>
     </div>
-    <aside class="toc-drawer no-toc">
+    <aside class="toc-drawer">
       
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">Chat Conversations</a><ul>
+<li><a class="reference internal" href="#viser.ChatMessage"><code class="docutils literal notranslate"><span class="pre">ChatMessage</span></code></a><ul>
+<li><a class="reference internal" href="#viser.ChatMessage.role"><code class="docutils literal notranslate"><span class="pre">ChatMessage.role</span></code></a></li>
+<li><a class="reference internal" href="#viser.ChatMessage.text"><code class="docutils literal notranslate"><span class="pre">ChatMessage.text</span></code></a></li>
+<li><a class="reference internal" href="#viser.ChatMessage.attachments"><code class="docutils literal notranslate"><span class="pre">ChatMessage.attachments</span></code></a></li>
+<li><a class="reference internal" href="#viser.ChatMessage.message_id"><code class="docutils literal notranslate"><span class="pre">ChatMessage.message_id</span></code></a></li>
+<li><a class="reference internal" href="#viser.ChatMessage.timestamp"><code class="docutils literal notranslate"><span class="pre">ChatMessage.timestamp</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#viser.ChatAttachment"><code class="docutils literal notranslate"><span class="pre">ChatAttachment</span></code></a><ul>
+<li><a class="reference internal" href="#viser.ChatAttachment.name"><code class="docutils literal notranslate"><span class="pre">ChatAttachment.name</span></code></a></li>
+<li><a class="reference internal" href="#viser.ChatAttachment.mime_type"><code class="docutils literal notranslate"><span class="pre">ChatAttachment.mime_type</span></code></a></li>
+<li><a class="reference internal" href="#viser.ChatAttachment.data"><code class="docutils literal notranslate"><span class="pre">ChatAttachment.data</span></code></a></li>
+<li><a class="reference internal" href="#viser.ChatAttachment.thumbnail"><code class="docutils literal notranslate"><span class="pre">ChatAttachment.thumbnail</span></code></a></li>
+<li><a class="reference internal" href="#viser.ChatAttachment.is_image"><code class="docutils literal notranslate"><span class="pre">ChatAttachment.is_image</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#viser.Conversation"><code class="docutils literal notranslate"><span class="pre">Conversation</span></code></a><ul>
+<li><a class="reference internal" href="#viser.Conversation.conversation_id"><code class="docutils literal notranslate"><span class="pre">Conversation.conversation_id</span></code></a></li>
+<li><a class="reference internal" href="#viser.Conversation.title"><code class="docutils literal notranslate"><span class="pre">Conversation.title</span></code></a></li>
+<li><a class="reference internal" href="#viser.Conversation.messages"><code class="docutils literal notranslate"><span class="pre">Conversation.messages</span></code></a></li>
+<li><a class="reference internal" href="#viser.Conversation.created_at"><code class="docutils literal notranslate"><span class="pre">Conversation.created_at</span></code></a></li>
+<li><a class="reference internal" href="#viser.Conversation.updated_at"><code class="docutils literal notranslate"><span class="pre">Conversation.updated_at</span></code></a></li>
+<li><a class="reference internal" href="#viser.Conversation.append"><code class="docutils literal notranslate"><span class="pre">Conversation.append()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#viser.ConversationStore"><code class="docutils literal notranslate"><span class="pre">ConversationStore</span></code></a><ul>
+<li><a class="reference internal" href="#viser.ConversationStore.directory"><code class="docutils literal notranslate"><span class="pre">ConversationStore.directory</span></code></a></li>
+<li><a class="reference internal" href="#viser.ConversationStore.list_conversations"><code class="docutils literal notranslate"><span class="pre">ConversationStore.list_conversations()</span></code></a></li>
+<li><a class="reference internal" href="#viser.ConversationStore.load"><code class="docutils literal notranslate"><span class="pre">ConversationStore.load()</span></code></a></li>
+<li><a class="reference internal" href="#viser.ConversationStore.save"><code class="docutils literal notranslate"><span class="pre">ConversationStore.save()</span></code></a></li>
+<li><a class="reference internal" href="#viser.ConversationStore.delete"><code class="docutils literal notranslate"><span class="pre">ConversationStore.delete()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
       
       
     </aside>

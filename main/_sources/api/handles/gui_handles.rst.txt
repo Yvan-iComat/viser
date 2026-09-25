@@ -4,6 +4,8 @@
 GUI Handles
 ===========
 
+.. autoclass:: viser.ChatStream
+
 .. autoclass:: viser.CommandHandle
 
 .. autoclass:: viser.GalleryBlockHandle
@@ -11,6 +13,8 @@ GUI Handles
 .. autoclass:: viser.GuiButtonGroupHandle
 
 .. autoclass:: viser.GuiButtonHandle
+
+.. autoclass:: viser.GuiChatHandle
 
 .. autoclass:: viser.GuiCheckboxHandle
 

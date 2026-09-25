@@ -370,6 +370,7 @@
 </li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../../advanced/">Advanced API</a><input class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" role="switch" type="checkbox"/><label for="toctree-checkbox-8"><div class="visually-hidden">Toggle navigation of Advanced API</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../../advanced/events/">Events</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../advanced/chat/">Chat Conversations</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../advanced/icons/">Icons</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../advanced/theme/">Theme Configuration</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../advanced/uplot/">uPlot Types</a></li>
@@ -379,7 +380,7 @@
 <li class="toctree-l1 has-children"><a class="reference internal" href="../../auxiliary/">Auxiliary API</a><input class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" role="switch" type="checkbox"/><label for="toctree-checkbox-9"><div class="visually-hidden">Toggle navigation of Auxiliary API</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../../auxiliary/transforms/">Transforms</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../auxiliary/infrastructure/">Communication</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../auxiliary/extras/">Record3D + URDF Helpers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../auxiliary/extras/">Extras: Record3D, URDF, and Gemini File Search Helpers</a></li>
 </ul>
 </li>
 </ul>
@@ -433,6 +434,34 @@
         <article role="main" id="furo-main-content">
           <section id="gui-handles">
 <h1>GUI Handles<a class="headerlink" href="#gui-handles" title="Link to this heading">¶</a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="viser.ChatStream">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">viser.</span></span><span class="sig-name descname"><span class="pre">ChatStream</span></span><a class="reference internal" href="../../../_modules/viser/_gui_handles/#ChatStream"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#viser.ChatStream" title="Link to this definition">¶</a></dt>
+<dd><p>An assistant reply being written incrementally.</p>
+<p>Created by <a class="reference internal" href="#viser.GuiChatHandle.stream" title="viser.GuiChatHandle.stream"><code class="xref py py-meth docutils literal notranslate"><span class="pre">GuiChatHandle.stream()</span></code></a>; the text is committed to the
+conversation when the <code class="docutils literal notranslate"><span class="pre">with</span></code> block exits.</p>
+<dl class="py property">
+<dt class="sig sig-object py" id="viser.ChatStream.text">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">text</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></em><a class="headerlink" href="#viser.ChatStream.text" title="Link to this definition">¶</a></dt>
+<dd><p>Text written so far.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="viser.ChatStream.write">
+<span class="sig-name descname"><span class="pre">write</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">delta</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../../../_modules/viser/_gui_handles/#ChatStream.write"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#viser.ChatStream.write" title="Link to this definition">¶</a></dt>
+<dd><p>Append text to the reply and display it.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>delta</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>)</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
 <dl class="py class">
 <dt class="sig sig-object py" id="viser.CommandHandle">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">viser.</span></span><span class="sig-name descname"><span class="pre">CommandHandle</span></span><a class="reference internal" href="../../../_modules/viser/_gui_handles/#CommandHandle"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#viser.CommandHandle" title="Link to this definition">¶</a></dt>
@@ -799,6 +828,282 @@ the button is held. Defaults to 10.0 Hz.</p></li>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="viser.GuiButtonHandle.disabled">
 <span class="sig-name descname"><span class="pre">disabled</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></em><a class="headerlink" href="#viser.GuiButtonHandle.disabled" title="Link to this definition">¶</a></dt>
+<dd><p>Disabled state of the GUI element.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="viser.GuiChatHandle">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">viser.</span></span><span class="sig-name descname"><span class="pre">GuiChatHandle</span></span><a class="reference internal" href="../../../_modules/viser/_gui_handles/#GuiChatHandle"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#viser.GuiChatHandle" title="Link to this definition">¶</a></dt>
+<dd><p>Handle for an AI-assistant style chat.</p>
+<p>The chat only transports messages: attach a callback with
+<a class="reference internal" href="#viser.GuiChatHandle.on_submit" title="viser.GuiChatHandle.on_submit"><code class="xref py py-meth docutils literal notranslate"><span class="pre">on_submit()</span></code></a> to generate replies, using <a class="reference internal" href="#viser.GuiChatHandle.add_message" title="viser.GuiChatHandle.add_message"><code class="xref py py-meth docutils literal notranslate"><span class="pre">add_message()</span></code></a> or
+<a class="reference internal" href="#viser.GuiChatHandle.stream" title="viser.GuiChatHandle.stream"><code class="xref py py-meth docutils literal notranslate"><span class="pre">stream()</span></code></a>. Conversations are persisted through a
+<a class="reference internal" href="../../advanced/chat/#viser.ConversationStore" title="viser.ConversationStore"><code class="xref py py-class docutils literal notranslate"><span class="pre">ConversationStore</span></code></a>, and can be browsed from the history drawer.</p>
+<dl class="py property">
+<dt class="sig sig-object py" id="viser.GuiChatHandle.store">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">store</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="../../advanced/chat/#viser.ConversationStore" title="viser._chat.ConversationStore"><span class="pre">ConversationStore</span></a></em><a class="headerlink" href="#viser.GuiChatHandle.store" title="Link to this definition">¶</a></dt>
+<dd><p>Store used to persist conversations.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="viser.GuiChatHandle.conversation">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">conversation</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="../../advanced/chat/#viser.Conversation" title="viser._chat.Conversation"><span class="pre">Conversation</span></a></em><a class="headerlink" href="#viser.GuiChatHandle.conversation" title="Link to this definition">¶</a></dt>
+<dd><p>Conversation currently displayed.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="viser.GuiChatHandle.add_message">
+<span class="sig-name descname"><span class="pre">add_message</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">role</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Literal" title="(in Python v3.14)"><span class="pre">Literal</span></a><span class="p"><span class="pre">[</span></span><span class="s"><span class="pre">'user'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'assistant'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'system'</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">text</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">attachments</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Sequence" title="(in Python v3.14)"><span class="pre">Sequence</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="../../advanced/chat/#viser.ChatAttachment" title="viser._chat.ChatAttachment"><span class="pre">ChatAttachment</span></a><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">()</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="../../advanced/chat/#viser.ChatMessage" title="viser._chat.ChatMessage"><span class="pre">ChatMessage</span></a></span></span><a class="reference internal" href="../../../_modules/viser/_gui_handles/#GuiChatHandle.add_message"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#viser.GuiChatHandle.add_message" title="Link to this definition">¶</a></dt>
+<dd><p>Append a message to the active conversation and save it.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>role</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Literal" title="(in Python v3.14)"><em>Literal</em></a><em>[</em><em>'user'</em><em>, </em><em>'assistant'</em><em>, </em><em>'system'</em><em>]</em>) – <code class="docutils literal notranslate"><span class="pre">&quot;assistant&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;user&quot;</span></code>, or <code class="docutils literal notranslate"><span class="pre">&quot;system&quot;</span></code>.</p></li>
+<li><p><strong>text</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – Message text. Assistant and system messages render as markdown.</p></li>
+<li><p><strong>attachments</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Sequence" title="(in Python v3.14)"><em>Sequence</em></a><em>[</em><a class="reference internal" href="../../advanced/chat/#viser.ChatAttachment" title="viser._chat.ChatAttachment"><em>ChatAttachment</em></a><em>]</em>) – Optional files attached to the message.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The appended message.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="../../advanced/chat/#viser.ChatMessage" title="viser._chat.ChatMessage"><em>ChatMessage</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="viser.GuiChatHandle.stream">
+<span class="sig-name descname"><span class="pre">stream</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">role</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Literal" title="(in Python v3.14)"><span class="pre">Literal</span></a><span class="p"><span class="pre">[</span></span><span class="s"><span class="pre">'user'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'assistant'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'system'</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'assistant'</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Iterator" title="(in Python v3.14)"><span class="pre">Iterator</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#viser.ChatStream" title="viser._gui_handles.ChatStream"><span class="pre">ChatStream</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../../../_modules/viser/_gui_handles/#GuiChatHandle.stream"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#viser.GuiChatHandle.stream" title="Link to this definition">¶</a></dt>
+<dd><p>Stream a reply into the chat, e.g. token by token from an LLM.</p>
+<p>The text is displayed as it is written, and appended to the active
+conversation when the block exits (also on error, if any text was
+written).</p>
+<p class="rubric">Example</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="k">with</span> <span class="n">chat</span><span class="o">.</span><span class="n">stream</span><span class="p">()</span> <span class="k">as</span> <span class="n">reply</span><span class="p">:</span>
+<span class="gp">&gt;&gt;&gt; </span>    <span class="k">for</span> <span class="n">token</span> <span class="ow">in</span> <span class="n">llm_tokens</span><span class="p">():</span>
+<span class="gp">&gt;&gt;&gt; </span>        <span class="n">reply</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">token</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>role</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Literal" title="(in Python v3.14)"><em>Literal</em></a><em>[</em><em>'user'</em><em>, </em><em>'assistant'</em><em>, </em><em>'system'</em><em>]</em>)</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Iterator" title="(in Python v3.14)"><em>Iterator</em></a>[<a class="reference internal" href="#viser.ChatStream" title="viser._gui_handles.ChatStream"><em>ChatStream</em></a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="viser.GuiChatHandle.new_conversation">
+<span class="sig-name descname"><span class="pre">new_conversation</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="../../advanced/chat/#viser.Conversation" title="viser._chat.Conversation"><span class="pre">Conversation</span></a></span></span><a class="reference internal" href="../../../_modules/viser/_gui_handles/#GuiChatHandle.new_conversation"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#viser.GuiChatHandle.new_conversation" title="Link to this definition">¶</a></dt>
+<dd><p>Start a new, empty conversation and display it.</p>
+<p>The conversation is only saved once it has a message.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="../../advanced/chat/#viser.Conversation" title="viser._chat.Conversation"><em>Conversation</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="viser.GuiChatHandle.open_conversation">
+<span class="sig-name descname"><span class="pre">open_conversation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">conversation_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="../../advanced/chat/#viser.Conversation" title="viser._chat.Conversation"><span class="pre">Conversation</span></a></span></span><a class="reference internal" href="../../../_modules/viser/_gui_handles/#GuiChatHandle.open_conversation"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#viser.GuiChatHandle.open_conversation" title="Link to this definition">¶</a></dt>
+<dd><p>Load a saved conversation and display it.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#KeyError" title="(in Python v3.14)"><strong>KeyError</strong></a> – If no conversation with this id exists.</p>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>conversation_id</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>)</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="../../advanced/chat/#viser.Conversation" title="viser._chat.Conversation"><em>Conversation</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="viser.GuiChatHandle.delete_conversation">
+<span class="sig-name descname"><span class="pre">delete_conversation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">conversation_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../../../_modules/viser/_gui_handles/#GuiChatHandle.delete_conversation"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#viser.GuiChatHandle.delete_conversation" title="Link to this definition">¶</a></dt>
+<dd><p>Delete a saved conversation. If it is displayed, a new one is started.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>conversation_id</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>)</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="viser.GuiChatHandle.rename_conversation">
+<span class="sig-name descname"><span class="pre">rename_conversation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">conversation_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">title</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../../../_modules/viser/_gui_handles/#GuiChatHandle.rename_conversation"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#viser.GuiChatHandle.rename_conversation" title="Link to this definition">¶</a></dt>
+<dd><p>Change the title of a saved conversation. Unknown ids are ignored.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>conversation_id</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>)</p></li>
+<li><p><strong>title</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="viser.GuiChatHandle.on_submit">
+<span class="sig-name descname"><span class="pre">on_submit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">func</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.14)"><span class="pre">Callable</span></a><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="../../advanced/events/#viser.ChatSubmitEvent" title="viser._gui_handles.ChatSubmitEvent"><span class="pre">ChatSubmitEvent</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">NoneOrCoroutine</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.14)"><span class="pre">Callable</span></a><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="../../advanced/events/#viser.ChatSubmitEvent" title="viser._gui_handles.ChatSubmitEvent"><span class="pre">ChatSubmitEvent</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">NoneOrCoroutine</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../../../_modules/viser/_gui_handles/#GuiChatHandle.on_submit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#viser.GuiChatHandle.on_submit" title="Link to this definition">¶</a></dt>
+<dd><p>Attach a callback for when the user submits a message.</p>
+<p>By the time the callback runs, the user’s message has been appended to
+<code class="docutils literal notranslate"><span class="pre">event.conversation</span></code> and displayed. The chat shows a busy state
+(and blocks new submissions) until all callbacks return.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<ul class="simple">
+<li><p>If <cite>func</cite> is a regular function (defined with <cite>def</cite>), it will be executed in a thread pool.</p></li>
+<li><p>If <cite>func</cite> is an async function (defined with <cite>async def</cite>), it will be executed in the event loop.</p></li>
+</ul>
+</div>
+<p class="rubric">Example</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="nd">@chat</span><span class="o">.</span><span class="n">on_submit</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">def</span><span class="w"> </span><span class="nf">_</span><span class="p">(</span><span class="n">event</span><span class="p">:</span> <span class="n">viser</span><span class="o">.</span><span class="n">ChatSubmitEvent</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="gp">&gt;&gt;&gt; </span>    <span class="n">event</span><span class="o">.</span><span class="n">chat</span><span class="o">.</span><span class="n">add_message</span><span class="p">(</span><span class="s2">"assistant"</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"You said: </span><span class="si">{</span><span class="n">event</span><span class="o">.</span><span class="n">message</span><span class="o">.</span><span class="n">text</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>func</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.14)"><em>Callable</em></a><em>[</em><em>[</em><a class="reference internal" href="../../advanced/events/#viser.ChatSubmitEvent" title="viser._gui_handles.ChatSubmitEvent"><em>ChatSubmitEvent</em></a><em>]</em><em>, </em><em>NoneOrCoroutine</em><em>]</em>)</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.14)"><em>Callable</em></a>[[<a class="reference internal" href="../../advanced/events/#viser.ChatSubmitEvent" title="viser._gui_handles.ChatSubmitEvent"><em>ChatSubmitEvent</em></a>], <em>NoneOrCoroutine</em>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="viser.GuiChatHandle.remove">
+<span class="sig-name descname"><span class="pre">remove</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span></span><a class="headerlink" href="#viser.GuiChatHandle.remove" title="Link to this definition">¶</a></dt>
+<dd><p>Permanently remove this GUI element from the visualizer.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="viser.GuiChatHandle.greeting">
+<span class="sig-name descname"><span class="pre">greeting</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></em><a class="headerlink" href="#viser.GuiChatHandle.greeting" title="Link to this definition">¶</a></dt>
+<dd><p>Heading shown while the conversation is empty.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="viser.GuiChatHandle.subtitle">
+<span class="sig-name descname"><span class="pre">subtitle</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></em><a class="headerlink" href="#viser.GuiChatHandle.subtitle" title="Link to this definition">¶</a></dt>
+<dd><p>Text shown below the greeting while the conversation is empty.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="viser.GuiChatHandle.suggestions">
+<span class="sig-name descname"><span class="pre">suggestions</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#viser.GuiChatHandle.suggestions" title="Link to this definition">¶</a></dt>
+<dd><p>Suggested prompts shown as chips while the conversation is empty.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="viser.GuiChatHandle.disclaimer">
+<span class="sig-name descname"><span class="pre">disclaimer</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></em><a class="headerlink" href="#viser.GuiChatHandle.disclaimer" title="Link to this definition">¶</a></dt>
+<dd><p>Optional notice shown above the input while the conversation is empty.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="viser.GuiChatHandle.placeholder">
+<span class="sig-name descname"><span class="pre">placeholder</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></em><a class="headerlink" href="#viser.GuiChatHandle.placeholder" title="Link to this definition">¶</a></dt>
+<dd><p>Placeholder text for the input box.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="viser.GuiChatHandle.height">
+<span class="sig-name descname"><span class="pre">height</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></em><a class="headerlink" href="#viser.GuiChatHandle.height" title="Link to this definition">¶</a></dt>
+<dd><p>Height of the chat widget in pixels when its container sizes to its
+content. In a fixed-height container, the chat fills it instead.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="viser.GuiChatHandle.messages">
+<span class="sig-name descname"><span class="pre">messages</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">GuiChatEntry</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#viser.GuiChatHandle.messages" title="Link to this definition">¶</a></dt>
+<dd><p>Messages of the active conversation, oldest first.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="viser.GuiChatHandle.streaming_text">
+<span class="sig-name descname"><span class="pre">streaming_text</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></em><a class="headerlink" href="#viser.GuiChatHandle.streaming_text" title="Link to this definition">¶</a></dt>
+<dd><p>Text of the assistant reply currently being streamed, or None.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="viser.GuiChatHandle.busy">
+<span class="sig-name descname"><span class="pre">busy</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></em><a class="headerlink" href="#viser.GuiChatHandle.busy" title="Link to this definition">¶</a></dt>
+<dd><p>True while a reply is being generated; disables submission.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="viser.GuiChatHandle.conversations">
+<span class="sig-name descname"><span class="pre">conversations</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">GuiChatConversationInfo</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#viser.GuiChatHandle.conversations" title="Link to this definition">¶</a></dt>
+<dd><p>Saved conversations, most recently updated first.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="viser.GuiChatHandle.active_conversation_id">
+<span class="sig-name descname"><span class="pre">active_conversation_id</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></em><a class="headerlink" href="#viser.GuiChatHandle.active_conversation_id" title="Link to this definition">¶</a></dt>
+<dd><p>Identifier of the conversation currently displayed.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="viser.GuiChatHandle.models">
+<span class="sig-name descname"><span class="pre">models</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#viser.GuiChatHandle.models" title="Link to this definition">¶</a></dt>
+<dd><p>AI models the user can choose from. The selector is hidden when empty.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="viser.GuiChatHandle.model">
+<span class="sig-name descname"><span class="pre">model</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></em><a class="headerlink" href="#viser.GuiChatHandle.model" title="Link to this definition">¶</a></dt>
+<dd><p>Currently selected model; one of <cite>models</cite>, or empty if there are none.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="viser.GuiChatHandle.order">
+<span class="sig-name descname"><span class="pre">order</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></em><a class="headerlink" href="#viser.GuiChatHandle.order" title="Link to this definition">¶</a></dt>
+<dd><p>Order value for arranging GUI elements.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="viser.GuiChatHandle.label">
+<span class="sig-name descname"><span class="pre">label</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></em><a class="headerlink" href="#viser.GuiChatHandle.label" title="Link to this definition">¶</a></dt>
+<dd><p>Label text for the GUI element.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="viser.GuiChatHandle.hint">
+<span class="sig-name descname"><span class="pre">hint</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></em><a class="headerlink" href="#viser.GuiChatHandle.hint" title="Link to this definition">¶</a></dt>
+<dd><p>Optional hint text for the GUI element.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="viser.GuiChatHandle.visible">
+<span class="sig-name descname"><span class="pre">visible</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></em><a class="headerlink" href="#viser.GuiChatHandle.visible" title="Link to this definition">¶</a></dt>
+<dd><p>Visibility state of the GUI element.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="viser.GuiChatHandle.disabled">
+<span class="sig-name descname"><span class="pre">disabled</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></em><a class="headerlink" href="#viser.GuiChatHandle.disabled" title="Link to this definition">¶</a></dt>
 <dd><p>Disabled state of the GUI element.</p>
 </dd></dl>
 
@@ -1692,12 +1997,6 @@ synchronized between all connected clients. When a GUI element is added via
 <dt class="sig sig-object py" id="viser.GuiMarkdownHandle">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">viser.</span></span><span class="sig-name descname"><span class="pre">GuiMarkdownHandle</span></span><a class="reference internal" href="../../../_modules/viser/_gui_handles/#GuiMarkdownHandle"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#viser.GuiMarkdownHandle" title="Link to this definition">¶</a></dt>
 <dd><p>Handling for updating and removing markdown elements.</p>
-<dl class="py property">
-<dt class="sig sig-object py" id="viser.GuiMarkdownHandle.content">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">content</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></em><a class="headerlink" href="#viser.GuiMarkdownHandle.content" title="Link to this definition">¶</a></dt>
-<dd><p>Current content of this markdown element. Synchronized automatically when assigned.</p>
-</dd></dl>
-
 <dl class="py method">
 <dt class="sig sig-object py" id="viser.GuiMarkdownHandle.remove">
 <span class="sig-name descname"><span class="pre">remove</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span></span><a class="headerlink" href="#viser.GuiMarkdownHandle.remove" title="Link to this definition">¶</a></dt>
@@ -1719,6 +2018,12 @@ synchronized between all connected clients. When a GUI element is added via
 <dt class="sig sig-object py" id="viser.GuiMarkdownHandle.visible">
 <span class="sig-name descname"><span class="pre">visible</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></em><a class="headerlink" href="#viser.GuiMarkdownHandle.visible" title="Link to this definition">¶</a></dt>
 <dd><p>Visibility state of the markdown element.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="viser.GuiMarkdownHandle.content">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">content</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></em><a class="headerlink" href="#viser.GuiMarkdownHandle.content" title="Link to this definition">¶</a></dt>
+<dd><p>Current content of this markdown element. Synchronized automatically when assigned.</p>
 </dd></dl>
 
 </dd></dl>
@@ -3480,6 +3785,11 @@ errors defaults to ‘strict’.</p>
           <div class="toc-tree">
             <ul>
 <li><a class="reference internal" href="#">GUI Handles</a><ul>
+<li><a class="reference internal" href="#viser.ChatStream"><code class="docutils literal notranslate"><span class="pre">ChatStream</span></code></a><ul>
+<li><a class="reference internal" href="#viser.ChatStream.text"><code class="docutils literal notranslate"><span class="pre">ChatStream.text</span></code></a></li>
+<li><a class="reference internal" href="#viser.ChatStream.write"><code class="docutils literal notranslate"><span class="pre">ChatStream.write()</span></code></a></li>
+</ul>
+</li>
 <li><a class="reference internal" href="#viser.CommandHandle"><code class="docutils literal notranslate"><span class="pre">CommandHandle</span></code></a><ul>
 <li><a class="reference internal" href="#viser.CommandHandle.label"><code class="docutils literal notranslate"><span class="pre">CommandHandle.label</span></code></a></li>
 <li><a class="reference internal" href="#viser.CommandHandle.description"><code class="docutils literal notranslate"><span class="pre">CommandHandle.description</span></code></a></li>
@@ -3527,6 +3837,37 @@ errors defaults to ‘strict’.</p>
 <li><a class="reference internal" href="#viser.GuiButtonHandle.hint"><code class="docutils literal notranslate"><span class="pre">GuiButtonHandle.hint</span></code></a></li>
 <li><a class="reference internal" href="#viser.GuiButtonHandle.visible"><code class="docutils literal notranslate"><span class="pre">GuiButtonHandle.visible</span></code></a></li>
 <li><a class="reference internal" href="#viser.GuiButtonHandle.disabled"><code class="docutils literal notranslate"><span class="pre">GuiButtonHandle.disabled</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#viser.GuiChatHandle"><code class="docutils literal notranslate"><span class="pre">GuiChatHandle</span></code></a><ul>
+<li><a class="reference internal" href="#viser.GuiChatHandle.store"><code class="docutils literal notranslate"><span class="pre">GuiChatHandle.store</span></code></a></li>
+<li><a class="reference internal" href="#viser.GuiChatHandle.conversation"><code class="docutils literal notranslate"><span class="pre">GuiChatHandle.conversation</span></code></a></li>
+<li><a class="reference internal" href="#viser.GuiChatHandle.add_message"><code class="docutils literal notranslate"><span class="pre">GuiChatHandle.add_message()</span></code></a></li>
+<li><a class="reference internal" href="#viser.GuiChatHandle.stream"><code class="docutils literal notranslate"><span class="pre">GuiChatHandle.stream()</span></code></a></li>
+<li><a class="reference internal" href="#viser.GuiChatHandle.new_conversation"><code class="docutils literal notranslate"><span class="pre">GuiChatHandle.new_conversation()</span></code></a></li>
+<li><a class="reference internal" href="#viser.GuiChatHandle.open_conversation"><code class="docutils literal notranslate"><span class="pre">GuiChatHandle.open_conversation()</span></code></a></li>
+<li><a class="reference internal" href="#viser.GuiChatHandle.delete_conversation"><code class="docutils literal notranslate"><span class="pre">GuiChatHandle.delete_conversation()</span></code></a></li>
+<li><a class="reference internal" href="#viser.GuiChatHandle.rename_conversation"><code class="docutils literal notranslate"><span class="pre">GuiChatHandle.rename_conversation()</span></code></a></li>
+<li><a class="reference internal" href="#viser.GuiChatHandle.on_submit"><code class="docutils literal notranslate"><span class="pre">GuiChatHandle.on_submit()</span></code></a></li>
+<li><a class="reference internal" href="#viser.GuiChatHandle.remove"><code class="docutils literal notranslate"><span class="pre">GuiChatHandle.remove()</span></code></a></li>
+<li><a class="reference internal" href="#viser.GuiChatHandle.greeting"><code class="docutils literal notranslate"><span class="pre">GuiChatHandle.greeting</span></code></a></li>
+<li><a class="reference internal" href="#viser.GuiChatHandle.subtitle"><code class="docutils literal notranslate"><span class="pre">GuiChatHandle.subtitle</span></code></a></li>
+<li><a class="reference internal" href="#viser.GuiChatHandle.suggestions"><code class="docutils literal notranslate"><span class="pre">GuiChatHandle.suggestions</span></code></a></li>
+<li><a class="reference internal" href="#viser.GuiChatHandle.disclaimer"><code class="docutils literal notranslate"><span class="pre">GuiChatHandle.disclaimer</span></code></a></li>
+<li><a class="reference internal" href="#viser.GuiChatHandle.placeholder"><code class="docutils literal notranslate"><span class="pre">GuiChatHandle.placeholder</span></code></a></li>
+<li><a class="reference internal" href="#viser.GuiChatHandle.height"><code class="docutils literal notranslate"><span class="pre">GuiChatHandle.height</span></code></a></li>
+<li><a class="reference internal" href="#viser.GuiChatHandle.messages"><code class="docutils literal notranslate"><span class="pre">GuiChatHandle.messages</span></code></a></li>
+<li><a class="reference internal" href="#viser.GuiChatHandle.streaming_text"><code class="docutils literal notranslate"><span class="pre">GuiChatHandle.streaming_text</span></code></a></li>
+<li><a class="reference internal" href="#viser.GuiChatHandle.busy"><code class="docutils literal notranslate"><span class="pre">GuiChatHandle.busy</span></code></a></li>
+<li><a class="reference internal" href="#viser.GuiChatHandle.conversations"><code class="docutils literal notranslate"><span class="pre">GuiChatHandle.conversations</span></code></a></li>
+<li><a class="reference internal" href="#viser.GuiChatHandle.active_conversation_id"><code class="docutils literal notranslate"><span class="pre">GuiChatHandle.active_conversation_id</span></code></a></li>
+<li><a class="reference internal" href="#viser.GuiChatHandle.models"><code class="docutils literal notranslate"><span class="pre">GuiChatHandle.models</span></code></a></li>
+<li><a class="reference internal" href="#viser.GuiChatHandle.model"><code class="docutils literal notranslate"><span class="pre">GuiChatHandle.model</span></code></a></li>
+<li><a class="reference internal" href="#viser.GuiChatHandle.order"><code class="docutils literal notranslate"><span class="pre">GuiChatHandle.order</span></code></a></li>
+<li><a class="reference internal" href="#viser.GuiChatHandle.label"><code class="docutils literal notranslate"><span class="pre">GuiChatHandle.label</span></code></a></li>
+<li><a class="reference internal" href="#viser.GuiChatHandle.hint"><code class="docutils literal notranslate"><span class="pre">GuiChatHandle.hint</span></code></a></li>
+<li><a class="reference internal" href="#viser.GuiChatHandle.visible"><code class="docutils literal notranslate"><span class="pre">GuiChatHandle.visible</span></code></a></li>
+<li><a class="reference internal" href="#viser.GuiChatHandle.disabled"><code class="docutils literal notranslate"><span class="pre">GuiChatHandle.disabled</span></code></a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#viser.GuiCheckboxHandle"><code class="docutils literal notranslate"><span class="pre">GuiCheckboxHandle</span></code></a><ul>
@@ -3655,10 +3996,10 @@ errors defaults to ‘strict’.</p>
 </ul>
 </li>
 <li><a class="reference internal" href="#viser.GuiMarkdownHandle"><code class="docutils literal notranslate"><span class="pre">GuiMarkdownHandle</span></code></a><ul>
-<li><a class="reference internal" href="#viser.GuiMarkdownHandle.content"><code class="docutils literal notranslate"><span class="pre">GuiMarkdownHandle.content</span></code></a></li>
 <li><a class="reference internal" href="#viser.GuiMarkdownHandle.remove"><code class="docutils literal notranslate"><span class="pre">GuiMarkdownHandle.remove()</span></code></a></li>
 <li><a class="reference internal" href="#viser.GuiMarkdownHandle.order"><code class="docutils literal notranslate"><span class="pre">GuiMarkdownHandle.order</span></code></a></li>
 <li><a class="reference internal" href="#viser.GuiMarkdownHandle.visible"><code class="docutils literal notranslate"><span class="pre">GuiMarkdownHandle.visible</span></code></a></li>
+<li><a class="reference internal" href="#viser.GuiMarkdownHandle.content"><code class="docutils literal notranslate"><span class="pre">GuiMarkdownHandle.content</span></code></a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#viser.GuiMultiSliderHandle"><code class="docutils literal notranslate"><span class="pre">GuiMultiSliderHandle</span></code></a><ul>

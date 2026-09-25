@@ -368,6 +368,7 @@
 </li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../api/advanced/">Advanced API</a><input class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" role="switch" type="checkbox"/><label for="toctree-checkbox-8"><div class="visually-hidden">Toggle navigation of Advanced API</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../api/advanced/events/">Events</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/advanced/chat/">Chat Conversations</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../api/advanced/icons/">Icons</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../api/advanced/theme/">Theme Configuration</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../api/advanced/uplot/">uPlot Types</a></li>
@@ -377,7 +378,7 @@
 <li class="toctree-l1 has-children"><a class="reference internal" href="../api/auxiliary/">Auxiliary API</a><input class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" role="switch" type="checkbox"/><label for="toctree-checkbox-9"><div class="visually-hidden">Toggle navigation of Auxiliary API</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../api/auxiliary/transforms/">Transforms</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../api/auxiliary/infrastructure/">Communication</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../api/auxiliary/extras/">Record3D + URDF Helpers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/auxiliary/extras/">Extras: Record3D, URDF, and Gemini File Search Helpers</a></li>
 </ul>
 </li>
 </ul>
@@ -490,6 +491,8 @@
 </li>
         <li><a href="../api/handles/scene_handles/#viser.TransformControlsHandle.active_axes">active_axes (viser.TransformControlsHandle attribute)</a>
 </li>
+        <li><a href="../api/handles/gui_handles/#viser.GuiChatHandle.active_conversation_id">active_conversation_id (viser.GuiChatHandle attribute)</a>
+</li>
         <li><a href="../api/advanced/icons/#viser.Icon.ACTIVITY">ACTIVITY (viser.Icon attribute)</a>
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.ACTIVITY_HEARTBEAT">ACTIVITY_HEARTBEAT (viser.Icon attribute)</a>
@@ -529,6 +532,8 @@
         <li><a href="../api/core/gui_api/#viser.GuiApi.add_button_group">add_button_group() (viser.GuiApi method)</a>
 </li>
         <li><a href="../api/core/scene_api/#viser.SceneApi.add_camera_frustum">add_camera_frustum() (viser.SceneApi method)</a>
+</li>
+        <li><a href="../api/core/gui_api/#viser.GuiApi.add_chat">add_chat() (viser.GuiApi method)</a>
 </li>
         <li><a href="../api/core/gui_api/#viser.GuiApi.add_checkbox">add_checkbox() (viser.GuiApi method)</a>
 </li>
@@ -591,6 +596,8 @@
         <li><a href="../api/core/scene_api/#viser.SceneApi.add_mesh_skinned">add_mesh_skinned() (viser.SceneApi method)</a>
 </li>
         <li><a href="../api/core/scene_api/#viser.SceneApi.add_mesh_trimesh">add_mesh_trimesh() (viser.SceneApi method)</a>
+</li>
+        <li><a href="../api/handles/gui_handles/#viser.GuiChatHandle.add_message">add_message() (viser.GuiChatHandle method)</a>
 </li>
         <li><a href="../api/core/gui_api/#viser.GuiApi.add_modal">add_modal() (viser.GuiApi method)</a>
 </li>
@@ -892,6 +899,8 @@
 </li>
         <li><a href="../api/auxiliary/infrastructure/#viser.infra.TypeScriptAnnotationOverride.annotation">annotation (viser.infra.TypeScriptAnnotationOverride attribute)</a>
 </li>
+        <li><a href="../api/auxiliary/extras/#viser.extras.GeminiFileSearch.answer">answer() (viser.extras.GeminiFileSearch method)</a>
+</li>
         <li><a href="../api/advanced/icons/#viser.Icon.ANTENNA">ANTENNA (viser.Icon attribute)</a>
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.ANTENNA_BARS_1">ANTENNA_BARS_1 (viser.Icon attribute)</a>
@@ -923,6 +932,8 @@
         <li><a href="../api/advanced/icons/#viser.Icon.APP_WINDOW">APP_WINDOW (viser.Icon attribute)</a>
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.APP_WINDOW_FILLED">APP_WINDOW_FILLED (viser.Icon attribute)</a>
+</li>
+        <li><a href="../api/advanced/chat/#viser.Conversation.append">append() (viser.Conversation method)</a>
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.APPLE">APPLE (viser.Icon attribute)</a>
 </li>
@@ -962,12 +973,12 @@
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.ARMCHAIR_OFF">ARMCHAIR_OFF (viser.Icon attribute)</a>
 </li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="../api/advanced/icons/#viser.Icon.ARROW_AUTOFIT_CONTENT">ARROW_AUTOFIT_CONTENT (viser.Icon attribute)</a>
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.ARROW_AUTOFIT_CONTENT_FILLED">ARROW_AUTOFIT_CONTENT_FILLED (viser.Icon attribute)</a>
 </li>
-    </ul></td>
-    <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="../api/advanced/icons/#viser.Icon.ARROW_AUTOFIT_DOWN">ARROW_AUTOFIT_DOWN (viser.Icon attribute)</a>
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.ARROW_AUTOFIT_HEIGHT">ARROW_AUTOFIT_HEIGHT (viser.Icon attribute)</a>
@@ -1420,6 +1431,8 @@
           <li><a href="../api/core/server/#viser.ViserServer.atomic">(viser.ViserServer method)</a>
 </li>
         </ul></li>
+        <li><a href="../api/advanced/chat/#viser.ChatMessage.attachments">attachments (viser.ChatMessage attribute)</a>
+</li>
         <li><a href="../api/advanced/icons/#viser.Icon.AUGMENTED_REALITY">AUGMENTED_REALITY (viser.Icon attribute)</a>
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.AUGMENTED_REALITY_2">AUGMENTED_REALITY_2 (viser.Icon attribute)</a>
@@ -2164,10 +2177,10 @@
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.BRAND_CUPRA">BRAND_CUPRA (viser.Icon attribute)</a>
 </li>
-    </ul></td>
-    <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="../api/advanced/icons/#viser.Icon.BRAND_CYPRESS">BRAND_CYPRESS (viser.Icon attribute)</a>
 </li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="../api/advanced/icons/#viser.Icon.BRAND_D3">BRAND_D3 (viser.Icon attribute)</a>
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.BRAND_DAYS_COUNTER">BRAND_DAYS_COUNTER (viser.Icon attribute)</a>
@@ -2838,6 +2851,8 @@
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.BUSINESSPLAN">BUSINESSPLAN (viser.Icon attribute)</a>
 </li>
+        <li><a href="../api/handles/gui_handles/#viser.GuiChatHandle.busy">busy (viser.GuiChatHandle attribute)</a>
+</li>
         <li><a href="../api/advanced/icons/#viser.Icon.BUTTERFLY">BUTTERFLY (viser.Icon attribute)</a>
 </li>
         <li><a href="../api/advanced/events/#viser.SceneNodeDragEvent.button">button (viser.SceneNodeDragEvent attribute)</a>
@@ -3204,6 +3219,16 @@
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.CHART_TREEMAP">CHART_TREEMAP (viser.Icon attribute)</a>
 </li>
+        <li><a href="../api/advanced/events/#viser.ChatSubmitEvent.chat">chat (viser.ChatSubmitEvent attribute)</a>
+</li>
+        <li><a href="../api/advanced/chat/#viser.ChatAttachment">ChatAttachment (class in viser)</a>
+</li>
+        <li><a href="../api/advanced/chat/#viser.ChatMessage">ChatMessage (class in viser)</a>
+</li>
+        <li><a href="../api/handles/gui_handles/#viser.ChatStream">ChatStream (class in viser)</a>
+</li>
+        <li><a href="../api/advanced/events/#viser.ChatSubmitEvent">ChatSubmitEvent (class in viser)</a>
+</li>
         <li><a href="../api/advanced/icons/#viser.Icon.CHECK">CHECK (viser.Icon attribute)</a>
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.CHECKBOX">CHECKBOX (viser.Icon attribute)</a>
@@ -3553,6 +3578,8 @@
         <li><a href="../api/handles/camera_handles/#viser.CameraHandle.client">client (viser.CameraHandle property)</a>
 
         <ul>
+          <li><a href="../api/advanced/events/#viser.ChatSubmitEvent.client">(viser.ChatSubmitEvent attribute)</a>
+</li>
           <li><a href="../api/advanced/events/#viser.CommandEvent.client">(viser.CommandEvent attribute)</a>
 </li>
           <li><a href="../api/advanced/events/#viser.GalleryBlockEvent.client">(viser.GalleryBlockEvent attribute)</a>
@@ -3574,9 +3601,11 @@
         </ul></li>
     </ul></td>
     <td style="width: 33%; vertical-align: top;"><ul>
-        <li><a href="../api/handles/client_handles/#viser.ClientHandle.client_id">client_id (viser.ClientHandle attribute)</a>
+        <li><a href="../api/advanced/events/#viser.ChatSubmitEvent.client_id">client_id (viser.ChatSubmitEvent attribute)</a>
 
         <ul>
+          <li><a href="../api/handles/client_handles/#viser.ClientHandle.client_id">(viser.ClientHandle attribute)</a>
+</li>
           <li><a href="../api/advanced/events/#viser.CommandEvent.client_id">(viser.CommandEvent attribute)</a>
 </li>
           <li><a href="../api/advanced/events/#viser.GalleryBlockEvent.client_id">(viser.GalleryBlockEvent attribute)</a>
@@ -3942,6 +3971,8 @@
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.CONFUCIUS">CONFUCIUS (viser.Icon attribute)</a>
 </li>
+        <li><a href="../api/auxiliary/extras/#viser.extras.GeminiFileSearch.connect">connect() (viser.extras.GeminiFileSearch method)</a>
+</li>
         <li><a href="../api/advanced/icons/#viser.Icon.CONTAINER">CONTAINER (viser.Icon attribute)</a>
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.CONTAINER_OFF">CONTAINER_OFF (viser.Icon attribute)</a>
@@ -3965,6 +3996,20 @@
         <li><a href="../api/advanced/icons/#viser.Icon.CONTRAST_OFF">CONTRAST_OFF (viser.Icon attribute)</a>
 </li>
         <li><a href="../api/handles/scene_handles/#viser.SplineCubicBezierHandle.control_points">control_points (viser.SplineCubicBezierHandle attribute)</a>
+</li>
+        <li><a href="../api/advanced/chat/#viser.Conversation">Conversation (class in viser)</a>
+</li>
+        <li><a href="../api/advanced/events/#viser.ChatSubmitEvent.conversation">conversation (viser.ChatSubmitEvent attribute)</a>
+
+        <ul>
+          <li><a href="../api/handles/gui_handles/#viser.GuiChatHandle.conversation">(viser.GuiChatHandle property)</a>
+</li>
+        </ul></li>
+        <li><a href="../api/advanced/chat/#viser.Conversation.conversation_id">conversation_id (viser.Conversation attribute)</a>
+</li>
+        <li><a href="../api/handles/gui_handles/#viser.GuiChatHandle.conversations">conversations (viser.GuiChatHandle attribute)</a>
+</li>
+        <li><a href="../api/advanced/chat/#viser.ConversationStore">ConversationStore (class in viser)</a>
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.COOKER">COOKER (viser.Icon attribute)</a>
 </li>
@@ -4033,6 +4078,8 @@
         <li><a href="../api/advanced/icons/#viser.Icon.CRANE">CRANE (viser.Icon attribute)</a>
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.CRANE_OFF">CRANE_OFF (viser.Icon attribute)</a>
+</li>
+        <li><a href="../api/advanced/chat/#viser.Conversation.created_at">created_at (viser.Conversation attribute)</a>
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.CREATIVE_COMMONS">CREATIVE_COMMONS (viser.Icon attribute)</a>
 </li>
@@ -4288,8 +4335,12 @@
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.DASHBOARD_OFF">DASHBOARD_OFF (viser.Icon attribute)</a>
 </li>
-        <li><a href="../api/handles/gui_handles/#viser.GuiUplotHandle.data">data (viser.GuiUplotHandle attribute)</a>
+        <li><a href="../api/advanced/chat/#viser.ChatAttachment.data">data (viser.ChatAttachment attribute)</a>
+
+        <ul>
+          <li><a href="../api/handles/gui_handles/#viser.GuiUplotHandle.data">(viser.GuiUplotHandle attribute)</a>
 </li>
+        </ul></li>
         <li><a href="../api/advanced/icons/#viser.Icon.DATABASE">DATABASE (viser.Icon attribute)</a>
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.DATABASE_COG">DATABASE_COG (viser.Icon attribute)</a>
@@ -4335,6 +4386,10 @@
         <li><a href="../api/advanced/icons/#viser.Icon.DECIMAL">DECIMAL (viser.Icon attribute)</a>
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.DEER">DEER (viser.Icon attribute)</a>
+</li>
+        <li><a href="../api/advanced/chat/#viser.ConversationStore.delete">delete() (viser.ConversationStore method)</a>
+</li>
+        <li><a href="../api/handles/gui_handles/#viser.GuiChatHandle.delete_conversation">delete_conversation() (viser.GuiChatHandle method)</a>
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.DELTA">DELTA (viser.Icon attribute)</a>
 </li>
@@ -4666,10 +4721,10 @@
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.DEVICE_TABLET_OFF">DEVICE_TABLET_OFF (viser.Icon attribute)</a>
 </li>
-    </ul></td>
-    <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="../api/advanced/icons/#viser.Icon.DEVICE_TABLET_PAUSE">DEVICE_TABLET_PAUSE (viser.Icon attribute)</a>
 </li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="../api/advanced/icons/#viser.Icon.DEVICE_TABLET_PIN">DEVICE_TABLET_PIN (viser.Icon attribute)</a>
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.DEVICE_TABLET_PLUS">DEVICE_TABLET_PLUS (viser.Icon attribute)</a>
@@ -4866,6 +4921,8 @@
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.DIRECTIONS_OFF">DIRECTIONS_OFF (viser.Icon attribute)</a>
 </li>
+        <li><a href="../api/advanced/chat/#viser.ConversationStore.directory">directory (viser.ConversationStore property)</a>
+</li>
         <li><a href="../api/handles/scene_handles/#viser.TransformControlsHandle.disable_axes">disable_axes (viser.TransformControlsHandle attribute)</a>
 </li>
         <li><a href="../api/handles/scene_handles/#viser.TransformControlsHandle.disable_rotations">disable_rotations (viser.TransformControlsHandle attribute)</a>
@@ -4878,6 +4935,8 @@
           <li><a href="../api/handles/gui_handles/#viser.GuiButtonGroupHandle.disabled">(viser.GuiButtonGroupHandle property)</a>
 </li>
           <li><a href="../api/handles/gui_handles/#viser.GuiButtonHandle.disabled">(viser.GuiButtonHandle attribute)</a>
+</li>
+          <li><a href="../api/handles/gui_handles/#viser.GuiChatHandle.disabled">(viser.GuiChatHandle attribute)</a>
 </li>
           <li><a href="../api/handles/gui_handles/#viser.GuiCheckboxHandle.disabled">(viser.GuiCheckboxHandle attribute)</a>
 </li>
@@ -4919,6 +4978,8 @@
         <li><a href="../api/advanced/icons/#viser.Icon.DISC_GOLF">DISC_GOLF (viser.Icon attribute)</a>
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.DISC_OFF">DISC_OFF (viser.Icon attribute)</a>
+</li>
+        <li><a href="../api/handles/gui_handles/#viser.GuiChatHandle.disclaimer">disclaimer (viser.GuiChatHandle attribute)</a>
 </li>
         <li><a href="../api/auxiliary/infrastructure/#viser.infra.WebsockServer.disconnect_all_clients">disconnect_all_clients() (viser.infra.WebsockServer method)</a>
 </li>
@@ -4984,6 +5045,10 @@
           <li><a href="../api/handles/gui_handles/#viser.PanelHandle.dock_right">(viser.PanelHandle method)</a>
 </li>
         </ul></li>
+        <li><a href="../api/auxiliary/extras/#viser.extras.GeminiFileSearch.documents">documents() (viser.extras.GeminiFileSearch method)</a>
+</li>
+        <li><a href="../api/auxiliary/extras/#viser.extras.GeminiFileSearch.documents_markdown">documents_markdown() (viser.extras.GeminiFileSearch method)</a>
+</li>
         <li><a href="../api/advanced/icons/#viser.Icon.DOG">DOG (viser.Icon attribute)</a>
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.DOG_BOWL">DOG_BOWL (viser.Icon attribute)</a>
@@ -5127,6 +5192,8 @@
         <li><a href="../api/advanced/icons/#viser.Icon.ELEVATOR">ELEVATOR (viser.Icon attribute)</a>
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.ELEVATOR_OFF">ELEVATOR_OFF (viser.Icon attribute)</a>
+</li>
+        <li><a href="../api/auxiliary/extras/#viser.extras.GeminiFileSearch.embedding_model">embedding_model (viser.extras.GeminiFileSearch property)</a>
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.EMERGENCY_BED">EMERGENCY_BED (viser.Icon attribute)</a>
 </li>
@@ -5846,6 +5913,8 @@
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.GAVEL">GAVEL (viser.Icon attribute)</a>
 </li>
+        <li><a href="../api/auxiliary/extras/#viser.extras.GeminiFileSearch">GeminiFileSearch (class in viser.extras)</a>
+</li>
         <li><a href="../api/advanced/icons/#viser.Icon.GENDER_AGENDER">GENDER_AGENDER (viser.Icon attribute)</a>
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.GENDER_ANDROGYNE">GENDER_ANDROGYNE (viser.Icon attribute)</a>
@@ -6030,6 +6099,8 @@
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.GRAVE_2">GRAVE_2 (viser.Icon attribute)</a>
 </li>
+        <li><a href="../api/handles/gui_handles/#viser.GuiChatHandle.greeting">greeting (viser.GuiChatHandle attribute)</a>
+</li>
         <li><a href="../api/advanced/uplot/#viser.uplot.Axis.grid">grid (viser.uplot.Axis attribute)</a>
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.GRID_DOTS">GRID_DOTS (viser.Icon attribute)</a>
@@ -6067,6 +6138,8 @@
         <li><a href="../api/handles/gui_handles/#viser.GuiButtonGroupHandle">GuiButtonGroupHandle (class in viser)</a>
 </li>
         <li><a href="../api/handles/gui_handles/#viser.GuiButtonHandle">GuiButtonHandle (class in viser)</a>
+</li>
+        <li><a href="../api/handles/gui_handles/#viser.GuiChatHandle">GuiChatHandle (class in viser)</a>
 </li>
         <li><a href="../api/handles/gui_handles/#viser.GuiCheckboxHandle">GuiCheckboxHandle (class in viser)</a>
 </li>
@@ -6236,6 +6309,8 @@
 
         <ul>
           <li><a href="../api/handles/scene_handles/#viser.GridHandle.height">(viser.GridHandle attribute)</a>
+</li>
+          <li><a href="../api/handles/gui_handles/#viser.GuiChatHandle.height">(viser.GuiChatHandle attribute)</a>
 </li>
           <li><a href="../api/handles/gui_handles/#viser.GuiUplotHandle.height">(viser.GuiUplotHandle attribute)</a>
 </li>
@@ -6424,6 +6499,8 @@
 
         <ul>
           <li><a href="../api/handles/gui_handles/#viser.GuiButtonHandle.hint">(viser.GuiButtonHandle attribute)</a>
+</li>
+          <li><a href="../api/handles/gui_handles/#viser.GuiChatHandle.hint">(viser.GuiChatHandle attribute)</a>
 </li>
           <li><a href="../api/handles/gui_handles/#viser.GuiCheckboxHandle.hint">(viser.GuiCheckboxHandle attribute)</a>
 </li>
@@ -6682,6 +6759,10 @@
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.INDENT_INCREASE">INDENT_INCREASE (viser.Icon attribute)</a>
 </li>
+        <li><a href="../api/auxiliary/extras/#viser.extras.GeminiFileSearch.index">index() (viser.extras.GeminiFileSearch method)</a>
+</li>
+        <li><a href="../api/auxiliary/extras/#viser.extras.GeminiFileSearch.index_folder">index_folder() (viser.extras.GeminiFileSearch method)</a>
+</li>
         <li><a href="../api/handles/scene_handles/#viser.GridHandle.infinite_grid">infinite_grid (viser.GridHandle attribute)</a>
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.INFINITY">INFINITY (viser.Icon attribute)</a>
@@ -6692,10 +6773,10 @@
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.INFO_CIRCLE_FILLED">INFO_CIRCLE_FILLED (viser.Icon attribute)</a>
 </li>
-        <li><a href="../api/advanced/icons/#viser.Icon.INFO_HEXAGON">INFO_HEXAGON (viser.Icon attribute)</a>
-</li>
     </ul></td>
     <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="../api/advanced/icons/#viser.Icon.INFO_HEXAGON">INFO_HEXAGON (viser.Icon attribute)</a>
+</li>
         <li><a href="../api/advanced/icons/#viser.Icon.INFO_HEXAGON_FILLED">INFO_HEXAGON_FILLED (viser.Icon attribute)</a>
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.INFO_OCTAGON">INFO_OCTAGON (viser.Icon attribute)</a>
@@ -6812,6 +6893,8 @@
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.IRREGULAR_POLYHEDRON_PLUS">IRREGULAR_POLYHEDRON_PLUS (viser.Icon attribute)</a>
 </li>
+        <li><a href="../api/advanced/chat/#viser.ChatAttachment.is_image">is_image (viser.ChatAttachment property)</a>
+</li>
         <li><a href="../api/advanced/uplot/#viser.uplot.Legend.isolate">isolate (viser.uplot.Legend attribute)</a>
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.ITALIC">ITALIC (viser.Icon attribute)</a>
@@ -6900,6 +6983,8 @@
           <li><a href="../api/handles/gui_handles/#viser.GuiButtonGroupHandle.label">(viser.GuiButtonGroupHandle attribute)</a>
 </li>
           <li><a href="../api/handles/gui_handles/#viser.GuiButtonHandle.label">(viser.GuiButtonHandle attribute)</a>
+</li>
+          <li><a href="../api/handles/gui_handles/#viser.GuiChatHandle.label">(viser.GuiChatHandle attribute)</a>
 </li>
           <li><a href="../api/handles/gui_handles/#viser.GuiCheckboxHandle.label">(viser.GuiCheckboxHandle attribute)</a>
 </li>
@@ -7198,6 +7283,8 @@
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.LIST_CHECK">LIST_CHECK (viser.Icon attribute)</a>
 </li>
+        <li><a href="../api/advanced/chat/#viser.ConversationStore.list_conversations">list_conversations() (viser.ConversationStore method)</a>
+</li>
         <li><a href="../api/advanced/icons/#viser.Icon.LIST_DETAILS">LIST_DETAILS (viser.Icon attribute)</a>
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.LIST_NUMBERS">LIST_NUMBERS (viser.Icon attribute)</a>
@@ -7213,6 +7300,8 @@
         <li><a href="../api/advanced/icons/#viser.Icon.LIVE_PHOTO_OFF">LIVE_PHOTO_OFF (viser.Icon attribute)</a>
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.LIVE_VIEW">LIVE_VIEW (viser.Icon attribute)</a>
+</li>
+        <li><a href="../api/advanced/chat/#viser.ConversationStore.load">load() (viser.ConversationStore method)</a>
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.LOAD_BALANCER">LOAD_BALANCER (viser.Icon attribute)</a>
 </li>
@@ -7680,6 +7769,8 @@
 </li>
         <li><a href="../api/auxiliary/infrastructure/#viser.infra.Message">Message (class in viser.infra)</a>
 </li>
+        <li><a href="../api/advanced/events/#viser.ChatSubmitEvent.message">message (viser.ChatSubmitEvent attribute)</a>
+</li>
         <li><a href="../api/advanced/icons/#viser.Icon.MESSAGE">MESSAGE (viser.Icon attribute)</a>
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.MESSAGE_2">MESSAGE_2 (viser.Icon attribute)</a>
@@ -7746,14 +7837,14 @@
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.MESSAGE_CIRCLE_CODE">MESSAGE_CIRCLE_CODE (viser.Icon attribute)</a>
 </li>
-    </ul></td>
-    <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="../api/advanced/icons/#viser.Icon.MESSAGE_CIRCLE_COG">MESSAGE_CIRCLE_COG (viser.Icon attribute)</a>
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.MESSAGE_CIRCLE_DOLLAR">MESSAGE_CIRCLE_DOLLAR (viser.Icon attribute)</a>
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.MESSAGE_CIRCLE_DOWN">MESSAGE_CIRCLE_DOWN (viser.Icon attribute)</a>
 </li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="../api/advanced/icons/#viser.Icon.MESSAGE_CIRCLE_EXCLAMATION">MESSAGE_CIRCLE_EXCLAMATION (viser.Icon attribute)</a>
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.MESSAGE_CIRCLE_HEART">MESSAGE_CIRCLE_HEART (viser.Icon attribute)</a>
@@ -7796,6 +7887,8 @@
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.MESSAGE_HEART">MESSAGE_HEART (viser.Icon attribute)</a>
 </li>
+        <li><a href="../api/advanced/chat/#viser.ChatMessage.message_id">message_id (viser.ChatMessage attribute)</a>
+</li>
         <li><a href="../api/advanced/icons/#viser.Icon.MESSAGE_LANGUAGE">MESSAGE_LANGUAGE (viser.Icon attribute)</a>
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.MESSAGE_MINUS">MESSAGE_MINUS (viser.Icon attribute)</a>
@@ -7822,6 +7915,12 @@
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.MESSAGE_X">MESSAGE_X (viser.Icon attribute)</a>
 </li>
+        <li><a href="../api/advanced/chat/#viser.Conversation.messages">messages (viser.Conversation attribute)</a>
+
+        <ul>
+          <li><a href="../api/handles/gui_handles/#viser.GuiChatHandle.messages">(viser.GuiChatHandle attribute)</a>
+</li>
+        </ul></li>
         <li><a href="../api/advanced/icons/#viser.Icon.MESSAGES">MESSAGES (viser.Icon attribute)</a>
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.MESSAGES_OFF">MESSAGES_OFF (viser.Icon attribute)</a>
@@ -7866,8 +7965,12 @@
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.MILKSHAKE">MILKSHAKE (viser.Icon attribute)</a>
 </li>
-        <li><a href="../api/handles/gui_handles/#viser.GuiUploadButtonHandle.mime_type">mime_type (viser.GuiUploadButtonHandle attribute)</a>
+        <li><a href="../api/advanced/chat/#viser.ChatAttachment.mime_type">mime_type (viser.ChatAttachment attribute)</a>
+
+        <ul>
+          <li><a href="../api/handles/gui_handles/#viser.GuiUploadButtonHandle.mime_type">(viser.GuiUploadButtonHandle attribute)</a>
 </li>
+        </ul></li>
         <li><a href="../api/handles/gui_handles/#viser.GuiMultiSliderHandle.min">min (viser.GuiMultiSliderHandle attribute)</a>
 
         <ul>
@@ -7909,6 +8012,14 @@
         <li><a href="../api/advanced/icons/#viser.Icon.MOBILEDATA_OFF">MOBILEDATA_OFF (viser.Icon attribute)</a>
 </li>
         <li><a href="../api/handles/gui_handles/#viser.GuiUplotHandle.mode">mode (viser.GuiUplotHandle attribute)</a>
+</li>
+        <li><a href="../api/advanced/events/#viser.ChatSubmitEvent.model">model (viser.ChatSubmitEvent attribute)</a>
+
+        <ul>
+          <li><a href="../api/handles/gui_handles/#viser.GuiChatHandle.model">(viser.GuiChatHandle attribute)</a>
+</li>
+        </ul></li>
+        <li><a href="../api/handles/gui_handles/#viser.GuiChatHandle.models">models (viser.GuiChatHandle attribute)</a>
 </li>
         <li><a href="../api/handles/gui_handles/#viser.CommandHandle.modifier">modifier (viser.CommandHandle attribute)</a>
 
@@ -8154,6 +8265,8 @@
 </li>
           <li><a href="../api/handles/scene_handles/#viser.CameraFrustumHandle.name">(viser.CameraFrustumHandle property)</a>
 </li>
+          <li><a href="../api/advanced/chat/#viser.ChatAttachment.name">(viser.ChatAttachment attribute)</a>
+</li>
           <li><a href="../api/handles/scene_handles/#viser.CylinderHandle.name">(viser.CylinderHandle property)</a>
 </li>
           <li><a href="../api/handles/scene_handles/#viser.DirectionalLightHandle.name">(viser.DirectionalLightHandle property)</a>
@@ -8224,6 +8337,8 @@
     </ul></td>
     <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="../api/advanced/icons/#viser.Icon.NETWORK_OFF">NETWORK_OFF (viser.Icon attribute)</a>
+</li>
+        <li><a href="../api/handles/gui_handles/#viser.GuiChatHandle.new_conversation">new_conversation() (viser.GuiChatHandle method)</a>
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.NEW_SECTION">NEW_SECTION (viser.Icon attribute)</a>
 </li>
@@ -8427,8 +8542,12 @@
 </li>
         <li><a href="../api/handles/gui_handles/#viser.GuiFolderSelectButtonHandle.on_select">on_select() (viser.GuiFolderSelectButtonHandle method)</a>
 </li>
-        <li><a href="../api/handles/gui_handles/#viser.GuiFormHandle.on_submit">on_submit() (viser.GuiFormHandle method)</a>
+        <li><a href="../api/handles/gui_handles/#viser.GuiChatHandle.on_submit">on_submit() (viser.GuiChatHandle method)</a>
+
+        <ul>
+          <li><a href="../api/handles/gui_handles/#viser.GuiFormHandle.on_submit">(viser.GuiFormHandle method)</a>
 </li>
+        </ul></li>
         <li><a href="../api/handles/client_handles/#viser.ClientHandle.on_toolbar_action">on_toolbar_action() (viser.ClientHandle method)</a>
 </li>
         <li><a href="../api/handles/gui_handles/#viser.CommandHandle.on_trigger">on_trigger() (viser.CommandHandle method)</a>
@@ -8485,6 +8604,8 @@
           <li><a href="../api/handles/scene_handles/#viser.TransformControlsHandle.opacity">(viser.TransformControlsHandle attribute)</a>
 </li>
         </ul></li>
+        <li><a href="../api/handles/gui_handles/#viser.GuiChatHandle.open_conversation">open_conversation() (viser.GuiChatHandle method)</a>
+</li>
         <li><a href="../api/handles/gui_handles/#viser.GuiButtonGroupHandle.options">options (viser.GuiButtonGroupHandle attribute)</a>
 
         <ul>
@@ -8497,6 +8618,8 @@
           <li><a href="../api/handles/gui_handles/#viser.GuiButtonGroupHandle.order">(viser.GuiButtonGroupHandle attribute)</a>
 </li>
           <li><a href="../api/handles/gui_handles/#viser.GuiButtonHandle.order">(viser.GuiButtonHandle attribute)</a>
+</li>
+          <li><a href="../api/handles/gui_handles/#viser.GuiChatHandle.order">(viser.GuiChatHandle attribute)</a>
 </li>
           <li><a href="../api/handles/gui_handles/#viser.GuiCheckboxHandle.order">(viser.GuiCheckboxHandle attribute)</a>
 </li>
@@ -8854,6 +8977,8 @@
         <li><a href="../api/advanced/icons/#viser.Icon.PIZZA_OFF">PIZZA_OFF (viser.Icon attribute)</a>
 </li>
         <li><a href="../api/handles/gui_handles/#viser.PlaceableHandle">PlaceableHandle (in module viser)</a>
+</li>
+        <li><a href="../api/handles/gui_handles/#viser.GuiChatHandle.placeholder">placeholder (viser.GuiChatHandle attribute)</a>
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.PLACEHOLDER">PLACEHOLDER (viser.Icon attribute)</a>
 </li>
@@ -9468,6 +9593,8 @@
 </li>
           <li><a href="../api/handles/gui_handles/#viser.GuiButtonHandle.remove">(viser.GuiButtonHandle method)</a>
 </li>
+          <li><a href="../api/handles/gui_handles/#viser.GuiChatHandle.remove">(viser.GuiChatHandle method)</a>
+</li>
           <li><a href="../api/handles/gui_handles/#viser.GuiCheckboxHandle.remove">(viser.GuiCheckboxHandle method)</a>
 </li>
           <li><a href="../api/handles/gui_handles/#viser.GuiColorbarHandle.remove">(viser.GuiColorbarHandle method)</a>
@@ -9661,6 +9788,8 @@
           <li><a href="../api/handles/gui_handles/#viser.GuiTabHandle.removed">(viser.GuiTabHandle attribute)</a>
 </li>
         </ul></li>
+        <li><a href="../api/handles/gui_handles/#viser.GuiChatHandle.rename_conversation">rename_conversation() (viser.GuiChatHandle method)</a>
+</li>
         <li><a href="../api/handles/scene_handles/#viser.ImageHandle.render_height">render_height (viser.ImageHandle attribute)</a>
 </li>
         <li><a href="../api/handles/scene_handles/#viser.ImageHandle.render_width">render_width (viser.ImageHandle attribute)</a>
@@ -9760,6 +9889,8 @@
         <li><a href="../api/advanced/icons/#viser.Icon.ROCKET">ROCKET (viser.Icon attribute)</a>
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.ROCKET_OFF">ROCKET_OFF (viser.Icon attribute)</a>
+</li>
+        <li><a href="../api/advanced/chat/#viser.ChatMessage.role">role (viser.ChatMessage attribute)</a>
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.ROLLER_SKATING">ROLLER_SKATING (viser.Icon attribute)</a>
 </li>
@@ -9900,6 +10031,8 @@
         <li><a href="../api/advanced/icons/#viser.Icon.SATELLITE_OFF">SATELLITE_OFF (viser.Icon attribute)</a>
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.SAUSAGE">SAUSAGE (viser.Icon attribute)</a>
+</li>
+        <li><a href="../api/advanced/chat/#viser.ConversationStore.save">save() (viser.ConversationStore method)</a>
 </li>
         <li><a href="../api/advanced/uplot/#viser.uplot.Scale">Scale (class in viser.uplot)</a>
 </li>
@@ -10511,14 +10644,14 @@
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.SORT_ASCENDING_LETTERS">SORT_ASCENDING_LETTERS (viser.Icon attribute)</a>
 </li>
-    </ul></td>
-    <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="../api/advanced/icons/#viser.Icon.SORT_ASCENDING_NUMBERS">SORT_ASCENDING_NUMBERS (viser.Icon attribute)</a>
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.SORT_DESCENDING">SORT_DESCENDING (viser.Icon attribute)</a>
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.SORT_DESCENDING_2">SORT_DESCENDING_2 (viser.Icon attribute)</a>
 </li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="../api/advanced/icons/#viser.Icon.SORT_DESCENDING_LETTERS">SORT_DESCENDING_LETTERS (viser.Icon attribute)</a>
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.SORT_DESCENDING_NUMBERS">SORT_DESCENDING_NUMBERS (viser.Icon attribute)</a>
@@ -11051,9 +11184,19 @@
           <li><a href="../api/core/server/#viser.ViserServer.stop">(viser.ViserServer method)</a>
 </li>
         </ul></li>
+        <li><a href="../api/handles/gui_handles/#viser.GuiChatHandle.store">store (viser.GuiChatHandle property)</a>
+</li>
+        <li><a href="../api/auxiliary/extras/#viser.extras.GeminiFileSearch.store_name">store_name (viser.extras.GeminiFileSearch property)</a>
+</li>
         <li><a href="../api/advanced/icons/#viser.Icon.STORM">STORM (viser.Icon attribute)</a>
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.STORM_OFF">STORM_OFF (viser.Icon attribute)</a>
+</li>
+        <li><a href="../api/handles/gui_handles/#viser.GuiChatHandle.stream">stream() (viser.GuiChatHandle method)</a>
+</li>
+        <li><a href="../api/auxiliary/extras/#viser.extras.GeminiFileSearch.stream_answer">stream_answer() (viser.extras.GeminiFileSearch method)</a>
+</li>
+        <li><a href="../api/handles/gui_handles/#viser.GuiChatHandle.streaming_text">streaming_text (viser.GuiChatHandle attribute)</a>
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.STRETCHING">STRETCHING (viser.Icon attribute)</a>
 </li>
@@ -11090,6 +11233,12 @@
         <li><a href="../api/advanced/icons/#viser.Icon.SUBTASK">SUBTASK (viser.Icon attribute)</a>
 </li>
         <li><a href="../api/handles/gui_handles/#viser.GalleryBlockHandle.subtitle">subtitle (viser.GalleryBlockHandle property)</a>
+
+        <ul>
+          <li><a href="../api/handles/gui_handles/#viser.GuiChatHandle.subtitle">(viser.GuiChatHandle attribute)</a>
+</li>
+        </ul></li>
+        <li><a href="../api/handles/gui_handles/#viser.GuiChatHandle.suggestions">suggestions (viser.GuiChatHandle attribute)</a>
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.SUM">SUM (viser.Icon attribute)</a>
 </li>
@@ -11283,8 +11432,14 @@
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.TEX">TEX (viser.Icon attribute)</a>
 </li>
-        <li><a href="../api/handles/scene_handles/#viser.LabelHandle.text">text (viser.LabelHandle attribute)</a>
+        <li><a href="../api/advanced/chat/#viser.ChatMessage.text">text (viser.ChatMessage attribute)</a>
+
+        <ul>
+          <li><a href="../api/handles/gui_handles/#viser.ChatStream.text">(viser.ChatStream property)</a>
 </li>
+          <li><a href="../api/handles/scene_handles/#viser.LabelHandle.text">(viser.LabelHandle attribute)</a>
+</li>
+        </ul></li>
         <li><a href="../api/advanced/icons/#viser.Icon.TEXT_CAPTION">TEXT_CAPTION (viser.Icon attribute)</a>
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.TEXT_COLOR">TEXT_COLOR (viser.Icon attribute)</a>
@@ -11353,6 +11508,8 @@
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.THUMB_UP_OFF">THUMB_UP_OFF (viser.Icon attribute)</a>
 </li>
+        <li><a href="../api/advanced/chat/#viser.ChatAttachment.thumbnail">thumbnail (viser.ChatAttachment attribute)</a>
+</li>
         <li><a href="../api/advanced/icons/#viser.Icon.TIC_TAC">TIC_TAC (viser.Icon attribute)</a>
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.TICKET">TICKET (viser.Icon attribute)</a>
@@ -11379,10 +11536,10 @@
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.TIME_DURATION_10">TIME_DURATION_10 (viser.Icon attribute)</a>
 </li>
-        <li><a href="../api/advanced/icons/#viser.Icon.TIME_DURATION_15">TIME_DURATION_15 (viser.Icon attribute)</a>
-</li>
     </ul></td>
     <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="../api/advanced/icons/#viser.Icon.TIME_DURATION_15">TIME_DURATION_15 (viser.Icon attribute)</a>
+</li>
         <li><a href="../api/advanced/icons/#viser.Icon.TIME_DURATION_30">TIME_DURATION_30 (viser.Icon attribute)</a>
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.TIME_DURATION_45">TIME_DURATION_45 (viser.Icon attribute)</a>
@@ -11409,11 +11566,15 @@
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.TIMELINE_EVENT_X">TIMELINE_EVENT_X (viser.Icon attribute)</a>
 </li>
+        <li><a href="../api/advanced/chat/#viser.ChatMessage.timestamp">timestamp (viser.ChatMessage attribute)</a>
+</li>
         <li><a href="../api/advanced/icons/#viser.Icon.TIR">TIR (viser.Icon attribute)</a>
 </li>
-        <li><a href="../api/handles/gui_handles/#viser.GalleryBlockHandle.title">title (viser.GalleryBlockHandle property)</a>
+        <li><a href="../api/advanced/chat/#viser.Conversation.title">title (viser.Conversation attribute)</a>
 
         <ul>
+          <li><a href="../api/handles/gui_handles/#viser.GalleryBlockHandle.title">(viser.GalleryBlockHandle property)</a>
+</li>
           <li><a href="../api/handles/gui_handles/#viser.GuiUplotHandle.title">(viser.GuiUplotHandle attribute)</a>
 </li>
           <li><a href="../api/handles/client_handles/#viser.NotificationHandle.title">(viser.NotificationHandle attribute)</a>
@@ -11685,6 +11846,8 @@
           <li><a href="../api/handles/scene_handles/#viser.TransformControlsHandle.update_timestamp">(viser.TransformControlsHandle property)</a>
 </li>
         </ul></li>
+        <li><a href="../api/advanced/chat/#viser.Conversation.updated_at">updated_at (viser.Conversation attribute)</a>
+</li>
     </ul></td>
     <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="../api/advanced/icons/#viser.Icon.UPLOAD">UPLOAD (viser.Icon attribute)</a>
@@ -11954,6 +12117,8 @@
 </li>
           <li><a href="../api/handles/gui_handles/#viser.GuiButtonHandle.visible">(viser.GuiButtonHandle attribute)</a>
 </li>
+          <li><a href="../api/handles/gui_handles/#viser.GuiChatHandle.visible">(viser.GuiChatHandle attribute)</a>
+</li>
           <li><a href="../api/handles/gui_handles/#viser.GuiCheckboxHandle.visible">(viser.GuiCheckboxHandle attribute)</a>
 </li>
           <li><a href="../api/handles/gui_handles/#viser.GuiColorbarHandle.visible">(viser.GuiColorbarHandle attribute)</a>
@@ -12215,10 +12380,10 @@
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.WINDOW_OFF">WINDOW_OFF (viser.Icon attribute)</a>
 </li>
-    </ul></td>
-    <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="../api/advanced/icons/#viser.Icon.WINDSOCK">WINDSOCK (viser.Icon attribute)</a>
 </li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="../api/advanced/icons/#viser.Icon.WIPER">WIPER (viser.Icon attribute)</a>
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.WIPER_WASH">WIPER_WASH (viser.Icon attribute)</a>
@@ -12298,6 +12463,8 @@
         <li><a href="../api/advanced/icons/#viser.Icon.WORLD_X">WORLD_X (viser.Icon attribute)</a>
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.WRECKING_BALL">WRECKING_BALL (viser.Icon attribute)</a>
+</li>
+        <li><a href="../api/handles/gui_handles/#viser.ChatStream.write">write() (viser.ChatStream method)</a>
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.WRITING">WRITING (viser.Icon attribute)</a>
 </li>
