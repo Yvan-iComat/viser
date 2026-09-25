@@ -41,6 +41,7 @@ from viser._backwards_compat_shims import deprecated_positional_shim
 
 from . import _messages, uplot
 from ._assignable_props_api import colors_to_uint8
+from ._chat import ChatAttachment, ConversationStore
 from ._gui_handles import (
     CONTROL_PANEL_ID,
     CommandEvent,
@@ -48,6 +49,7 @@ from ._gui_handles import (
     GalleryBlockEvent,
     GuiButtonGroupHandle,
     GuiButtonHandle,
+    GuiChatHandle,
     GuiCheckboxHandle,
     GuiColorbarHandle,
     GuiContainerProtocol,
@@ -374,6 +376,7 @@ class GuiApi:
         self._layout_run_id = uuid.uuid4().hex[:8]
         self._command_handle_from_uuid: dict[str, CommandHandle] = {}
         self._gallery_handle_from_uuid: dict[str, GuiGalleryHandle] = {}
+        self._chat_handle_from_uuid: dict[str, GuiChatHandle] = {}
         self._current_file_upload_states: dict[str, _FileUploadState] = {}
 
         # Set to True when plotly.min.js has been sent to client.
@@ -410,6 +413,12 @@ class GuiApi:
         )
         self._websock_interface.register_handler(
             _messages.GuiGalleryRenderReplyMessage, self._handle_gallery_render_reply
+        )
+        self._websock_interface.register_handler(
+            _messages.GuiChatSubmitMessage, self._handle_chat_submit
+        )
+        self._websock_interface.register_handler(
+            _messages.GuiChatActionMessage, self._handle_chat_action
         )
 
     def _resolve_client(self, client_id: ClientId) -> ClientHandle | None:
@@ -617,6 +626,42 @@ class GuiApi:
         if gallery is None or gallery._impl.removed:
             return
         gallery._handle_render_reply(message.render_uuid, message._data)
+
+    async def _handle_chat_submit(
+        self, client_id: ClientId, message: _messages.GuiChatSubmitMessage
+    ) -> None:
+        """Callback for chat messages submitted by a client."""
+        chat = self._chat_handle_from_uuid.get(message.uuid, None)
+        if chat is None or chat._impl.removed:
+            return
+        client = self._resolve_client(client_id)
+        if client is None:
+            return
+        attachments = []
+        for upload in message.attachments:
+            # Nested dataclasses arrive from msgpack as plain dicts.
+            if isinstance(upload, dict):
+                upload = _messages.GuiChatUpload(**upload)
+            attachments.append(
+                ChatAttachment(
+                    name=upload.name,
+                    mime_type=upload.mime_type,
+                    data=bytes(upload._data),
+                    thumbnail=None
+                    if upload._thumbnail is None
+                    else bytes(upload._thumbnail),
+                )
+            )
+        chat._handle_submit(client, client_id, message.text, attachments)
+
+    async def _handle_chat_action(
+        self, client_id: ClientId, message: _messages.GuiChatActionMessage
+    ) -> None:
+        """Callback for chat history actions (new/open/delete/rename)."""
+        chat = self._chat_handle_from_uuid.get(message.uuid, None)
+        if chat is None or chat._impl.removed:
+            return
+        chat._handle_action(message.action, message.conversation_id, message.value)
 
     async def _handle_gui_form_submit(
         self, client_id: ClientId, message: _messages.GuiFormSubmitMessage
@@ -2679,6 +2724,118 @@ class GuiApi:
             )
         )
         self._gallery_handle_from_uuid[message.uuid] = handle
+        return handle
+
+    def add_chat(
+        self,
+        label: str = "AI Assistant",
+        *,
+        greeting: str = "Hi there!",
+        subtitle: str = "What are we tackling today?",
+        suggestions: Sequence[str] = (),
+        disclaimer: str | None = None,
+        placeholder: str = "Ask anything…",
+        height: int = 560,
+        store: ConversationStore | None = None,
+        parent: GuiContainerProtocol | None = None,
+        visible: bool = True,
+        order: float | None = None,
+    ) -> GuiChatHandle:
+        """Add an AI-assistant style chat: a message list, a text box that
+        accepts pasted or dropped images and documents, and a history drawer
+        of saved conversations.
+
+        The chat does not generate replies itself. Attach a callback with
+        :meth:`GuiChatHandle.on_submit` and answer with
+        :meth:`GuiChatHandle.add_message` or :meth:`GuiChatHandle.stream`.
+
+        Args:
+            label: Title shown in the chat header.
+            greeting: Heading shown while the conversation is empty.
+            subtitle: Text shown below the greeting.
+            suggestions: Suggested prompts, shown as clickable chips while the
+                conversation is empty. Clicking one submits it.
+            disclaimer: Optional notice shown above the input while the
+                conversation is empty.
+            placeholder: Placeholder text for the input box.
+            height: Height of the widget, in pixels.
+            store: Where conversations are saved. Defaults to an in-memory
+                store; pass ``ConversationStore("some/dir")`` to persist them
+                as JSON files.
+            parent: Container to place the chat in, e.g. a panel tab. Defaults
+                to the current ``with`` container.
+            visible: Whether the chat is visible initially.
+            order: Optional ordering, smallest values will be displayed first.
+
+        Returns:
+            A handle used to answer messages and manage conversations.
+
+        Example:
+            >>> panel = server.gui.add_panel()
+            >>> chat = server.gui.add_chat(parent=panel.add_tab("Assistant"))
+            >>>
+            >>> @chat.on_submit
+            >>> def _(event: viser.ChatSubmitEvent) -> None:
+            >>>     with event.chat.stream() as reply:
+            >>>         for token in my_llm(event.conversation.messages):
+            >>>             reply.write(token)
+        """
+        if height <= 0:
+            raise ValueError("`height` must be positive.")
+        if isinstance(parent, PanelHandle):
+            raise TypeError(
+                "A panel holds tabs, not content directly. Add the chat to one "
+                "of its tabs:\n"
+                "    panel = server.gui.add_panel()\n"
+                '    chat = server.gui.add_chat(parent=panel.add_tab("Assistant"))'
+            )
+        container_uuid = (
+            self._get_container_uuid()
+            if parent is None
+            else self._container_uuid_from_handle(parent)
+        )
+        store = ConversationStore(None) if store is None else store
+
+        message = _messages.GuiChatMessage(
+            uuid=_make_uuid(),
+            container_uuid=container_uuid,
+            props=_messages.GuiChatProps(
+                order=_apply_default_order(order),
+                label=label,
+                hint=None,
+                visible=visible,
+                disabled=False,
+                greeting=greeting,
+                subtitle=subtitle,
+                suggestions=tuple(suggestions),
+                disclaimer=disclaimer,
+                placeholder=placeholder,
+                height=height,
+                messages=(),
+                streaming_text=None,
+                busy=False,
+                conversations=tuple(
+                    _messages.GuiChatConversationInfo(
+                        c.conversation_id, c.title, c.updated_at
+                    )
+                    for c in store.list_conversations()
+                ),
+                active_conversation_id="",
+            ),
+        )
+        handle = GuiChatHandle(
+            _GuiHandleState(
+                message.uuid,
+                self,
+                None,
+                props=message.props,
+                parent_container_id=message.container_uuid,
+            ),
+            store=store,
+        )
+        message.props.active_conversation_id = handle.conversation.conversation_id
+        self._websock_interface.queue_message(message)
+        self._chat_handle_from_uuid[message.uuid] = handle
         return handle
 
     @deprecated_positional_shim

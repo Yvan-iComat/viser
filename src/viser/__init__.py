@@ -1,12 +1,19 @@
 from typing import TYPE_CHECKING as _TYPE_CHECKING
 
+from ._chat import ChatAttachment as ChatAttachment
+from ._chat import ChatMessage as ChatMessage
+from ._chat import Conversation as Conversation
+from ._chat import ConversationStore as ConversationStore
 from ._gui_api import GuiApi as GuiApi
+from ._gui_handles import ChatStream as ChatStream
+from ._gui_handles import ChatSubmitEvent as ChatSubmitEvent
 from ._gui_handles import CommandEvent as CommandEvent
 from ._gui_handles import CommandHandle as CommandHandle
 from ._gui_handles import GalleryBlockEvent as GalleryBlockEvent
 from ._gui_handles import GalleryBlockHandle as GalleryBlockHandle
 from ._gui_handles import GuiButtonGroupHandle as GuiButtonGroupHandle
 from ._gui_handles import GuiButtonHandle as GuiButtonHandle
+from ._gui_handles import GuiChatHandle as GuiChatHandle
 from ._gui_handles import GuiCheckboxHandle as GuiCheckboxHandle
 from ._gui_handles import GuiColorbarHandle as GuiColorbarHandle
 from ._gui_handles import GuiDividerHandle as GuiDividerHandle

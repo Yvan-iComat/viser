@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import base64
+import contextlib
 import dataclasses
 import io
 import json
@@ -19,6 +20,7 @@ from typing import (
     Callable,
     Generic,
     Iterable,
+    Iterator,
     Literal,
     Sequence,
     Tuple,
@@ -32,6 +34,13 @@ import numpy as np
 from typing_extensions import Protocol, Self, TypeAlias, override
 
 from ._assignable_props_api import AssignablePropsBase
+from ._chat import (
+    ChatAttachment,
+    ChatMessage,
+    ChatRole,
+    Conversation,
+    ConversationStore,
+)
 from ._icons import svg_from_icon
 from ._icons_enum import IconName
 from ._messages import (
@@ -42,6 +51,10 @@ from ._messages import (
     GuiBaseProps,
     GuiButtonGroupProps,
     GuiButtonProps,
+    GuiChatAttachment,
+    GuiChatConversationInfo,
+    GuiChatEntry,
+    GuiChatProps,
     GuiCheckboxProps,
     GuiCloseModalMessage,
     GuiColorbarProps,
@@ -84,7 +97,7 @@ from ._messages import (
     TimelineRemoveMessage,
 )
 from ._scene_api import _encode_image_binary
-from ._threadpool_exceptions import print_task_error
+from ._threadpool_exceptions import print_awaited_callback_error, print_task_error
 from .infra import ClientId
 
 if TYPE_CHECKING:
@@ -1239,6 +1252,300 @@ class GuiGalleryHandle(_GuiHandle[None], GuiGalleryProps):
         """
         self._gallery_click_cb.append(func)
         return func
+
+
+@dataclasses.dataclass(frozen=True)
+class ChatSubmitEvent:
+    """Information associated with a chat message submitted by a user.
+
+    Passed as input to :meth:`GuiChatHandle.on_submit` callbacks."""
+
+    client: ClientHandle | None
+    """Client that submitted the message."""
+    client_id: int | None
+    """ID of the client that submitted the message."""
+    chat: GuiChatHandle
+    """Chat the message was submitted to."""
+    conversation: Conversation
+    """Conversation the message was appended to. Its ``messages`` list holds
+    the full history, including the submitted message."""
+    message: ChatMessage
+    """The submitted user message."""
+
+
+class ChatStream:
+    """An assistant reply being written incrementally.
+
+    Created by :meth:`GuiChatHandle.stream`; the text is committed to the
+    conversation when the ``with`` block exits."""
+
+    def __init__(self, chat: GuiChatHandle) -> None:
+        self._chat = chat
+        self._parts: list[str] = []
+
+    @property
+    def text(self) -> str:
+        """Text written so far."""
+        return "".join(self._parts)
+
+    def write(self, delta: str) -> None:
+        """Append text to the reply and display it."""
+        if delta == "":
+            return
+        self._parts.append(delta)
+        self._chat._set_props(streaming_text=self.text)
+
+
+class GuiChatHandle(_GuiHandle[None], GuiChatProps):
+    """Handle for an AI-assistant style chat.
+
+    The chat only transports messages: attach a callback with
+    :meth:`on_submit` to generate replies, using :meth:`add_message` or
+    :meth:`stream`. Conversations are persisted through a
+    :class:`ConversationStore`, and can be browsed from the history drawer.
+    """
+
+    def __init__(self, _impl: _GuiHandleState, store: ConversationStore) -> None:
+        super().__init__(impl=_impl)
+        self._store = store
+        self._conversation = Conversation()
+        self._lock = threading.RLock()
+        self._submit_cb: list[Callable[[ChatSubmitEvent], None | Coroutine]] = []
+        # Strong references to in-flight reply tasks, so they aren't GC'd.
+        self._tasks: set[asyncio.Task[None]] = set()
+
+    @property
+    def store(self) -> ConversationStore:
+        """Store used to persist conversations."""
+        return self._store
+
+    @property
+    def conversation(self) -> Conversation:
+        """Conversation currently displayed."""
+        return self._conversation
+
+    def _set_props(self, **changes: Any) -> None:
+        """Assign several props in one update message, so clients apply them
+        together (e.g. committing a streamed reply and clearing the stream)."""
+        if self._impl.removed:
+            return
+        for name, value in changes.items():
+            setattr(self._impl.props, name, value)
+        self._impl.gui_api._websock_interface.queue_message(
+            GuiUpdateMessage(self._impl.uuid, changes)
+        )
+
+    @staticmethod
+    def _entry(message: ChatMessage) -> GuiChatEntry:
+        return GuiChatEntry(
+            message_id=message.message_id,
+            role=message.role,
+            text=message.text,
+            attachments=tuple(
+                GuiChatAttachment(a.name, a.mime_type, a.thumbnail)
+                for a in message.attachments
+            ),
+            timestamp=message.timestamp,
+        )
+
+    def _conversation_infos(self) -> tuple[GuiChatConversationInfo, ...]:
+        return tuple(
+            GuiChatConversationInfo(c.conversation_id, c.title, c.updated_at)
+            for c in self._store.list_conversations()
+        )
+
+    def _sync(self, *, conversations: bool = True, **extra: Any) -> None:
+        """Push the active conversation (and optionally the history list)."""
+        changes: dict[str, Any] = {
+            "messages": tuple(self._entry(m) for m in self._conversation.messages),
+            "active_conversation_id": self._conversation.conversation_id,
+            **extra,
+        }
+        if conversations:
+            changes["conversations"] = self._conversation_infos()
+        self._set_props(**changes)
+
+    def _commit(self, message: ChatMessage, **extra: Any) -> None:
+        with self._lock:
+            is_first = len(self._conversation.messages) == 0
+            self._conversation.append(message)
+            self._store.save(self._conversation)
+            # The history list only changes when a conversation is first
+            # saved (which also sets its title) -- i.e. on its first message.
+            self._sync(conversations=is_first, **extra)
+
+    def add_message(
+        self,
+        role: ChatRole,
+        text: str,
+        attachments: Sequence[ChatAttachment] = (),
+    ) -> ChatMessage:
+        """Append a message to the active conversation and save it.
+
+        Args:
+            role: ``"assistant"``, ``"user"``, or ``"system"``.
+            text: Message text. Assistant and system messages render as markdown.
+            attachments: Optional files attached to the message.
+
+        Returns:
+            The appended message.
+        """
+        message = ChatMessage(role=role, text=text, attachments=list(attachments))
+        self._commit(message)
+        return message
+
+    @contextlib.contextmanager
+    def stream(self, role: ChatRole = "assistant") -> Iterator[ChatStream]:
+        """Stream a reply into the chat, e.g. token by token from an LLM.
+
+        The text is displayed as it is written, and appended to the active
+        conversation when the block exits (also on error, if any text was
+        written).
+
+        Example:
+            >>> with chat.stream() as reply:
+            >>>     for token in llm_tokens():
+            >>>         reply.write(token)
+        """
+        reply = ChatStream(self)
+        self._set_props(streaming_text="")
+        try:
+            yield reply
+        finally:
+            if reply.text != "":
+                self._commit(
+                    ChatMessage(role=role, text=reply.text), streaming_text=None
+                )
+            else:
+                self._set_props(streaming_text=None)
+
+    def new_conversation(self) -> Conversation:
+        """Start a new, empty conversation and display it.
+
+        The conversation is only saved once it has a message."""
+        with self._lock:
+            self._conversation = Conversation()
+            self._sync()
+            return self._conversation
+
+    def open_conversation(self, conversation_id: str) -> Conversation:
+        """Load a saved conversation and display it.
+
+        Raises:
+            KeyError: If no conversation with this id exists.
+        """
+        with self._lock:
+            conversation = self._store.load(conversation_id)
+            if conversation is None:
+                raise KeyError(f"No conversation with id {conversation_id!r}.")
+            self._conversation = conversation
+            self._sync()
+            return conversation
+
+    def delete_conversation(self, conversation_id: str) -> None:
+        """Delete a saved conversation. If it is displayed, a new one is started."""
+        with self._lock:
+            self._store.delete(conversation_id)
+            if conversation_id == self._conversation.conversation_id:
+                self._conversation = Conversation()
+            self._sync()
+
+    def rename_conversation(self, conversation_id: str, title: str) -> None:
+        """Change the title of a saved conversation. Unknown ids are ignored."""
+        with self._lock:
+            if conversation_id == self._conversation.conversation_id:
+                conversation: Conversation | None = self._conversation
+            else:
+                conversation = self._store.load(conversation_id)
+            if conversation is None or len(conversation.messages) == 0:
+                return
+            conversation.title = title.strip() or conversation.title
+            self._store.save(conversation)
+            self._set_props(conversations=self._conversation_infos())
+
+    def on_submit(
+        self, func: Callable[[ChatSubmitEvent], NoneOrCoroutine]
+    ) -> Callable[[ChatSubmitEvent], NoneOrCoroutine]:
+        """Attach a callback for when the user submits a message.
+
+        By the time the callback runs, the user's message has been appended to
+        ``event.conversation`` and displayed. The chat shows a busy state
+        (and blocks new submissions) until all callbacks return.
+
+        Note:
+            - If `func` is a regular function (defined with `def`), it will be executed in a thread pool.
+            - If `func` is an async function (defined with `async def`), it will be executed in the event loop.
+
+        Example:
+            >>> @chat.on_submit
+            >>> def _(event: viser.ChatSubmitEvent) -> None:
+            >>>     event.chat.add_message("assistant", f"You said: {event.message.text}")
+        """
+        self._submit_cb.append(func)
+        return func
+
+    def _handle_submit(
+        self,
+        client: ClientHandle,
+        client_id: ClientId,
+        text: str,
+        attachments: list[ChatAttachment],
+    ) -> None:
+        """Record a client submission, then run the callbacks in the background."""
+        if self.busy or (text.strip() == "" and len(attachments) == 0):
+            return
+        message = ChatMessage(role="user", text=text, attachments=attachments)
+        self._commit(message, busy=True)
+        event = ChatSubmitEvent(
+            client=client,
+            client_id=client_id,
+            chat=self,
+            conversation=self._conversation,
+            message=message,
+        )
+        # Run as a task: awaiting here would block this client's websocket
+        # handler, so history actions couldn't be processed during a reply.
+        task = asyncio.get_running_loop().create_task(self._run_submit_callbacks(event))
+        self._tasks.add(task)
+        task.add_done_callback(self._tasks.discard)
+        task.add_done_callback(print_task_error)
+
+    async def _run_submit_callbacks(self, event: ChatSubmitEvent) -> None:
+        gui_api = self._impl.gui_api
+        loop = asyncio.get_running_loop()
+        try:
+            for cb in self._submit_cb:
+                try:
+                    if asyncio.iscoroutinefunction(cb):
+                        await cb(event)
+                    else:
+                        await loop.run_in_executor(gui_api._thread_executor, cb, event)
+                except Exception as e:
+                    print_awaited_callback_error(e)
+        finally:
+            self._set_props(busy=False, streaming_text=None)
+
+    def _handle_action(
+        self,
+        action: Literal["new", "open", "delete", "rename"],
+        conversation_id: str,
+        value: str,
+    ) -> None:
+        # Switching conversations mid-reply would send the reply to the wrong
+        # place; the client disables history while busy, this is the backstop.
+        if self.busy and action in ("new", "open", "delete"):
+            return
+        try:
+            if action == "new":
+                self.new_conversation()
+            elif action == "open":
+                self.open_conversation(conversation_id)
+            elif action == "delete":
+                self.delete_conversation(conversation_id)
+            elif action == "rename":
+                self.rename_conversation(conversation_id, value)
+        except (KeyError, ValueError) as e:
+            warnings.warn(f"Chat history action {action!r} failed: {e}")
 
 
 class _TabContainerMixin:
