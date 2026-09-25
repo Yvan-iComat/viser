@@ -153,12 +153,13 @@ const components: MDXComponents = {
   "*": () => <></>,
 };
 
-async function parseMarkdown(markdown: string) {
+async function parseMarkdown(markdown: string, format: "mdx" | "md") {
   // @ts-ignore (necessary since JSX runtime isn't properly typed according to the internet)
   const { default: Content } = await evaluate(markdown, {
     ...runtime,
     ...provider,
     development: false,
+    format,
     remarkPlugins: [remarkGfm],
     rehypePlugins: [rehypeCodeblock, rehypeColorChips],
   });
@@ -169,8 +170,15 @@ async function parseMarkdown(markdown: string) {
  * Parses and renders markdown on the client. This is generally a bad practice.
  * NOTE: Only run on markdown you trust.
  * It might be worth looking into sandboxing all markdown so that it can't run JS.
+ *
+ * Pass `format="md"` for untrusted text (e.g. LLM output): plain markdown
+ * disables JSX, `{expressions}`, ESM, and raw HTML, so it can't run code.
  */
-export default function Markdown(props: { children?: string }) {
+export default function Markdown(props: {
+  children?: string;
+  format?: "mdx" | "md";
+}) {
+  const format = props.format ?? "mdx";
   const [child, setChild] = useState<ReactNode>(null);
 
   useEffect(() => {
@@ -179,7 +187,7 @@ export default function Markdown(props: { children?: string }) {
     // or call setChild after unmount. The promise also rejects asynchronously,
     // so the error fallback must live in `.catch`, not the synchronous `try`.
     let cancelled = false;
-    parseMarkdown(props.children ?? "")
+    parseMarkdown(props.children ?? "", format)
       .then((Content) => {
         if (cancelled) return;
         setChild(<Content components={components} />);
@@ -191,7 +199,7 @@ export default function Markdown(props: { children?: string }) {
     return () => {
       cancelled = true;
     };
-  }, [props.children]);
+  }, [props.children, format]);
 
   return child;
 }

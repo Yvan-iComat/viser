@@ -31,6 +31,7 @@ import HtmlComponent from "../components/Html";
 import ColorbarComponent from "../components/Colorbar";
 import TableDataComponent from "../components/TableData";
 import GalleryComponent from "../components/Gallery";
+import ChatComponent from "../components/Chat";
 import DividerComponent from "../components/Divider";
 
 /** Root of generated inputs. */
@@ -230,6 +231,8 @@ function GeneratedInput(props: {
       return conf.props.placement === "inline" ? (
         <GalleryComponent {...conf} />
       ) : null;
+    case "GuiChatMessage":
+      return <ChatComponent {...conf} />;
     case "GuiProgressBarMessage":
       return <ProgressBarComponent {...conf} />;
     default:

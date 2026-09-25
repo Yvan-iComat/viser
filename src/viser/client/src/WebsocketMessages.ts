@@ -1325,6 +1325,47 @@ export interface GuiGalleryMessage {
     placement: "window" | "inline";
   };
 }
+/** GuiChatMessage(uuid: 'str', container_uuid: 'str', props: 'GuiChatProps')
+ *
+ * (automatically generated)
+ */
+export interface GuiChatMessage {
+  type: "GuiChatMessage";
+  uuid: string;
+  container_uuid: string;
+  props: {
+    order: number;
+    label: string;
+    hint: string | null;
+    visible: boolean;
+    disabled: boolean;
+    greeting: string;
+    subtitle: string;
+    suggestions: string[];
+    disclaimer: string | null;
+    placeholder: string;
+    height: number;
+    messages: {
+      message_id: string;
+      role: "user" | "assistant" | "system";
+      text: string;
+      attachments: {
+        name: string;
+        mime_type: string;
+        _thumbnail: Uint8Array<ArrayBuffer> | null;
+      }[];
+      timestamp: number;
+    }[];
+    streaming_text: string | null;
+    busy: boolean;
+    conversations: {
+      conversation_id: string;
+      title: string;
+      updated_at: number;
+    }[];
+    active_conversation_id: string;
+  };
+}
 /** Sent server->client to remove a GUI element.
  *
  * (automatically generated)
@@ -2025,6 +2066,32 @@ export interface GuiGalleryRenderReplyMessage {
   render_uuid: string;
   _data: Uint8Array<ArrayBuffer> | null;
 }
+/** Message sent from client->server when the user submits a chat message.
+ *
+ * (automatically generated)
+ */
+export interface GuiChatSubmitMessage {
+  type: "GuiChatSubmitMessage";
+  uuid: string;
+  text: string;
+  attachments: {
+    name: string;
+    mime_type: string;
+    _data: Uint8Array<ArrayBuffer>;
+    _thumbnail: Uint8Array<ArrayBuffer> | null;
+  }[];
+}
+/** Message sent from client->server for conversation history actions.
+ *
+ * (automatically generated)
+ */
+export interface GuiChatActionMessage {
+  type: "GuiChatActionMessage";
+  uuid: string;
+  action: "new" | "open" | "delete" | "rename";
+  conversation_id: string;
+  value: string;
+}
 /** Sent client<->server when any property of a GUI component is changed.
  *
  * (automatically generated)
@@ -2427,6 +2494,7 @@ export type Message =
   | GuiButtonGroupMessage
   | GuiTableDataMessage
   | GuiGalleryMessage
+  | GuiChatMessage
   | GuiRemoveMessage
   | RunJavascriptMessage
   | NotificationShowMessage
@@ -2476,6 +2544,8 @@ export type Message =
   | GuiGalleryClickMessage
   | GuiGalleryRenderRequestMessage
   | GuiGalleryRenderReplyMessage
+  | GuiChatSubmitMessage
+  | GuiChatActionMessage
   | GuiUpdateMessage
   | SceneNodeUpdateMessage
   | ThemeConfigurationMessage
@@ -2557,7 +2627,8 @@ export type GuiComponentMessage =
   | GuiDropdownMessage
   | GuiButtonGroupMessage
   | GuiTableDataMessage
-  | GuiGalleryMessage;
+  | GuiGalleryMessage
+  | GuiChatMessage;
 const typeSetSceneNodeMessage = new Set([
   "CameraFrustumMessage",
   "GlbMessage",
@@ -2621,6 +2692,7 @@ const typeSetGuiComponentMessage = new Set([
   "GuiButtonGroupMessage",
   "GuiTableDataMessage",
   "GuiGalleryMessage",
+  "GuiChatMessage",
 ]);
 export function isGuiComponentMessage(
   message: Message,
