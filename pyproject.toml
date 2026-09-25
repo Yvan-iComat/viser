@@ -83,6 +83,9 @@ examples = [
     "pyliblzfse>=0.4.1; platform_system!='Windows'",
     "pandas",  # https://github.com/viser-project/viser/issues/457
     "tyro>=1.0.0",
+    # LLM backends for the AI assistant examples (both SDKs need Python 3.10+).
+    "anthropic>=1.8.0; python_version>='3.10'",
+    "google-genai>=2.25.0; python_version>='3.10'",
 ]
 
 [project.urls]

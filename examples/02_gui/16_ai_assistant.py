@@ -84,7 +84,7 @@ def to_claude_content(message: viser.ChatMessage) -> list[dict]:
 
 
 def claude_reply(event: viser.ChatSubmitEvent) -> None:
-    import anthropic
+    import anthropic  # pyright: ignore[reportMissingImports] (not on Python 3.9)
 
     client = anthropic.Anthropic()
     history = [
