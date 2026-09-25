@@ -192,3 +192,37 @@ def test_panel_parent_raises() -> None:
         assert chat.label == "AI Assistant"
     finally:
         server.stop()
+
+
+def test_model_selection() -> None:
+    server = viser.ViserServer(port=0, verbose=False)
+    try:
+        # No models: selector hidden, empty selection.
+        assert server.gui.add_chat().model == ""
+        with pytest.raises(ValueError):
+            server.gui.add_chat(models=("a", "b"), model="c")
+
+        chat = server.gui.add_chat(models=("a", "b"))
+        assert chat.model == "a"
+        seen: list[str] = []
+        chat.on_submit(lambda event: seen.append(event.model))
+
+        chat._handle_action("set_model", "", "b")
+        assert chat.model == "b"
+        # Unknown models sent by a client are rejected.
+        with pytest.warns(UserWarning):
+            chat._handle_action("set_model", "", "evil")
+        assert chat.model == "b"
+
+        _submit(chat, "hi")
+        assert seen == ["b"]
+
+        # Replacing the list keeps the selection valid.
+        chat.models = ("b", "c")
+        assert chat.model == "b"
+        chat.models = ("x", "y")
+        assert chat.model == "x"
+        chat.models = ()
+        assert chat.model == ""
+    finally:
+        server.stop()

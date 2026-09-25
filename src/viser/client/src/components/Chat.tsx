@@ -5,6 +5,8 @@ import {
   Button,
   Group,
   Loader,
+  Popover,
+  Select,
   Stack,
   Text,
   Textarea,
@@ -18,6 +20,7 @@ import {
   IconPaperclip,
   IconPencil,
   IconPlus,
+  IconSettings,
   IconSend2,
   IconTrash,
   IconX,
@@ -25,10 +28,15 @@ import {
 import { ErrorBoundary } from "react-error-boundary";
 import Markdown from "../Markdown";
 import { ViewerContext } from "../ViewerContext";
-import { GuiChatMessage, GuiChatSubmitMessage } from "../WebsocketMessages";
+import {
+  GuiChatActionMessage,
+  GuiChatMessage,
+  GuiChatSubmitMessage,
+} from "../WebsocketMessages";
 
 type ChatEntry = GuiChatMessage["props"]["messages"][number];
 type Upload = GuiChatSubmitMessage["attachments"][number];
+type ChatAction = GuiChatActionMessage["action"];
 
 /** Total attachment size per submission. The websocket caps messages at 50 MB. */
 const MAX_ATTACHMENT_BYTES = 20 * 1024 * 1024;
@@ -246,17 +254,64 @@ const ChatBubble = React.memo(function ChatBubble({
   );
 });
 
+/** Settings button opening a dropdown of the models offered by the server. */
+function ModelSelector({
+  models,
+  model,
+  onSelect,
+}: {
+  models: string[];
+  model: string;
+  onSelect: (model: string) => void;
+}) {
+  const [opened, setOpened] = useState(false);
+  return (
+    <Popover
+      opened={opened}
+      onChange={setOpened}
+      position="bottom-end"
+      width={240}
+      shadow="md"
+    >
+      <Popover.Target>
+        <ActionIcon
+          variant="subtle"
+          color="gray"
+          aria-label="Model settings"
+          title={`Model: ${model}`}
+          onClick={() => setOpened((o) => !o)}
+        >
+          <IconSettings size={18} />
+        </ActionIcon>
+      </Popover.Target>
+      <Popover.Dropdown>
+        <Select
+          label="AI model"
+          size="xs"
+          data={models}
+          value={model}
+          allowDeselect={false}
+          // Inline, not portalled: a portalled list would count as a click
+          // outside the popover and close it before the option registers.
+          comboboxProps={{ withinPortal: false }}
+          onChange={(value) => {
+            if (value === null) return;
+            if (value !== model) onSelect(value);
+            setOpened(false);
+          }}
+        />
+      </Popover.Dropdown>
+    </Popover>
+  );
+}
+
 function HistoryDrawer({
   props,
   send,
   onClose,
 }: {
   props: GuiChatMessage["props"];
-  send: (
-    action: "new" | "open" | "delete" | "rename",
-    conversationId?: string,
-    value?: string,
-  ) => void;
+  send: (action: ChatAction, conversationId?: string, value?: string) => void;
   onClose: () => void;
 }) {
   const [renaming, setRenaming] = useState<{
@@ -418,11 +473,7 @@ export default function ChatComponent({ uuid, props }: GuiChatMessage) {
   // websocket layer reassigns sendMessage on reconnect.
   const sendMessage: typeof viewer.mutable.current.sendMessage = (message) =>
     viewer.mutable.current.sendMessage(message);
-  const sendAction = (
-    action: "new" | "open" | "delete" | "rename",
-    conversationId = "",
-    value = "",
-  ) =>
+  const sendAction = (action: ChatAction, conversationId = "", value = "") =>
     sendMessage({
       type: "GuiChatActionMessage",
       uuid,
@@ -535,6 +586,13 @@ export default function ChatComponent({ uuid, props }: GuiChatMessage) {
         <Text fz="sm" fw={600} truncate="end" style={{ flex: 1 }}>
           {props.label}
         </Text>
+        {props.models.length > 0 && (
+          <ModelSelector
+            models={props.models}
+            model={props.model}
+            onSelect={(m) => sendAction("set_model", "", m)}
+          />
+        )}
         <Tooltip label="New conversation" openDelay={500}>
           <ActionIcon
             variant="subtle"

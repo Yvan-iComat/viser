@@ -1271,6 +1271,10 @@ class ChatSubmitEvent:
     the full history, including the submitted message."""
     message: ChatMessage
     """The submitted user message."""
+    model: str
+    """Model selected in the chat when the message was submitted (empty if
+    the chat has no models). Captured at submission, so it stays stable even
+    if the user switches models while the reply is generated."""
 
 
 class ChatStream:
@@ -1463,6 +1467,12 @@ class GuiChatHandle(_GuiHandle[None], GuiChatProps):
             self._store.save(conversation)
             self._set_props(conversations=self._conversation_infos())
 
+    @override
+    def _on_prop_assigned(self, name: str) -> None:
+        # Keep the selection valid when the model list changes.
+        if name == "models" and self.model not in self.models:
+            self.model = self.models[0] if len(self.models) > 0 else ""
+
     def on_submit(
         self, func: Callable[[ChatSubmitEvent], NoneOrCoroutine]
     ) -> Callable[[ChatSubmitEvent], NoneOrCoroutine]:
@@ -1502,6 +1512,7 @@ class GuiChatHandle(_GuiHandle[None], GuiChatProps):
             chat=self,
             conversation=self._conversation,
             message=message,
+            model=self.model,
         )
         # Run as a task: awaiting here would block this client's websocket
         # handler, so history actions couldn't be processed during a reply.
@@ -1527,10 +1538,17 @@ class GuiChatHandle(_GuiHandle[None], GuiChatProps):
 
     def _handle_action(
         self,
-        action: Literal["new", "open", "delete", "rename"],
+        action: Literal["new", "open", "delete", "rename", "set_model"],
         conversation_id: str,
         value: str,
     ) -> None:
+        if action == "set_model":
+            # Only models offered by the server can be selected.
+            if value in self.models:
+                self.model = value
+            else:
+                warnings.warn(f"Ignoring selection of unknown model {value!r}.")
+            return
         # Switching conversations mid-reply would send the reply to the wrong
         # place; the client disables history while busy, this is the backstop.
         if self.busy and action in ("new", "open", "delete"):

@@ -20,6 +20,7 @@ import importlib.util
 import os
 import time
 from pathlib import Path
+from typing import Any
 
 import viser
 
@@ -27,6 +28,11 @@ SYSTEM_PROMPT = (
     "You are the assistant built into Viser Studio, a 3D viewer used for "
     "robotics and CAM work. Answer concisely, using markdown when it helps."
 )
+# Models offered in the chat's model selector; the first is the default.
+CLAUDE_MODELS = ("claude-opus-5", "claude-sonnet-5", "claude-haiku-4-5")
+# Models for which server-side refusal fallbacks are enabled.
+FALLBACK_MODELS = {"claude-opus-5"}
+ECHO_MODELS = ("echo", "echo (slow)")
 CLAUDE_IMAGE_TYPES = {"image/jpeg", "image/png", "image/gif", "image/webp"}
 TEXT_TYPES = {"application/json", "application/xml", "text/csv", "text/markdown"}
 
@@ -92,17 +98,21 @@ def claude_reply(event: viser.ChatSubmitEvent) -> None:
         for m in event.conversation.messages
         if m.role in ("user", "assistant")
     ]
+    # `fallbacks="default"` re-runs a request declined by the safety
+    # classifiers on Anthropic's recommended fallback model.
+    fallback: dict[str, Any] = (
+        {"betas": ["server-side-fallback-2026-07-01"], "fallbacks": "default"}
+        if event.model in FALLBACK_MODELS
+        else {}
+    )
     try:
         with event.chat.stream() as reply:
-            # `fallbacks="default"` re-runs a request declined by the safety
-            # classifiers on Anthropic's recommended fallback model.
             with client.beta.messages.stream(
-                model="claude-opus-5",
+                model=event.model,
                 max_tokens=64000,
                 system=SYSTEM_PROMPT,
                 messages=history,  # type: ignore[arg-type]
-                betas=["server-side-fallback-2026-07-01"],
-                fallbacks="default",
+                **fallback,
             ) as stream:
                 for text in stream.text_stream:
                     reply.write(text)
@@ -131,12 +141,14 @@ def echo_reply(event: viser.ChatSubmitEvent) -> None:
             f"- attachment `{att.name}` ({att.mime_type}, {len(att.data)} bytes)"
         )
     lines.append(
-        "\n*Echo mode: install `anthropic` and set `ANTHROPIC_API_KEY` for real answers.*"
+        f"\n*Echo mode (model: `{event.model}`): install `anthropic` and set "
+        "`ANTHROPIC_API_KEY` for real answers.*"
     )
+    delay = 0.15 if event.model == "echo (slow)" else 0.03
     with event.chat.stream() as reply:
         for word in "\n".join(lines).split(" "):
             reply.write(word + " ")
-            time.sleep(0.03)
+            time.sleep(delay)
 
 
 def main() -> None:
@@ -163,6 +175,8 @@ def main() -> None:
             "This is an AI assistant, not a human. Always check for accuracy. "
             "Conversations are saved on the server."
         ),
+        # Offered through the settings button in the chat header.
+        models=CLAUDE_MODELS if use_claude else ECHO_MODELS,
         # Saved outside the repo so conversations are never committed.
         store=viser.ConversationStore(Path.home() / ".viser" / "chat_history"),
     )

@@ -1364,6 +1364,8 @@ export interface GuiChatMessage {
       updated_at: number;
     }[];
     active_conversation_id: string;
+    models: string[];
+    model: string;
   };
 }
 /** Sent server->client to remove a GUI element.
@@ -2088,7 +2090,7 @@ export interface GuiChatSubmitMessage {
 export interface GuiChatActionMessage {
   type: "GuiChatActionMessage";
   uuid: string;
-  action: "new" | "open" | "delete" | "rename";
+  action: "new" | "open" | "delete" | "rename" | "set_model";
   conversation_id: string;
   value: string;
 }

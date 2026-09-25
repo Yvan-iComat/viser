@@ -185,7 +185,8 @@ def test_connect_indexes_attachments_and_answers() -> None:
     try:
         client = _Client()
         rag = _rag(client)
-        chat = server.gui.add_chat()
+        chat = server.gui.add_chat(models=("m", "m-pro"))
+        chat.model = "m-pro"
         doc_list = server.gui.add_markdown("")
         rag.connect(chat, document_list=doc_list)
         assert "No documents" in doc_list.content
@@ -204,6 +205,8 @@ def test_connect_indexes_attachments_and_answers() -> None:
         thread.join()
 
         assert client.file_search_stores.uploads[0][0] == b"%PDF"
+        # The model selected in the chat is used, not the instance default.
+        assert client.models.requests[0][0] == "m-pro"
         assert "manual.pdf" in doc_list.content
         texts = [(m.role, m.text) for m in chat.messages]
         assert texts[1:3] == [

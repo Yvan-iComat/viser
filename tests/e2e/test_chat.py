@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import io
 import threading
+import time
 
 import numpy as np
 from PIL import Image
@@ -126,3 +127,43 @@ def test_chat_history_reopen(
     row = viser_page.get_by_text("first topic", exact=True)
     row.dispatch_event("click", event_init={"button": 0})
     expect(viser_page.get_by_text("reply to first topic")).to_be_visible(timeout=5_000)
+
+
+def test_chat_model_selector(
+    viser_server: viser.ViserServer,
+    viser_page: Page,
+) -> None:
+    """The settings button lists the server's models; picking one reaches
+    the server, and callbacks see it as ``event.model``."""
+    chat = viser_server.gui.add_chat(models=("model-a", "model-b"))
+    seen: list[str] = []
+    done = threading.Event()
+
+    @chat.on_submit
+    def _(event: viser.ChatSubmitEvent) -> None:
+        seen.append(event.model)
+        done.set()
+
+    _click(viser_page, "Model settings")
+    select = viser_page.get_by_role("combobox", name="AI model")
+    expect(select).to_have_value("model-a", timeout=5_000)
+    select.dispatch_event("click")
+    viser_page.get_by_role("option", name="model-b").dispatch_event("click")
+
+    deadline = time.time() + 5.0
+    while chat.model != "model-b" and time.time() < deadline:
+        time.sleep(0.05)
+    assert chat.model == "model-b"
+
+    box = viser_page.get_by_placeholder("Ask anything…")
+    box.fill("hi")
+    box.press("Enter")
+    assert done.wait(timeout=10.0)
+    assert seen == ["model-b"]
+
+    # Server-side changes to the list show up in the dropdown.
+    chat.models = ("model-c",)
+    _click(viser_page, "Model settings")
+    expect(viser_page.get_by_role("combobox", name="AI model")).to_have_value(
+        "model-c", timeout=5_000
+    )

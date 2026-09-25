@@ -29,7 +29,11 @@ from viser.extras import GeminiFileSearch
 def main(
     docs_dir: Path | None = None,
     store: str = "viser-studio-docs",
-    model: str = "gemini-3.8-flash",
+    models: tuple[str, ...] = (
+        "gemini-3.8-flash",
+        "gemini-3.5-flash",
+        "gemini-3.1-pro-preview",
+    ),
 ) -> None:
     """Start the assistant.
 
@@ -37,9 +41,10 @@ def main(
         docs_dir: Folder of documents to index at startup (already-indexed
             files are skipped).
         store: Display name of the File Search store; created if missing.
-        model: Gemini model to answer with. Must support File Search.
+        models: Gemini models offered in the chat's model selector; the first
+            is the default. They must support File Search.
     """
-    rag = GeminiFileSearch(store, model=model)
+    rag = GeminiFileSearch(store, model=models[0])
     if docs_dir is not None:
         for name in rag.index_folder(docs_dir):
             print(f"Indexed {name}")
@@ -57,6 +62,7 @@ def main(
             "check the cited sources."
         ),
         placeholder="Ask about your documents…",
+        models=models,
         store=viser.ConversationStore(Path.home() / ".viser" / "rag_chat_history"),
     )
     with panel.add_tab("Documents", viser.Icon.FILES):

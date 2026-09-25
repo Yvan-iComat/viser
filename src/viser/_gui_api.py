@@ -2736,6 +2736,8 @@ class GuiApi:
         disclaimer: str | None = None,
         placeholder: str = "Ask anything…",
         height: int = 560,
+        models: Sequence[str] = (),
+        model: str | None = None,
         store: ConversationStore | None = None,
         parent: GuiContainerProtocol | None = None,
         visible: bool = True,
@@ -2762,6 +2764,12 @@ class GuiApi:
                 itself to its content (e.g. a floating panel that hasn't been
                 resized). In a fixed-height container -- a docked or resized
                 panel -- the chat grows or shrinks to fill it instead.
+            models: AI models the user can choose from, through a settings
+                button in the chat header. Read the choice from
+                ``event.model`` in :meth:`GuiChatHandle.on_submit`. The list
+                can be changed later through ``chat.models``.
+            model: Initially selected model. Defaults to the first of
+                ``models``.
             store: Where conversations are saved. Defaults to an in-memory
                 store; pass ``ConversationStore("some/dir")`` to persist them
                 as JSON files.
@@ -2785,6 +2793,11 @@ class GuiApi:
         """
         if height <= 0:
             raise ValueError("`height` must be positive.")
+        models = tuple(models)
+        if model is None:
+            model = models[0] if len(models) > 0 else ""
+        elif model not in models:
+            raise ValueError(f"`model` {model!r} is not in `models` {models!r}.")
         if isinstance(parent, PanelHandle):
             raise TypeError(
                 "A panel holds tabs, not content directly. Add the chat to one "
@@ -2824,6 +2837,8 @@ class GuiApi:
                     for c in store.list_conversations()
                 ),
                 active_conversation_id="",
+                models=models,
+                model=model,
             ),
         )
         handle = GuiChatHandle(

@@ -2535,6 +2535,10 @@ class GuiChatProps(GuiBaseProps):
     """Saved conversations, most recently updated first."""
     active_conversation_id: str
     """Identifier of the conversation currently displayed."""
+    models: Tuple[str, ...]
+    """AI models the user can choose from. The selector is hidden when empty."""
+    model: str
+    """Currently selected model; one of `models`, or empty if there are none."""
 
 
 @dataclasses.dataclass
@@ -2569,11 +2573,11 @@ class GuiChatActionMessage(Message, include_in_scene_serialization=False):
     """Message sent from client->server for conversation history actions."""
 
     uuid: str
-    action: Literal["new", "open", "delete", "rename"]
+    action: Literal["new", "open", "delete", "rename", "set_model"]
     conversation_id: str
-    """Target conversation. Ignored for 'new'."""
+    """Target conversation. Ignored for 'new' and 'set_model'."""
     value: str
-    """New title for 'rename'; empty otherwise."""
+    """New title for 'rename', model name for 'set_model'; empty otherwise."""
 
 
 @dataclasses.dataclass

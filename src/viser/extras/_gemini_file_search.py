@@ -34,7 +34,19 @@ def _default_client() -> Client:
     return Client()
 
 
+_MIME_OVERRIDES = {
+    # Not registered in Python's mimetypes on all platforms (notably
+    # Windows), where the fallback of application/octet-stream is rejected
+    # by File Search for text formats it needs to parse.
+    ".md": "text/markdown",
+    ".csv": "text/csv",
+}
+
+
 def _guess_mime(name: str) -> str:
+    suffix = Path(name).suffix.lower()
+    if suffix in _MIME_OVERRIDES:
+        return _MIME_OVERRIDES[suffix]
     return mimetypes.guess_type(name)[0] or "application/octet-stream"
 
 
@@ -143,7 +155,8 @@ class GeminiFileSearch:
         folder: str | Path,
         suffixes: Sequence[str] = DEFAULT_DOC_SUFFIXES,
     ) -> list[str]:
-        """Index the documents in a folder that aren't in the store yet.
+        """Index the documents in a folder (recursively) that aren't in the
+        store yet.
 
         Files are matched to indexed documents by name.
 
@@ -152,8 +165,12 @@ class GeminiFileSearch:
         """
         indexed = {d.display_name for d in self.documents()}
         added = []
-        for path in sorted(Path(folder).iterdir()):
-            if path.suffix.lower() not in suffixes or path.name in indexed:
+        for path in sorted(Path(folder).rglob("*")):
+            if (
+                not path.is_file()
+                or path.suffix.lower() not in suffixes
+                or path.name in indexed
+            ):
                 continue
             self.index(path)
             added.append(path.name)
@@ -163,6 +180,7 @@ class GeminiFileSearch:
         self,
         conversation: viser.Conversation,
         sources: list[str] | None = None,
+        model: str | None = None,
     ) -> Iterator[str]:
         """Stream Gemini's answer to the last message of a conversation.
 
@@ -173,6 +191,7 @@ class GeminiFileSearch:
             conversation: Conversation to answer.
             sources: Optional list, filled with the cited documents (and
                 pages) once the stream ends.
+            model: Gemini model to answer with. Defaults to ``self.model``.
         """
         from google.genai import types  # pyright: ignore[reportMissingImports]
 
@@ -203,7 +222,9 @@ class GeminiFileSearch:
         )
         cited: dict[str, None] = {}  # Ordered set.
         for chunk in self.client.models.generate_content_stream(
-            model=self.model, contents=contents, config=config
+            model=self.model if model is None else model,
+            contents=contents,
+            config=config,
         ):
             if chunk.text:
                 yield chunk.text
@@ -263,7 +284,9 @@ class GeminiFileSearch:
 
             sources: list[str] = []
             with chat.stream() as reply:
-                for text in self.stream_answer(event.conversation, sources):
+                # The model picked in the chat's selector, if it offers one.
+                model = event.model if event.model != "" else None
+                for text in self.stream_answer(event.conversation, sources, model):
                     reply.write(text)
                 if sources:
                     reply.write("\n\n**Sources:** " + "; ".join(sources))
