@@ -252,3 +252,27 @@ def test_connect_indexes_attachments_and_answers() -> None:
         assert "**Sources:** manual.pdf, p. 7; spec.pdf" in texts[3][1]
     finally:
         server.stop()
+
+
+def test_connect_documents_tab() -> None:
+    server = viser.ViserServer(port=0, verbose=False)
+    try:
+        # Default: a "Documents" tab is added next to the chat's tab.
+        panel = server.gui.add_panel()
+        chat = server.gui.add_chat(parent=panel.add_tab("Assistant"))
+        doc_list = _rag(_Client()).connect(chat)
+        assert [t._label for t in panel._tab_handles] == ["Assistant", "Documents"]
+        assert doc_list is not None and "No documents" in doc_list.content
+
+        # Hidden on request.
+        panel2 = server.gui.add_panel()
+        chat2 = server.gui.add_chat(parent=panel2.add_tab("Assistant"))
+        assert _rag(_Client()).connect(chat2, show_documents=False) is None
+        assert [t._label for t in panel2._tab_handles] == ["Assistant"]
+
+        # A chat outside any tab can't get one: warn instead.
+        chat3 = server.gui.add_chat()
+        with pytest.warns(UserWarning, match="needs the chat to be in a tab"):
+            assert _rag(_Client()).connect(chat3) is None
+    finally:
+        server.stop()
