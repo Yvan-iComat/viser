@@ -15,7 +15,7 @@
     <link rel="index" title="Index" href="../../../genindex/" /><link rel="search" title="Search" href="../../../search/" /><link rel="next" title="Interactive Notebooks" href="../../../interactive_notebooks/" /><link rel="prev" title="Communication" href="../infrastructure/" />
 
     <!-- Generated with Sphinx 8.0.2 and Furo 2024.08.06 -->
-        <title>Extras: Record3D, URDF, and Gemini File Search Helpers - viser</title>
+        <title>Extras: Record3D, URDF, LLM Assistant, and Gemini File Search Helpers - viser</title>
       <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
     <link rel="stylesheet" type="text/css" href="../../../_static/styles/furo.css?v=354aac6f" />
     <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css?v=76b2166b" />
@@ -380,7 +380,7 @@
 <li class="toctree-l1 current has-children"><a class="reference internal" href="../">Auxiliary API</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" role="switch" type="checkbox"/><label for="toctree-checkbox-9"><div class="visually-hidden">Toggle navigation of Auxiliary API</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="../transforms/">Transforms</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../infrastructure/">Communication</a></li>
-<li class="toctree-l2 current current-page"><a class="current reference internal" href="#">Extras: Record3D, URDF, and Gemini File Search Helpers</a></li>
+<li class="toctree-l2 current current-page"><a class="current reference internal" href="#">Extras: Record3D, URDF, LLM Assistant, and Gemini File Search Helpers</a></li>
 </ul>
 </li>
 </ul>
@@ -433,7 +433,7 @@
         </div>
         <article role="main" id="furo-main-content">
           <section id="module-viser.extras">
-<span id="extras-record3d-urdf-and-gemini-file-search-helpers"></span><h1>Extras: Record3D, URDF, and Gemini File Search Helpers<a class="headerlink" href="#module-viser.extras" title="Link to this heading">¶</a></h1>
+<span id="extras-record3d-urdf-llm-assistant-and-gemini-file-search-helpers"></span><h1>Extras: Record3D, URDF, LLM Assistant, and Gemini File Search Helpers<a class="headerlink" href="#module-viser.extras" title="Link to this heading">¶</a></h1>
 <p>Extra utilities. Used for example scripts.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="viser.extras.GeminiFileSearch">
@@ -613,6 +613,345 @@ list instead, for custom placement. Takes precedence over
 </dl>
 </dd></dl>
 
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="viser.extras.AnthropicBackend">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">viser.extras.</span></span><span class="sig-name descname"><span class="pre">AnthropicBackend</span></span><a class="reference internal" href="../../../_modules/viser/extras/_mcp_assistant/#AnthropicBackend"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#viser.extras.AnthropicBackend" title="Link to this definition">¶</a></dt>
+<dd><p><a class="reference internal" href="#viser.extras.LlmBackend" title="viser.extras.LlmBackend"><code class="xref py py-class docutils literal notranslate"><span class="pre">LlmBackend</span></code></a> for Claude, via the <code class="docutils literal notranslate"><span class="pre">anthropic</span></code> SDK.</p>
+<p>Requires <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">anthropic</span></code> and an <code class="docutils literal notranslate"><span class="pre">ANTHROPIC_API_KEY</span></code>
+environment variable, unless <code class="docutils literal notranslate"><span class="pre">client</span></code> is given.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>system_instruction</strong> – System prompt for answers.</p></li>
+<li><p><strong>max_tokens</strong> – Output token limit per turn.</p></li>
+<li><p><strong>client</strong> – Optional preconfigured <code class="docutils literal notranslate"><span class="pre">anthropic.AsyncAnthropic</span></code>.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="viser.extras.AnthropicBackend.start_history">
+<span class="sig-name descname"><span class="pre">start_history</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">conversation</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="../../advanced/chat/#viser.Conversation" title="viser._chat.Conversation"><span class="pre">Conversation</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.14)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../../../_modules/viser/extras/_mcp_assistant/#AnthropicBackend.start_history"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#viser.extras.AnthropicBackend.start_history" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>conversation</strong> (<a class="reference internal" href="../../advanced/chat/#viser.Conversation" title="viser._chat.Conversation"><em>Conversation</em></a>)</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.14)">list</a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.14)">dict</a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="viser.extras.AnthropicBackend.extend_history">
+<span class="sig-name descname"><span class="pre">extend_history</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">history</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.14)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">turn</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#viser.extras.ModelTurn" title="viser.extras._mcp_assistant.ModelTurn"><span class="pre">ModelTurn</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">results</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Sequence" title="(in Python v3.14)"><span class="pre">Sequence</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#viser.extras.ToolResult" title="viser.extras._mcp_assistant.ToolResult"><span class="pre">ToolResult</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.14)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../../../_modules/viser/extras/_mcp_assistant/#AnthropicBackend.extend_history"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#viser.extras.AnthropicBackend.extend_history" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>history</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.14)"><em>list</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a><em>]</em>)</p></li>
+<li><p><strong>turn</strong> (<a class="reference internal" href="#viser.extras.ModelTurn" title="viser.extras._mcp_assistant.ModelTurn"><em>ModelTurn</em></a>)</p></li>
+<li><p><strong>results</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Sequence" title="(in Python v3.14)"><em>Sequence</em></a><em>[</em><a class="reference internal" href="#viser.extras.ToolResult" title="viser.extras._mcp_assistant.ToolResult"><em>ToolResult</em></a><em>]</em>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.14)">list</a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.14)">dict</a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="viser.extras.AnthropicBackend.stream_turn">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">stream_turn</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">history</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.14)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">tools</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">McpTool</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">write</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#viser.extras.ModelTurn" title="viser.extras.ModelTurn"><span class="pre">ModelTurn</span></a></span></span><a class="reference internal" href="../../../_modules/viser/extras/_mcp_assistant/#AnthropicBackend.stream_turn"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#viser.extras.AnthropicBackend.stream_turn" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>history</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.14)"><em>list</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a><em>]</em>)</p></li>
+<li><p><strong>model</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>)</p></li>
+<li><p><strong>tools</strong> (<em>Sequence</em><em>[</em><em>McpTool</em><em>]</em>)</p></li>
+<li><p><strong>write</strong> (<em>Any</em>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#viser.extras.ModelTurn" title="viser.extras.ModelTurn">ModelTurn</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="viser.extras.AnthropicBackend.format_error">
+<span class="sig-name descname"><span class="pre">format_error</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">error</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#BaseException" title="(in Python v3.14)"><span class="pre">BaseException</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../../../_modules/viser/extras/_mcp_assistant/#AnthropicBackend.format_error"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#viser.extras.AnthropicBackend.format_error" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>error</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#BaseException" title="(in Python v3.14)"><em>BaseException</em></a>)</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)">str</a> | None</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="viser.extras.GeminiBackend">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">viser.extras.</span></span><span class="sig-name descname"><span class="pre">GeminiBackend</span></span><a class="reference internal" href="../../../_modules/viser/extras/_mcp_assistant/#GeminiBackend"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#viser.extras.GeminiBackend" title="Link to this definition">¶</a></dt>
+<dd><p><a class="reference internal" href="#viser.extras.LlmBackend" title="viser.extras.LlmBackend"><code class="xref py py-class docutils literal notranslate"><span class="pre">LlmBackend</span></code></a> for Google Gemini, via <code class="docutils literal notranslate"><span class="pre">google-genai</span></code>.</p>
+<p>Requires <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">google-genai</span></code> and a <code class="docutils literal notranslate"><span class="pre">GEMINI_API_KEY</span></code> (or
+<code class="docutils literal notranslate"><span class="pre">GOOGLE_API_KEY</span></code>) environment variable, unless <code class="docutils literal notranslate"><span class="pre">client</span></code> is given.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>system_instruction</strong> – System prompt for answers.</p></li>
+<li><p><strong>client</strong> – Optional preconfigured <code class="docutils literal notranslate"><span class="pre">google.genai.Client</span></code>.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="viser.extras.GeminiBackend.start_history">
+<span class="sig-name descname"><span class="pre">start_history</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">conversation</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="../../advanced/chat/#viser.Conversation" title="viser._chat.Conversation"><span class="pre">Conversation</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.14)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../../../_modules/viser/extras/_mcp_assistant/#GeminiBackend.start_history"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#viser.extras.GeminiBackend.start_history" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>conversation</strong> (<a class="reference internal" href="../../advanced/chat/#viser.Conversation" title="viser._chat.Conversation"><em>Conversation</em></a>)</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.14)">list</a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><em>Any</em></a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="viser.extras.GeminiBackend.extend_history">
+<span class="sig-name descname"><span class="pre">extend_history</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">history</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.14)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">turn</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#viser.extras.ModelTurn" title="viser.extras._mcp_assistant.ModelTurn"><span class="pre">ModelTurn</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">results</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Sequence" title="(in Python v3.14)"><span class="pre">Sequence</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#viser.extras.ToolResult" title="viser.extras._mcp_assistant.ToolResult"><span class="pre">ToolResult</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.14)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../../../_modules/viser/extras/_mcp_assistant/#GeminiBackend.extend_history"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#viser.extras.GeminiBackend.extend_history" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>history</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.14)"><em>list</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><em>Any</em></a><em>]</em>)</p></li>
+<li><p><strong>turn</strong> (<a class="reference internal" href="#viser.extras.ModelTurn" title="viser.extras._mcp_assistant.ModelTurn"><em>ModelTurn</em></a>)</p></li>
+<li><p><strong>results</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Sequence" title="(in Python v3.14)"><em>Sequence</em></a><em>[</em><a class="reference internal" href="#viser.extras.ToolResult" title="viser.extras._mcp_assistant.ToolResult"><em>ToolResult</em></a><em>]</em>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.14)">list</a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><em>Any</em></a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="viser.extras.GeminiBackend.stream_turn">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">stream_turn</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">history</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.14)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">tools</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">McpTool</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">write</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#viser.extras.ModelTurn" title="viser.extras.ModelTurn"><span class="pre">ModelTurn</span></a></span></span><a class="reference internal" href="../../../_modules/viser/extras/_mcp_assistant/#GeminiBackend.stream_turn"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#viser.extras.GeminiBackend.stream_turn" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>history</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.14)"><em>list</em></a><em>[</em><em>Any</em><em>]</em>)</p></li>
+<li><p><strong>model</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>)</p></li>
+<li><p><strong>tools</strong> (<em>Sequence</em><em>[</em><em>McpTool</em><em>]</em>)</p></li>
+<li><p><strong>write</strong> (<em>Any</em>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#viser.extras.ModelTurn" title="viser.extras.ModelTurn">ModelTurn</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="viser.extras.GeminiBackend.format_error">
+<span class="sig-name descname"><span class="pre">format_error</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">error</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#BaseException" title="(in Python v3.14)"><span class="pre">BaseException</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../../../_modules/viser/extras/_mcp_assistant/#GeminiBackend.format_error"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#viser.extras.GeminiBackend.format_error" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>error</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#BaseException" title="(in Python v3.14)"><em>BaseException</em></a>)</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)">str</a> | None</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="viser.extras.LlmBackend">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">viser.extras.</span></span><span class="sig-name descname"><span class="pre">LlmBackend</span></span><a class="reference internal" href="../../../_modules/viser/extras/_mcp_assistant/#LlmBackend"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#viser.extras.LlmBackend" title="Link to this definition">¶</a></dt>
+<dd><p>Provider-specific half of <a class="reference internal" href="#viser.extras.McpAssistant" title="viser.extras.McpAssistant"><code class="xref py py-class docutils literal notranslate"><span class="pre">McpAssistant</span></code></a>.</p>
+<p>A backend converts between the chat’s conversation and whatever the
+provider’s SDK expects, and streams one assistant turn at a time. The tool
+loop, the MCP session and all error reporting live in
+<a class="reference internal" href="#viser.extras.McpAssistant" title="viser.extras.McpAssistant"><code class="xref py py-class docutils literal notranslate"><span class="pre">McpAssistant</span></code></a>.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="viser.extras.LlmBackend.start_history">
+<span class="sig-name descname"><span class="pre">start_history</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">conversation</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="../../advanced/chat/#viser.Conversation" title="viser._chat.Conversation"><span class="pre">Conversation</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a></span></span><a class="reference internal" href="../../../_modules/viser/extras/_mcp_assistant/#LlmBackend.start_history"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#viser.extras.LlmBackend.start_history" title="Link to this definition">¶</a></dt>
+<dd><p>Build the provider’s initial conversation state from chat history.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>conversation</strong> (<a class="reference internal" href="../../advanced/chat/#viser.Conversation" title="viser._chat.Conversation"><em>Conversation</em></a>)</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><em>Any</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="viser.extras.LlmBackend.extend_history">
+<span class="sig-name descname"><span class="pre">extend_history</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">history</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">turn</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#viser.extras.ModelTurn" title="viser.extras._mcp_assistant.ModelTurn"><span class="pre">ModelTurn</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">results</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Sequence" title="(in Python v3.14)"><span class="pre">Sequence</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#viser.extras.ToolResult" title="viser.extras._mcp_assistant.ToolResult"><span class="pre">ToolResult</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a></span></span><a class="reference internal" href="../../../_modules/viser/extras/_mcp_assistant/#LlmBackend.extend_history"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#viser.extras.LlmBackend.extend_history" title="Link to this definition">¶</a></dt>
+<dd><p>Append a model turn and its tool results, returning the new history.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>history</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><em>Any</em></a>)</p></li>
+<li><p><strong>turn</strong> (<a class="reference internal" href="#viser.extras.ModelTurn" title="viser.extras._mcp_assistant.ModelTurn"><em>ModelTurn</em></a>)</p></li>
+<li><p><strong>results</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Sequence" title="(in Python v3.14)"><em>Sequence</em></a><em>[</em><a class="reference internal" href="#viser.extras.ToolResult" title="viser.extras._mcp_assistant.ToolResult"><em>ToolResult</em></a><em>]</em>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><em>Any</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="viser.extras.LlmBackend.stream_turn">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">stream_turn</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">history</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">tools</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">McpTool</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">write</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#viser.extras.ModelTurn" title="viser.extras.ModelTurn"><span class="pre">ModelTurn</span></a></span></span><a class="reference internal" href="../../../_modules/viser/extras/_mcp_assistant/#LlmBackend.stream_turn"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#viser.extras.LlmBackend.stream_turn" title="Link to this definition">¶</a></dt>
+<dd><p>Stream one assistant turn, calling <code class="docutils literal notranslate"><span class="pre">write(text)</span></code> as text arrives.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>history</strong> (<em>Any</em>) – Conversation state from <a class="reference internal" href="#viser.extras.LlmBackend.start_history" title="viser.extras.LlmBackend.start_history"><code class="xref py py-meth docutils literal notranslate"><span class="pre">start_history()</span></code></a> or
+<a class="reference internal" href="#viser.extras.LlmBackend.extend_history" title="viser.extras.LlmBackend.extend_history"><code class="xref py py-meth docutils literal notranslate"><span class="pre">extend_history()</span></code></a>.</p></li>
+<li><p><strong>model</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – Model to answer with.</p></li>
+<li><p><strong>tools</strong> (<em>Sequence</em><em>[</em><em>McpTool</em><em>]</em>) – Tools advertised by the MCP server.</p></li>
+<li><p><strong>write</strong> (<em>Any</em>) – Callback appending text to the reply.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The turn, including any tool calls the model requested.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#viser.extras.ModelTurn" title="viser.extras.ModelTurn">ModelTurn</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="viser.extras.LlmBackend.format_error">
+<span class="sig-name descname"><span class="pre">format_error</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">error</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#BaseException" title="(in Python v3.14)"><span class="pre">BaseException</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../../../_modules/viser/extras/_mcp_assistant/#LlmBackend.format_error"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#viser.extras.LlmBackend.format_error" title="Link to this definition">¶</a></dt>
+<dd><p>Message to show for a provider-specific error, or None to re-raise.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>error</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#BaseException" title="(in Python v3.14)"><em>BaseException</em></a>)</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)">str</a> | None</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="viser.extras.McpAssistant">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">viser.extras.</span></span><span class="sig-name descname"><span class="pre">McpAssistant</span></span><a class="reference internal" href="../../../_modules/viser/extras/_mcp_assistant/#McpAssistant"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#viser.extras.McpAssistant" title="Link to this definition">¶</a></dt>
+<dd><p>Answer chat messages with an LLM, letting it call an MCP server’s tools.</p>
+<p>For each message an MCP client session is opened, the server’s tools are
+offered to the model, and the model’s tool calls are forwarded to the
+server until it produces a final answer. The provider is supplied as an
+<a class="reference internal" href="#viser.extras.LlmBackend" title="viser.extras.LlmBackend"><code class="xref py py-class docutils literal notranslate"><span class="pre">LlmBackend</span></code></a>, so the same loop works for Gemini, Claude or any other
+tool-calling model.</p>
+<p class="rubric">Example</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">viser.extras</span><span class="w"> </span><span class="kn">import</span> <span class="n">GeminiBackend</span><span class="p">,</span> <span class="n">McpAssistant</span>
+<span class="gp">&gt;&gt;&gt;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">assistant</span> <span class="o">=</span> <span class="n">McpAssistant</span><span class="p">(</span><span class="n">endpoint</span><span class="p">,</span> <span class="n">GeminiBackend</span><span class="p">(</span><span class="n">system_instruction</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">assistant</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">chat</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>endpoint</strong> – Streamable HTTP URL of the MCP server.</p></li>
+<li><p><strong>backend</strong> – Provider adapter used to answer.</p></li>
+<li><p><strong>model</strong> – Default model; the chat’s model selector overrides it.</p></li>
+<li><p><strong>max_tool_rounds</strong> – Safety net for runaway tool loops within one reply.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="viser.extras.McpAssistant.answer">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">answer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">event</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="../../advanced/events/#viser.ChatSubmitEvent" title="viser._gui_handles.ChatSubmitEvent"><span class="pre">ChatSubmitEvent</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../../../_modules/viser/extras/_mcp_assistant/#McpAssistant.answer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#viser.extras.McpAssistant.answer" title="Link to this definition">¶</a></dt>
+<dd><p>Chat submit callback: run the tool loop, streaming text and tool calls.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>event</strong> (<a class="reference internal" href="../../advanced/events/#viser.ChatSubmitEvent" title="viser._gui_handles.ChatSubmitEvent"><em>ChatSubmitEvent</em></a>)</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="viser.extras.McpAssistant.connect">
+<span class="sig-name descname"><span class="pre">connect</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">chat</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="../../handles/gui_handles/#viser.GuiChatHandle" title="viser._gui_handles.GuiChatHandle"><span class="pre">GuiChatHandle</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../../../_modules/viser/extras/_mcp_assistant/#McpAssistant.connect"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#viser.extras.McpAssistant.connect" title="Link to this definition">¶</a></dt>
+<dd><p>Answer every message submitted to <code class="docutils literal notranslate"><span class="pre">chat</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>chat</strong> (<a class="reference internal" href="../../handles/gui_handles/#viser.GuiChatHandle" title="viser._gui_handles.GuiChatHandle"><em>GuiChatHandle</em></a>)</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="viser.extras.ModelTurn">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">viser.extras.</span></span><span class="sig-name descname"><span class="pre">ModelTurn</span></span><a class="reference internal" href="../../../_modules/viser/extras/_mcp_assistant/#ModelTurn"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#viser.extras.ModelTurn" title="Link to this definition">¶</a></dt>
+<dd><p>One assistant turn: text written so far, plus any tool calls to run.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>text</strong> – Text the model produced this turn (already streamed to the chat).</p></li>
+<li><p><strong>tool_calls</strong> – Tools the model wants to call before continuing.</p></li>
+<li><p><strong>state</strong> – Opaque provider-native representation of the turn. The tool
+loop never inspects it; it is handed back to
+<a class="reference internal" href="#viser.extras.LlmBackend.extend_history" title="viser.extras.LlmBackend.extend_history"><code class="xref py py-meth docutils literal notranslate"><span class="pre">LlmBackend.extend_history()</span></code></a> so providers that require their
+own turn objects (e.g. Gemini’s thought signatures) round-trip
+them unchanged.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="viser.extras.ToolCall">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">viser.extras.</span></span><span class="sig-name descname"><span class="pre">ToolCall</span></span><a class="reference internal" href="../../../_modules/viser/extras/_mcp_assistant/#ToolCall"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#viser.extras.ToolCall" title="Link to this definition">¶</a></dt>
+<dd><p>A tool call requested by the model.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> – Name of the tool to call.</p></li>
+<li><p><strong>arguments</strong> – Arguments to call it with.</p></li>
+<li><p><strong>call_id</strong> – Provider-specific identifier, echoed back with the result.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="viser.extras.ToolResult">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">viser.extras.</span></span><span class="sig-name descname"><span class="pre">ToolResult</span></span><a class="reference internal" href="../../../_modules/viser/extras/_mcp_assistant/#ToolResult"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#viser.extras.ToolResult" title="Link to this definition">¶</a></dt>
+<dd><p>The outcome of running a <a class="reference internal" href="#viser.extras.ToolCall" title="viser.extras.ToolCall"><code class="xref py py-class docutils literal notranslate"><span class="pre">ToolCall</span></code></a> against the MCP server.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>call</strong> – The call this answers.</p></li>
+<li><p><strong>text</strong> – Text content returned by the tool.</p></li>
+<li><p><strong>is_error</strong> – Whether the tool reported a failure.</p></li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py class">
@@ -897,7 +1236,7 @@ name to position.</p>
         <div class="toc-tree-container">
           <div class="toc-tree">
             <ul>
-<li><a class="reference internal" href="#">Extras: Record3D, URDF, and Gemini File Search Helpers</a><ul>
+<li><a class="reference internal" href="#">Extras: Record3D, URDF, LLM Assistant, and Gemini File Search Helpers</a><ul>
 <li><a class="reference internal" href="#viser.extras.GeminiFileSearch"><code class="docutils literal notranslate"><span class="pre">GeminiFileSearch</span></code></a><ul>
 <li><a class="reference internal" href="#viser.extras.GeminiFileSearch.store_name"><code class="docutils literal notranslate"><span class="pre">GeminiFileSearch.store_name</span></code></a></li>
 <li><a class="reference internal" href="#viser.extras.GeminiFileSearch.embedding_model"><code class="docutils literal notranslate"><span class="pre">GeminiFileSearch.embedding_model</span></code></a></li>
@@ -910,6 +1249,35 @@ name to position.</p>
 <li><a class="reference internal" href="#viser.extras.GeminiFileSearch.connect"><code class="docutils literal notranslate"><span class="pre">GeminiFileSearch.connect()</span></code></a></li>
 </ul>
 </li>
+<li><a class="reference internal" href="#viser.extras.AnthropicBackend"><code class="docutils literal notranslate"><span class="pre">AnthropicBackend</span></code></a><ul>
+<li><a class="reference internal" href="#viser.extras.AnthropicBackend.start_history"><code class="docutils literal notranslate"><span class="pre">AnthropicBackend.start_history()</span></code></a></li>
+<li><a class="reference internal" href="#viser.extras.AnthropicBackend.extend_history"><code class="docutils literal notranslate"><span class="pre">AnthropicBackend.extend_history()</span></code></a></li>
+<li><a class="reference internal" href="#viser.extras.AnthropicBackend.stream_turn"><code class="docutils literal notranslate"><span class="pre">AnthropicBackend.stream_turn()</span></code></a></li>
+<li><a class="reference internal" href="#viser.extras.AnthropicBackend.format_error"><code class="docutils literal notranslate"><span class="pre">AnthropicBackend.format_error()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#viser.extras.GeminiBackend"><code class="docutils literal notranslate"><span class="pre">GeminiBackend</span></code></a><ul>
+<li><a class="reference internal" href="#viser.extras.GeminiBackend.start_history"><code class="docutils literal notranslate"><span class="pre">GeminiBackend.start_history()</span></code></a></li>
+<li><a class="reference internal" href="#viser.extras.GeminiBackend.extend_history"><code class="docutils literal notranslate"><span class="pre">GeminiBackend.extend_history()</span></code></a></li>
+<li><a class="reference internal" href="#viser.extras.GeminiBackend.stream_turn"><code class="docutils literal notranslate"><span class="pre">GeminiBackend.stream_turn()</span></code></a></li>
+<li><a class="reference internal" href="#viser.extras.GeminiBackend.format_error"><code class="docutils literal notranslate"><span class="pre">GeminiBackend.format_error()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#viser.extras.LlmBackend"><code class="docutils literal notranslate"><span class="pre">LlmBackend</span></code></a><ul>
+<li><a class="reference internal" href="#viser.extras.LlmBackend.start_history"><code class="docutils literal notranslate"><span class="pre">LlmBackend.start_history()</span></code></a></li>
+<li><a class="reference internal" href="#viser.extras.LlmBackend.extend_history"><code class="docutils literal notranslate"><span class="pre">LlmBackend.extend_history()</span></code></a></li>
+<li><a class="reference internal" href="#viser.extras.LlmBackend.stream_turn"><code class="docutils literal notranslate"><span class="pre">LlmBackend.stream_turn()</span></code></a></li>
+<li><a class="reference internal" href="#viser.extras.LlmBackend.format_error"><code class="docutils literal notranslate"><span class="pre">LlmBackend.format_error()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#viser.extras.McpAssistant"><code class="docutils literal notranslate"><span class="pre">McpAssistant</span></code></a><ul>
+<li><a class="reference internal" href="#viser.extras.McpAssistant.answer"><code class="docutils literal notranslate"><span class="pre">McpAssistant.answer()</span></code></a></li>
+<li><a class="reference internal" href="#viser.extras.McpAssistant.connect"><code class="docutils literal notranslate"><span class="pre">McpAssistant.connect()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#viser.extras.ModelTurn"><code class="docutils literal notranslate"><span class="pre">ModelTurn</span></code></a></li>
+<li><a class="reference internal" href="#viser.extras.ToolCall"><code class="docutils literal notranslate"><span class="pre">ToolCall</span></code></a></li>
+<li><a class="reference internal" href="#viser.extras.ToolResult"><code class="docutils literal notranslate"><span class="pre">ToolResult</span></code></a></li>
 <li><a class="reference internal" href="#viser.extras.Record3dFrame"><code class="docutils literal notranslate"><span class="pre">Record3dFrame</span></code></a><ul>
 <li><a class="reference internal" href="#viser.extras.Record3dFrame.K"><code class="docutils literal notranslate"><span class="pre">Record3dFrame.K</span></code></a></li>
 <li><a class="reference internal" href="#viser.extras.Record3dFrame.rgb"><code class="docutils literal notranslate"><span class="pre">Record3dFrame.rgb</span></code></a></li>

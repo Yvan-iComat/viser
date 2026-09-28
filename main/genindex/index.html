@@ -378,7 +378,7 @@
 <li class="toctree-l1 has-children"><a class="reference internal" href="../api/auxiliary/">Auxiliary API</a><input class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" role="switch" type="checkbox"/><label for="toctree-checkbox-9"><div class="visually-hidden">Toggle navigation of Auxiliary API</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../api/auxiliary/transforms/">Transforms</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../api/auxiliary/infrastructure/">Communication</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../api/auxiliary/extras/">Extras: Record3D, URDF, and Gemini File Search Helpers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/auxiliary/extras/">Extras: Record3D, URDF, LLM Assistant, and Gemini File Search Helpers</a></li>
 </ul>
 </li>
 </ul>
@@ -900,7 +900,11 @@
         <li><a href="../api/auxiliary/infrastructure/#viser.infra.TypeScriptAnnotationOverride.annotation">annotation (viser.infra.TypeScriptAnnotationOverride attribute)</a>
 </li>
         <li><a href="../api/auxiliary/extras/#viser.extras.GeminiFileSearch.answer">answer() (viser.extras.GeminiFileSearch method)</a>
+
+        <ul>
+          <li><a href="../api/auxiliary/extras/#viser.extras.McpAssistant.answer">(viser.extras.McpAssistant method)</a>
 </li>
+        </ul></li>
         <li><a href="../api/advanced/icons/#viser.Icon.ANTENNA">ANTENNA (viser.Icon attribute)</a>
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.ANTENNA_BARS_1">ANTENNA_BARS_1 (viser.Icon attribute)</a>
@@ -916,6 +920,8 @@
         <li><a href="../api/advanced/icons/#viser.Icon.ANTENNA_BARS_OFF">ANTENNA_BARS_OFF (viser.Icon attribute)</a>
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.ANTENNA_OFF">ANTENNA_OFF (viser.Icon attribute)</a>
+</li>
+        <li><a href="../api/auxiliary/extras/#viser.extras.AnthropicBackend">AnthropicBackend (class in viser.extras)</a>
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.APERTURE">APERTURE (viser.Icon attribute)</a>
 </li>
@@ -971,10 +977,10 @@
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.ARMCHAIR_2_OFF">ARMCHAIR_2_OFF (viser.Icon attribute)</a>
 </li>
-        <li><a href="../api/advanced/icons/#viser.Icon.ARMCHAIR_OFF">ARMCHAIR_OFF (viser.Icon attribute)</a>
-</li>
     </ul></td>
     <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="../api/advanced/icons/#viser.Icon.ARMCHAIR_OFF">ARMCHAIR_OFF (viser.Icon attribute)</a>
+</li>
         <li><a href="../api/advanced/icons/#viser.Icon.ARROW_AUTOFIT_CONTENT">ARROW_AUTOFIT_CONTENT (viser.Icon attribute)</a>
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.ARROW_AUTOFIT_CONTENT_FILLED">ARROW_AUTOFIT_CONTENT_FILLED (viser.Icon attribute)</a>
@@ -3972,7 +3978,11 @@
         <li><a href="../api/advanced/icons/#viser.Icon.CONFUCIUS">CONFUCIUS (viser.Icon attribute)</a>
 </li>
         <li><a href="../api/auxiliary/extras/#viser.extras.GeminiFileSearch.connect">connect() (viser.extras.GeminiFileSearch method)</a>
+
+        <ul>
+          <li><a href="../api/auxiliary/extras/#viser.extras.McpAssistant.connect">(viser.extras.McpAssistant method)</a>
 </li>
+        </ul></li>
         <li><a href="../api/advanced/icons/#viser.Icon.CONTAINER">CONTAINER (viser.Icon attribute)</a>
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.CONTAINER_OFF">CONTAINER_OFF (viser.Icon attribute)</a>
@@ -5303,6 +5313,14 @@
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.EXPOSURE_PLUS_2">EXPOSURE_PLUS_2 (viser.Icon attribute)</a>
 </li>
+        <li><a href="../api/auxiliary/extras/#viser.extras.AnthropicBackend.extend_history">extend_history() (viser.extras.AnthropicBackend method)</a>
+
+        <ul>
+          <li><a href="../api/auxiliary/extras/#viser.extras.GeminiBackend.extend_history">(viser.extras.GeminiBackend method)</a>
+</li>
+          <li><a href="../api/auxiliary/extras/#viser.extras.LlmBackend.extend_history">(viser.extras.LlmBackend method)</a>
+</li>
+        </ul></li>
         <li><a href="../api/advanced/icons/#viser.Icon.EXTERNAL_LINK">EXTERNAL_LINK (viser.Icon attribute)</a>
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.EXTERNAL_LINK_OFF">EXTERNAL_LINK_OFF (viser.Icon attribute)</a>
@@ -5603,10 +5621,10 @@
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.FLAG_2_FILLED">FLAG_2_FILLED (viser.Icon attribute)</a>
 </li>
-    </ul></td>
-    <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="../api/advanced/icons/#viser.Icon.FLAG_2_OFF">FLAG_2_OFF (viser.Icon attribute)</a>
 </li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="../api/advanced/icons/#viser.Icon.FLAG_3">FLAG_3 (viser.Icon attribute)</a>
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.FLAG_3_FILLED">FLAG_3_FILLED (viser.Icon attribute)</a>
@@ -5771,6 +5789,14 @@
           <li><a href="../api/handles/scene_handles/#viser.ImageHandle.format">(viser.ImageHandle property)</a>
 </li>
         </ul></li>
+        <li><a href="../api/auxiliary/extras/#viser.extras.AnthropicBackend.format_error">format_error() (viser.extras.AnthropicBackend method)</a>
+
+        <ul>
+          <li><a href="../api/auxiliary/extras/#viser.extras.GeminiBackend.format_error">(viser.extras.GeminiBackend method)</a>
+</li>
+          <li><a href="../api/auxiliary/extras/#viser.extras.LlmBackend.format_error">(viser.extras.LlmBackend method)</a>
+</li>
+        </ul></li>
         <li><a href="../api/advanced/icons/#viser.Icon.FORMS">FORMS (viser.Icon attribute)</a>
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.FOUNTAIN">FOUNTAIN (viser.Icon attribute)</a>
@@ -5912,6 +5938,8 @@
         <li><a href="../api/handles/scene_handles/#viser.GaussianSplatHandle">GaussianSplatHandle (class in viser)</a>
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.GAVEL">GAVEL (viser.Icon attribute)</a>
+</li>
+        <li><a href="../api/auxiliary/extras/#viser.extras.GeminiBackend">GeminiBackend (class in viser.extras)</a>
 </li>
         <li><a href="../api/auxiliary/extras/#viser.extras.GeminiFileSearch">GeminiFileSearch (class in viser.extras)</a>
 </li>
@@ -7209,10 +7237,10 @@
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.LETTER_N">LETTER_N (viser.Icon attribute)</a>
 </li>
-    </ul></td>
-    <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="../api/advanced/icons/#viser.Icon.LETTER_O">LETTER_O (viser.Icon attribute)</a>
 </li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="../api/advanced/icons/#viser.Icon.LETTER_P">LETTER_P (viser.Icon attribute)</a>
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.LETTER_Q">LETTER_Q (viser.Icon attribute)</a>
@@ -7300,6 +7328,8 @@
         <li><a href="../api/advanced/icons/#viser.Icon.LIVE_PHOTO_OFF">LIVE_PHOTO_OFF (viser.Icon attribute)</a>
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.LIVE_VIEW">LIVE_VIEW (viser.Icon attribute)</a>
+</li>
+        <li><a href="../api/auxiliary/extras/#viser.extras.LlmBackend">LlmBackend (class in viser.extras)</a>
 </li>
         <li><a href="../api/advanced/chat/#viser.ConversationStore.load">load() (viser.ConversationStore method)</a>
 </li>
@@ -7731,6 +7761,8 @@
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.MAXIMIZE_OFF">MAXIMIZE_OFF (viser.Icon attribute)</a>
 </li>
+        <li><a href="../api/auxiliary/extras/#viser.extras.McpAssistant">McpAssistant (class in viser.extras)</a>
+</li>
         <li><a href="../api/advanced/icons/#viser.Icon.MEAT">MEAT (viser.Icon attribute)</a>
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.MEAT_OFF">MEAT_OFF (viser.Icon attribute)</a>
@@ -8020,6 +8052,8 @@
 </li>
         </ul></li>
         <li><a href="../api/handles/gui_handles/#viser.GuiChatHandle.models">models (viser.GuiChatHandle attribute)</a>
+</li>
+        <li><a href="../api/auxiliary/extras/#viser.extras.ModelTurn">ModelTurn (class in viser.extras)</a>
 </li>
         <li><a href="../api/handles/gui_handles/#viser.CommandHandle.modifier">modifier (viser.CommandHandle attribute)</a>
 
@@ -10650,14 +10684,14 @@
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.SORT_DESCENDING_2">SORT_DESCENDING_2 (viser.Icon attribute)</a>
 </li>
-    </ul></td>
-    <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="../api/advanced/icons/#viser.Icon.SORT_DESCENDING_LETTERS">SORT_DESCENDING_LETTERS (viser.Icon attribute)</a>
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.SORT_DESCENDING_NUMBERS">SORT_DESCENDING_NUMBERS (viser.Icon attribute)</a>
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.SORT_Z_A">SORT_Z_A (viser.Icon attribute)</a>
 </li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="../api/advanced/uplot/#viser.uplot.Series.sorted">sorted (viser.uplot.Series attribute)</a>
 
         <ul>
@@ -11140,6 +11174,14 @@
 </li>
         <li><a href="../api/auxiliary/infrastructure/#viser.infra.WebsockServer.start">start() (viser.infra.WebsockServer method)</a>
 </li>
+        <li><a href="../api/auxiliary/extras/#viser.extras.AnthropicBackend.start_history">start_history() (viser.extras.AnthropicBackend method)</a>
+
+        <ul>
+          <li><a href="../api/auxiliary/extras/#viser.extras.GeminiBackend.start_history">(viser.extras.GeminiBackend method)</a>
+</li>
+          <li><a href="../api/auxiliary/extras/#viser.extras.LlmBackend.start_history">(viser.extras.LlmBackend method)</a>
+</li>
+        </ul></li>
         <li><a href="../api/advanced/events/#viser.SceneNodeDragEvent.start_position">start_position (viser.SceneNodeDragEvent attribute)</a>
 </li>
         <li><a href="../api/advanced/events/#viser.SceneNodeDragEvent.start_screen_pos">start_screen_pos (viser.SceneNodeDragEvent attribute)</a>
@@ -11196,6 +11238,14 @@
 </li>
         <li><a href="../api/auxiliary/extras/#viser.extras.GeminiFileSearch.stream_answer">stream_answer() (viser.extras.GeminiFileSearch method)</a>
 </li>
+        <li><a href="../api/auxiliary/extras/#viser.extras.AnthropicBackend.stream_turn">stream_turn() (viser.extras.AnthropicBackend method)</a>
+
+        <ul>
+          <li><a href="../api/auxiliary/extras/#viser.extras.GeminiBackend.stream_turn">(viser.extras.GeminiBackend method)</a>
+</li>
+          <li><a href="../api/auxiliary/extras/#viser.extras.LlmBackend.stream_turn">(viser.extras.LlmBackend method)</a>
+</li>
+        </ul></li>
         <li><a href="../api/handles/gui_handles/#viser.GuiChatHandle.streaming_text">streaming_text (viser.GuiChatHandle attribute)</a>
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.STRETCHING">STRETCHING (viser.Icon attribute)</a>
@@ -11536,10 +11586,10 @@
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.TIME_DURATION_10">TIME_DURATION_10 (viser.Icon attribute)</a>
 </li>
-    </ul></td>
-    <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="../api/advanced/icons/#viser.Icon.TIME_DURATION_15">TIME_DURATION_15 (viser.Icon attribute)</a>
 </li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="../api/advanced/icons/#viser.Icon.TIME_DURATION_30">TIME_DURATION_30 (viser.Icon attribute)</a>
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.TIME_DURATION_45">TIME_DURATION_45 (viser.Icon attribute)</a>
@@ -11591,6 +11641,10 @@
         <li><a href="../api/advanced/icons/#viser.Icon.TOML">TOML (viser.Icon attribute)</a>
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.TOOL">TOOL (viser.Icon attribute)</a>
+</li>
+        <li><a href="../api/auxiliary/extras/#viser.extras.ToolCall">ToolCall (class in viser.extras)</a>
+</li>
+        <li><a href="../api/auxiliary/extras/#viser.extras.ToolResult">ToolResult (class in viser.extras)</a>
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.TOOLS">TOOLS (viser.Icon attribute)</a>
 </li>
