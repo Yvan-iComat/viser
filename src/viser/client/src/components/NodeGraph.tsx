@@ -1,8 +1,20 @@
 import "@xyflow/react/dist/style.css";
 
 import React, { useContext, useMemo, useRef, useState } from "react";
-import { Box, Menu, Paper, Text, useComputedColorScheme } from "@mantine/core";
-import { IconPencil, IconTrash } from "@tabler/icons-react";
+import {
+  Box,
+  Checkbox,
+  Menu,
+  NumberInput,
+  Paper,
+  Loader,
+  Text,
+  TextInput,
+  ThemeIcon,
+  Tooltip,
+  useComputedColorScheme,
+} from "@mantine/core";
+import { IconCheck, IconPencil, IconTrash, IconX } from "@tabler/icons-react";
 import {
   Background,
   Connection,
@@ -30,7 +42,18 @@ import { useFillHeight } from "./useFillHeight";
 type NodeGraphProps = GuiNodeGraphMessage["props"];
 type NodeTypeSpec = NodeGraphProps["node_types"][number];
 type PortSpec = NodeTypeSpec["inputs"][number];
-type ViserFlowNode = Node<{ nodeType: NodeTypeSpec }, "viser">;
+type InputValue = boolean | number | string;
+type NodeStatus = NodeGraphProps["node_status"][string];
+type ViserFlowNode = Node<
+  {
+    nodeType: NodeTypeSpec;
+    values: { [port: string]: InputValue };
+    /** Input ports with a wire plugged in; their value fields are hidden. */
+    wired: string[];
+    status: NodeStatus | null;
+  },
+  "viser"
+>;
 type CanvasMenuItem = NodeGraphProps["canvas_menu"][number];
 /** Open context menu, anchored at a point relative to the canvas. For the
  * canvas menu, `position` is the right-clicked point in node coordinates. */
@@ -42,6 +65,13 @@ type MenuState = { x: number; y: number } & (
 /** Smallest height the canvas shrinks to when filling a short panel. */
 const MIN_FILL_HEIGHT = 200;
 const ROW_HEIGHT_EM = 1.7;
+/** Rows holding a value field are a little taller. */
+const FIELD_ROW_HEIGHT_EM = 2.1;
+
+/** Sends a value the user entered in a node's input field. */
+const SetInputValueContext = React.createContext<
+  (nodeId: string, port: string, value: InputValue) => void
+>(() => {});
 
 /** Mirrors `dtypes_compatible` in viser/_node_graph.py. */
 function dtypesCompatible(outputDtype: string, inputDtype: string) {
@@ -82,14 +112,119 @@ function PortHandle({
   );
 }
 
+const fieldStyles = {
+  input: { height: "1.7em", minHeight: "1.7em", paddingInline: "0.4em" },
+};
+
+/** Field editing the value of an unwired input. Text and numbers are sent
+ * when the field loses focus or Enter is pressed, a checkbox at once. */
+function InputValueField({
+  kind,
+  value,
+  label,
+  onCommit,
+}: {
+  kind: NonNullable<PortSpec["value_kind"]>;
+  value: InputValue;
+  label: string;
+  onCommit: (value: InputValue) => void;
+}) {
+  const [draft, setDraft] = useState<InputValue>(value);
+  // Follow the server, e.g. after another client's edit.
+  React.useEffect(() => setDraft(value), [value]);
+  const commit = () => {
+    const valid =
+      kind === "str" ? typeof draft === "string" : typeof draft === "number";
+    if (valid && draft !== value) onCommit(draft);
+    else setDraft(value);
+  };
+  const blurOnEnter = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === "Enter") event.currentTarget.blur();
+  };
+  if (kind === "bool")
+    return (
+      <Checkbox
+        size="xs"
+        aria-label={label}
+        checked={value === true}
+        onChange={(event) => onCommit(event.currentTarget.checked)}
+      />
+    );
+  if (kind === "str")
+    return (
+      <TextInput
+        size="xs"
+        w="7em"
+        aria-label={label}
+        styles={fieldStyles}
+        value={String(draft)}
+        onChange={(event) => setDraft(event.currentTarget.value)}
+        onBlur={commit}
+        onKeyDown={blurOnEnter}
+      />
+    );
+  return (
+    <NumberInput
+      size="xs"
+      w="5.5em"
+      aria-label={label}
+      styles={fieldStyles}
+      hideControls
+      allowDecimal={kind === "float"}
+      value={typeof draft === "boolean" ? "" : draft}
+      onChange={setDraft}
+      onBlur={commit}
+      onKeyDown={blurOnEnter}
+    />
+  );
+}
+
+/** Spinner while the node's work runs, then a success or error mark. Hovering
+ * shows the status message. */
+function StatusMark({ status }: { status: NodeStatus }) {
+  const mark =
+    status.state === "running" ? (
+      <Loader size={13} color="white" aria-label="Running" />
+    ) : (
+      <ThemeIcon
+        size={16}
+        radius="xl"
+        color={status.state === "success" ? "green" : "red"}
+        // Stands out on headers of any color.
+        style={{ border: "1.5px solid white" }}
+        aria-label={status.state === "success" ? "Succeeded" : "Failed"}
+      >
+        {status.state === "success" ? (
+          <IconCheck size={11} stroke={3} />
+        ) : (
+          <IconX size={11} stroke={3} />
+        )}
+      </ThemeIcon>
+    );
+  return (
+    <Tooltip
+      label={status.message}
+      disabled={status.message === null}
+      zIndex={1000}
+      multiline
+      maw="20em"
+    >
+      <Box style={{ display: "flex" }}>{mark}</Box>
+    </Tooltip>
+  );
+}
+
 /** Generic node: a header with the type label, then one row per port, inputs
- * on the left and outputs on the right. Every node type renders through this
- * one component, so `nodeTypes` stays a module-level constant. */
+ * on the left and outputs on the right. Unwired inputs with a value show a
+ * field to edit it. Every node type renders through this one component, so
+ * `nodeTypes` stays a module-level constant. */
 const ViserNode = React.memo(function ViserNode({
+  id,
   data,
   selected,
 }: NodeProps<ViserFlowNode>) {
-  const { nodeType } = data;
+  const { nodeType, values, wired, status } = data;
+  const setInputValue = useContext(SetInputValueContext);
   const accent = nodeType.color ?? "var(--mantine-primary-color-filled)";
   const rows = Math.max(nodeType.inputs.length, nodeType.outputs.length);
   return (
@@ -100,25 +235,47 @@ const ViserNode = React.memo(function ViserNode({
       style={{
         minWidth: "10em",
         fontSize: "0.8125rem",
-        borderColor: selected ? accent : undefined,
+        borderColor:
+          status?.state === "error"
+            ? "var(--mantine-color-red-6)"
+            : selected
+              ? accent
+              : undefined,
       }}
     >
       <Box
         style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: "0.75em",
           background: accent,
           color: "white",
-          padding: "0.25em 0.75em",
+          padding: "0.25em 0.5em 0.25em 0.75em",
+          minHeight: "1.9em",
           fontWeight: 600,
           borderTopLeftRadius: "inherit",
           borderTopRightRadius: "inherit",
         }}
       >
         {nodeType.label}
+        {status !== null && <StatusMark status={status} />}
       </Box>
       <Box py="0.3em">
         {Array.from({ length: rows }, (_, i) => {
           const input = nodeType.inputs[i];
           const output = nodeType.outputs[i];
+          const field =
+            input?.value_kind != null &&
+            !wired.includes(input.name) &&
+            values[input.name] !== undefined ? (
+              <InputValueField
+                kind={input.value_kind}
+                value={values[input.name]}
+                label={input.label}
+                onCommit={(value) => setInputValue(id, input.name, value)}
+              />
+            ) : null;
           return (
             // Handles are absolutely positioned; a relative row centers each
             // one on its label instead of on the whole node.
@@ -130,11 +287,27 @@ const ViserNode = React.memo(function ViserNode({
                 alignItems: "center",
                 justifyContent: "space-between",
                 gap: "1em",
-                height: `${ROW_HEIGHT_EM}em`,
+                height: `${field === null ? ROW_HEIGHT_EM : FIELD_ROW_HEIGHT_EM}em`,
                 padding: "0 0.75em",
               }}
             >
-              <Text size="xs">{input?.label ?? ""}</Text>
+              <Box
+                style={{ display: "flex", alignItems: "center", gap: "0.5em" }}
+              >
+                <Text size="xs">{input?.label ?? ""}</Text>
+                {field !== null && (
+                  // "nodrag"/"nowheel": typing and scrolling stay in the
+                  // field. Double and right clicks too, instead of opening
+                  // the node's settings or menu.
+                  <Box
+                    className="nodrag nowheel"
+                    onDoubleClick={(event) => event.stopPropagation()}
+                    onContextMenu={(event) => event.stopPropagation()}
+                  >
+                    {field}
+                  </Box>
+                )}
+              </Box>
               <Text size="xs">{output?.label ?? ""}</Text>
               {input !== undefined && <PortHandle port={input} type="target" />}
               {output !== undefined && (
@@ -162,10 +335,22 @@ function toFlowNodes(
 ): ViserFlowNode[] {
   const typeFromName = new Map(props.node_types.map((t) => [t.type_name, t]));
   const previousFromId = new Map(previous.map((n) => [n.id, n]));
+  const wiredFromId = new Map<string, string[]>();
+  for (const edge of props.edges)
+    wiredFromId.set(edge.target, [
+      ...(wiredFromId.get(edge.target) ?? []),
+      edge.target_port,
+    ]);
   return props.nodes.flatMap((node) => {
     const nodeType = typeFromName.get(node.type_name);
     if (nodeType === undefined) return [];
     const prev = previousFromId.get(node.node_id);
+    const data = {
+      nodeType,
+      values: node.values,
+      status: props.node_status[node.node_id] ?? null,
+      wired: wiredFromId.get(node.node_id) ?? [],
+    };
     return [
       {
         // Keeps local state: selection, and the measured size -- without it
@@ -177,10 +362,25 @@ function toFlowNodes(
         position: prev?.dragging
           ? prev.position
           : { x: node.position[0], y: node.position[1] },
-        data: prev?.data.nodeType === nodeType ? prev.data : { nodeType },
+        // Unchanged data keeps its identity, so the memoized node skips
+        // rendering.
+        data:
+          prev !== undefined && sameData(prev.data, data) ? prev.data : data,
       },
     ];
   });
+}
+
+function sameData(a: ViserFlowNode["data"], b: ViserFlowNode["data"]) {
+  const keys = Object.keys(b.values);
+  return (
+    a.nodeType === b.nodeType &&
+    a.status?.state === b.status?.state &&
+    a.status?.message === b.status?.message &&
+    a.wired.join("\n") === b.wired.join("\n") &&
+    Object.keys(a.values).length === keys.length &&
+    keys.every((k) => a.values[k] === b.values[k])
+  );
 }
 
 function toFlowEdges(props: NodeGraphProps, previous: Edge[]): Edge[] {
@@ -355,7 +555,7 @@ function NodeGraphCanvas({
   // The server owns the graph: re-seed local state whenever it changes.
   React.useEffect(() => {
     setNodes((previous) => toFlowNodes(props, previous));
-  }, [props.nodes, props.node_types, setNodes]);
+  }, [props.nodes, props.node_types, props.edges, props.node_status, setNodes]);
   React.useEffect(() => {
     setEdges((previous) => toFlowEdges(props, previous));
   }, [props.edges, setEdges]);
@@ -376,6 +576,14 @@ function NodeGraphCanvas({
       node_id: nodeId,
       kind,
       action_id: actionId,
+    });
+  const setInputValue = (nodeId: string, port: string, value: InputValue) =>
+    send({
+      type: "GuiNodeGraphSetValueMessage",
+      uuid,
+      node_id: nodeId,
+      port,
+      value,
     });
   const sendDelete = (nodeIds: string[], edgeIds: string[]) =>
     send({
@@ -477,40 +685,42 @@ function NodeGraphCanvas({
 
   return (
     <Box ref={paneRef} pos="relative" h="100%">
-      <ReactFlow
-        nodes={nodes}
-        edges={edges}
-        nodeTypes={nodeTypes}
-        onNodesChange={onNodesChange}
-        onEdgesChange={onEdgesChange}
-        onConnect={onConnect}
-        onBeforeDelete={onBeforeDelete}
-        isValidConnection={isValidConnection}
-        onNodeDoubleClick={(_event, node) =>
-          sendNodeEvent(node.id, "double_click")
-        }
-        onNodeContextMenu={onNodeContextMenu}
-        onPaneContextMenu={onPaneContextMenu}
-        onMoveStart={() => setMenu(null)}
-        // Double-clicks belong to nodes; zooming on them would be surprising.
-        zoomOnDoubleClick={false}
-        colorMode={colorScheme}
-        deleteKeyCode={["Delete", "Backspace"]}
-        fitView
-        minZoom={0.2}
-        proOptions={proOptions}
-      >
-        <Background />
-        <Controls showInteractive={false} />
-        {props.show_minimap && (
-          <MiniMap
-            pannable
-            zoomable
-            nodeColor={minimapNodeColor}
-            style={{ width: 140, height: 90 }}
-          />
-        )}
-      </ReactFlow>
+      <SetInputValueContext.Provider value={setInputValue}>
+        <ReactFlow
+          nodes={nodes}
+          edges={edges}
+          nodeTypes={nodeTypes}
+          onNodesChange={onNodesChange}
+          onEdgesChange={onEdgesChange}
+          onConnect={onConnect}
+          onBeforeDelete={onBeforeDelete}
+          isValidConnection={isValidConnection}
+          onNodeDoubleClick={(_event, node) =>
+            sendNodeEvent(node.id, "double_click")
+          }
+          onNodeContextMenu={onNodeContextMenu}
+          onPaneContextMenu={onPaneContextMenu}
+          onMoveStart={() => setMenu(null)}
+          // Double-clicks belong to nodes; zooming on them would be surprising.
+          zoomOnDoubleClick={false}
+          colorMode={colorScheme}
+          deleteKeyCode={["Delete", "Backspace"]}
+          fitView
+          minZoom={0.2}
+          proOptions={proOptions}
+        >
+          <Background />
+          <Controls showInteractive={false} />
+          {props.show_minimap && (
+            <MiniMap
+              pannable
+              zoomable
+              nodeColor={minimapNodeColor}
+              style={{ width: 140, height: 90 }}
+            />
+          )}
+        </ReactFlow>
+      </SetInputValueContext.Provider>
       <ContextMenu menu={menu} onClose={() => setMenu(null)}>
         {(shown) =>
           shown.kind === "node" ? (

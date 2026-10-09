@@ -74,6 +74,8 @@ GUI Handles
 
 .. autoclass:: viser.NodeGraphMenuItemHandle
 
+.. autoclass:: viser.NodeGraphRun
+
 .. autoclass:: viser.PanelHandle
 
 .. autodata:: viser.PlaceableHandle

@@ -1386,10 +1386,25 @@ export interface GuiNodeGraphMessage {
       type_name: string;
       label: string;
       color: string | null;
-      inputs: { name: string; label: string; dtype: string }[];
-      outputs: { name: string; label: string; dtype: string }[];
+      inputs: {
+        name: string;
+        label: string;
+        dtype: string;
+        value_kind: "bool" | "int" | "float" | "str" | null;
+      }[];
+      outputs: {
+        name: string;
+        label: string;
+        dtype: string;
+        value_kind: "bool" | "int" | "float" | "str" | null;
+      }[];
     }[];
-    nodes: { node_id: string; type_name: string; position: [number, number] }[];
+    nodes: {
+      node_id: string;
+      type_name: string;
+      position: [number, number];
+      values: { [key: string]: boolean | number | string };
+    }[];
     edges: {
       edge_id: string;
       source: string;
@@ -1397,6 +1412,12 @@ export interface GuiNodeGraphMessage {
       target: string;
       target_port: string;
     }[];
+    node_status: {
+      [key: string]: {
+        state: "running" | "success" | "error";
+        message: string | null;
+      };
+    };
     node_actions: {
       action_id: string;
       label: string;
@@ -2183,6 +2204,18 @@ export interface GuiNodeGraphMoveMessage {
   node_ids: string[];
   positions: [number, number][];
 }
+/** Message sent from client->server when the user edits the value of a
+ * node's input.
+ *
+ * (automatically generated)
+ */
+export interface GuiNodeGraphSetValueMessage {
+  type: "GuiNodeGraphSetValueMessage";
+  uuid: string;
+  node_id: string;
+  port: string;
+  value: boolean | number | string;
+}
 /** Message sent from client->server when the user draws a wire.
  *
  * (automatically generated)
@@ -2654,6 +2687,7 @@ export type Message =
   | GuiNodeGraphCanvasMenuMessage
   | GuiNodeGraphDeleteMessage
   | GuiNodeGraphMoveMessage
+  | GuiNodeGraphSetValueMessage
   | GuiNodeGraphConnectMessage
   | GuiUpdateMessage
   | SceneNodeUpdateMessage

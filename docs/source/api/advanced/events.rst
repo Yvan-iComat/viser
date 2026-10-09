@@ -19,6 +19,8 @@ when events like clicks or GUI updates are triggered.
 
 .. autoclass:: viser.NodeGraphChangeEvent()
 
+.. autoclass:: viser.NodeGraphInputEvent()
+
 .. autoclass:: viser.NodeGraphNodeEvent()
 
 .. autoclass:: viser.SceneClickEvent()

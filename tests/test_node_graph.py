@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 import asyncio
+import time
 from collections.abc import Coroutine, Iterator
 from typing import Any, Literal, cast
 
+import msgspec
 import pytest
 
 import viser
@@ -424,6 +426,166 @@ def test_client_edits_are_reported(server_graph: viser.GuiNodeGraphHandle) -> No
         {"removed_nodes": (slice_,), "removed_edges": (wire.edge_id,)},
     ]
     assert removed == [(slice_, "slice", CLIENT_ID)]
+
+
+def test_input_values(graph: viser.GuiNodeGraphHandle) -> None:
+    graph.add_node_type(
+        "mill",
+        inputs=[
+            viser.NodePort("mesh", dtype="Mesh"),
+            viser.NodePort("passes", dtype="int", default=2),
+            viser.NodePort("feed", dtype="float", default=1200.0),
+            viser.NodePort("coolant", dtype="bool", default=True),
+            viser.NodePort("note", dtype="str", default=""),
+        ],
+    )
+    (mill_type,) = [t for t in graph.node_types if t.type_name == "mill"]
+    assert [p.value_kind for p in mill_type.inputs] == [
+        None,
+        "int",
+        "float",
+        "bool",
+        "str",
+    ]
+    mill = graph.add_node("mill", values={"feed": 900})
+    (node,) = [n for n in graph.nodes if n.node_id == mill]
+    assert node.values == {"passes": 2, "feed": 900.0, "coolant": True, "note": ""}
+    assert isinstance(node.values["feed"], float)
+
+    graph.set_input_value(mill, "passes", 3.0)  # Integral floats fit an int.
+    assert graph.get_input_value(mill, "passes") == 3
+    with pytest.raises(ValueError, match="Expected a int"):
+        graph.set_input_value(mill, "passes", 2.5)
+    with pytest.raises(ValueError, match="Expected a bool"):
+        graph.set_input_value(mill, "coolant", 1)
+    with pytest.raises(ValueError, match="has no value"):
+        graph.get_input_value(mill, "mesh")
+    with pytest.raises(KeyError, match="No port"):
+        graph.set_input_value(mill, "missing", 1)
+    with pytest.raises(ValueError, match="Only input ports"):
+        graph.add_node_type("bad", outputs=[viser.NodePort("x", default=1)])
+    with pytest.raises(TypeError, match="Unsupported input value"):
+        graph.add_node_type("bad", inputs=[viser.NodePort("x", default=cast(Any, []))])
+
+
+def test_node_status(graph: viser.GuiNodeGraphHandle) -> None:
+    node = graph.add_node("load")
+    other = graph.add_node("load")
+
+    def status(node_id: str) -> tuple[str, str | None] | None:
+        s = graph.node_status.get(node_id, None)
+        return None if s is None else (s.state, s.message)
+
+    graph.set_node_status(node, "success", "done")
+    assert status(node) == ("success", "done")
+    graph.set_node_status(node, None)
+    assert status(node) is None
+    with pytest.raises(KeyError):
+        graph.set_node_status("missing", "running")
+
+    # Success by default; reported outcomes; exceptions shown and re-raised.
+    with graph.node_running(node):
+        assert status(node) == ("running", None)
+    assert status(node) == ("success", None)
+    with graph.node_running(node) as run:
+        run.error("step-over too large")
+    assert status(node) == ("error", "step-over too large")
+    with pytest.raises(RuntimeError):
+        with graph.node_running(node) as run:
+            run.success("never shown")
+            raise RuntimeError("boom")
+    assert status(node) == ("error", "RuntimeError: boom")
+
+    # Overlapping runs keep the spinner until the last one ends.
+    with graph.node_running(node):
+        with graph.node_running(node) as inner:
+            inner.error("inner failed")
+        assert status(node) == ("running", None)
+    assert status(node) == ("success", None)
+
+    # Removing a node drops its status, even mid-run.
+    graph.set_node_status(other, "error", "bad")
+    with graph.node_running(node):
+        graph.remove_node(node)
+    assert graph.node_status == {other: graph.node_status[other]}
+    graph.remove_node(other)
+    assert graph.node_status == {}
+
+
+@pytest.mark.parametrize("value", [False, True, 3, 2.5, "x"])
+def test_input_values_survive_the_wire(value: Any) -> None:
+    # bool is a subclass of int; decoding must not turn False into 0.
+    message = _messages.GuiNodeGraphSetValueMessage("g", "n", "p", value)
+    encoded = msgspec.msgpack.encode(message.as_serializable_dict())
+    decoded = _messages.Message.deserialize(encoded)
+    assert isinstance(decoded, _messages.GuiNodeGraphSetValueMessage)
+    assert (type(decoded.value), decoded.value) == (type(value), value)
+
+
+def test_node_and_input_callbacks(server_graph: viser.GuiNodeGraphHandle) -> None:
+    graph = server_graph
+    gui_api = graph._impl.gui_api
+    server = cast(viser.ViserServer, gui_api._owner)
+    uuid = graph._impl.uuid
+    graph.add_node_type(
+        "mill",
+        inputs=[
+            viser.NodePort("mesh", dtype="Mesh"),
+            viser.NodePort("feed", dtype="float", default=1200.0),
+        ],
+    )
+    seen: list[tuple[Any, ...]] = []
+
+    @graph.on_node_add
+    def _(event: viser.NodeGraphNodeEvent) -> None:
+        seen.append(("add", event.type_name, event.client_id))
+
+    @graph.on_node_input_change
+    def _(event: viser.NodeGraphInputEvent) -> None:
+        source = None if event.edge is None else event.edge.source
+        seen.append((event.reason, event.port, event.value, source, event.client_id))
+
+    first = graph.add_node("load")
+    second = graph.add_node("load")
+    mill = graph.add_node("mill")
+    graph.connect(first, "mesh", mill, "mesh")
+    graph.connect(second, "mesh", mill, "mesh")  # Replaces the wire.
+    graph.set_input_value(mill, "feed", 800)
+    graph.set_input_value(mill, "feed", 800)  # Unchanged: not reported.
+    graph.remove_node(second)  # Unplugs the mill's input.
+    assert seen == [
+        ("add", "load", None),
+        ("add", "load", None),
+        ("add", "mill", None),
+        ("connected", "mesh", None, first, None),
+        ("disconnected", "mesh", None, first, None),
+        ("connected", "mesh", None, second, None),
+        ("value", "feed", 800.0, None, None),
+        ("disconnected", "mesh", None, second, None),
+    ]
+
+    # Values edited in the browser; invalid ones warn instead of raising.
+    seen.clear()
+    _dispatch(
+        server,
+        gui_api._handle_node_graph_set_value(
+            CLIENT_ID, _messages.GuiNodeGraphSetValueMessage(uuid, mill, "feed", 650)
+        ),
+    )
+    with pytest.warns(UserWarning, match="Ignoring invalid input value"):
+        _dispatch(
+            server,
+            gui_api._handle_node_graph_set_value(
+                CLIENT_ID,
+                _messages.GuiNodeGraphSetValueMessage(uuid, mill, "feed", "fast"),
+            ),
+        )
+    # Sync callbacks of browser edits run in the thread pool.
+    deadline = time.time() + 5.0
+    while not seen and time.time() < deadline:
+        time.sleep(0.01)
+    assert seen == [("value", "feed", 650.0, None, CLIENT_ID)]
+    assert graph.get_input_value(mill, "feed") == 650.0
 
 
 def test_add_node_graph_rejects_bad_arguments() -> None:

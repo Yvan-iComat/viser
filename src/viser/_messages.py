@@ -2592,6 +2592,9 @@ class GuiNodeGraphPort:
     dtype: str
     """Data type carried by the port. An output can only be wired to an input
     with the same dtype, or to either end when one of them is 'any'."""
+    value_kind: Optional[Literal["bool", "int", "float", "str"]]
+    """Kind of the value the user can edit in the node while no wire is
+    plugged into this input. None for ports that only take wires."""
 
 
 @dataclasses.dataclass
@@ -2621,6 +2624,9 @@ class GuiNodeGraphNode:
     """Node type of this node; one of the graph's node types."""
     position: Tuple[float, float]
     """Position of the node's top-left corner on the canvas, in pixels."""
+    values: Dict[str, Union[bool, int, float, str]]
+    """Value of each input port that has a ``value_kind``, by port name. Used
+    while no wire is plugged into the input."""
 
 
 @dataclasses.dataclass
@@ -2637,6 +2643,16 @@ class GuiNodeGraphEdge:
     """ID of the node the wire ends at."""
     target_port: str
     """Name of the input port on the target node."""
+
+
+@dataclasses.dataclass
+class GuiNodeGraphNodeStatus:
+    """Progress of the work done for a node, shown in its header."""
+
+    state: Literal["running", "success", "error"]
+    """A spinner while running, then a success or error mark."""
+    message: Optional[str]
+    """Shown when hovering the mark, or None."""
 
 
 @dataclasses.dataclass
@@ -2679,6 +2695,8 @@ class GuiNodeGraphProps(GuiBaseProps):
     """Nodes in the graph."""
     edges: Tuple[GuiNodeGraphEdge, ...]
     """Wires between nodes."""
+    node_status: Dict[str, GuiNodeGraphNodeStatus]
+    """Status of the nodes that have one, by node ID."""
     node_actions: Tuple[GuiNodeGraphNodeAction, ...]
     """Custom entries of the node context menu, listed after Edit and Delete."""
     canvas_menu: Tuple[GuiNodeGraphMenuItem, ...]
@@ -2738,6 +2756,17 @@ class GuiNodeGraphMoveMessage(Message, include_in_scene_serialization=False):
     node_ids: Tuple[str, ...]
     positions: Tuple[Tuple[float, float], ...]
     """New position of each node in `node_ids`."""
+
+
+@dataclasses.dataclass
+class GuiNodeGraphSetValueMessage(Message, include_in_scene_serialization=False):
+    """Message sent from client->server when the user edits the value of a
+    node's input."""
+
+    uuid: str
+    node_id: str
+    port: str
+    value: Union[bool, int, float, str]
 
 
 @dataclasses.dataclass

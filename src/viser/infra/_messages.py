@@ -45,6 +45,10 @@ def _prepare_for_deserialization(value: Any, annotation: Type) -> Any:
         if value is None:
             return None
         args = get_args(annotation)
+        # bool is a subclass of int: keep it when the union accepts bools,
+        # rather than turning it into 0/1 (or 0.0/1.0) below.
+        if isinstance(value, bool) and bool in args:
+            return value
         for arg in args:
             if arg is type(None):
                 continue

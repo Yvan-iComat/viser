@@ -45,8 +45,10 @@ from ._gui_handles import MainPanelHandle as MainPanelHandle
 from ._gui_handles import NodeGraphActionHandle as NodeGraphActionHandle
 from ._gui_handles import NodeGraphCanvasEvent as NodeGraphCanvasEvent
 from ._gui_handles import NodeGraphChangeEvent as NodeGraphChangeEvent
+from ._gui_handles import NodeGraphInputEvent as NodeGraphInputEvent
 from ._gui_handles import NodeGraphMenuItemHandle as NodeGraphMenuItemHandle
 from ._gui_handles import NodeGraphNodeEvent as NodeGraphNodeEvent
+from ._gui_handles import NodeGraphRun as NodeGraphRun
 from ._gui_handles import PanelHandle as PanelHandle
 from ._gui_handles import PlaceableHandle as PlaceableHandle
 from ._gui_handles import UploadedFile as UploadedFile

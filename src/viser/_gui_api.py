@@ -8,6 +8,7 @@ import functools
 import math
 import threading
 import time
+import traceback
 import uuid
 import warnings
 from asyncio import AbstractEventLoop
@@ -441,6 +442,9 @@ class GuiApi:
         self._websock_interface.register_handler(
             _messages.GuiNodeGraphConnectMessage, self._handle_node_graph_connect
         )
+        self._websock_interface.register_handler(
+            _messages.GuiNodeGraphSetValueMessage, self._handle_node_graph_set_value
+        )
 
     def _resolve_client(self, client_id: ClientId) -> ClientHandle | None:
         """Resolve the ClientHandle for a given client_id. Returns None when
@@ -762,13 +766,26 @@ class GuiApi:
         # The edit is applied even if its client has since disconnected, so it
         # is reported regardless, without a client handle.
         client = self._resolve_client(client_id)
-        for cb, event in graph._change_callbacks(change, client, client_id):
+        calls = graph._change_callbacks(change, client, client_id)
+
+        # Regular callbacks run in one thread pool task, so they see the
+        # change in order (e.g. a node removed, then the inputs it fed
+        # disconnected). One failing doesn't stop the others.
+        def run_sync_callbacks() -> None:
+            for cb, event in calls:
+                if not asyncio.iscoroutinefunction(cb):
+                    try:
+                        cb(event)
+                    except Exception:
+                        traceback.print_exc()
+
+        if any(not asyncio.iscoroutinefunction(cb) for cb, _ in calls):
+            self._thread_executor.submit(run_sync_callbacks).add_done_callback(
+                print_threadpool_errors
+            )
+        for cb, event in calls:
             if asyncio.iscoroutinefunction(cb):
                 await cb(event)
-            else:
-                self._thread_executor.submit(cb, event).add_done_callback(
-                    print_threadpool_errors
-                )
 
     async def _handle_node_graph_delete(
         self, client_id: ClientId, message: _messages.GuiNodeGraphDeleteMessage
@@ -796,6 +813,16 @@ class GuiApi:
                 message.source_port,
                 message.target,
                 message.target_port,
+            )
+            await self._report_node_graph_change(client_id, graph, change)
+
+    async def _handle_node_graph_set_value(
+        self, client_id: ClientId, message: _messages.GuiNodeGraphSetValueMessage
+    ) -> None:
+        graph = self._live_node_graph(message.uuid)
+        if graph is not None:
+            change = graph._apply_client_value(
+                message.node_id, message.port, message.value
             )
             await self._report_node_graph_change(client_id, graph, change)
 
@@ -3065,6 +3092,7 @@ class GuiApi:
                 node_types=(),
                 nodes=(),
                 edges=(),
+                node_status={},
                 node_actions=(),
                 canvas_menu=(),
                 height=height,
