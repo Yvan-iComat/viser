@@ -2581,6 +2581,177 @@ class GuiChatActionMessage(Message, include_in_scene_serialization=False):
 
 
 @dataclasses.dataclass
+class GuiNodeGraphPort:
+    """An input or output connection point on a node type."""
+
+    name: str
+    """Identifier of the port, unique among the node type's inputs (or
+    outputs)."""
+    label: str
+    """Text displayed next to the port."""
+    dtype: str
+    """Data type carried by the port. An output can only be wired to an input
+    with the same dtype, or to either end when one of them is 'any'."""
+
+
+@dataclasses.dataclass
+class GuiNodeGraphNodeType:
+    """A kind of node that can be placed in a node graph."""
+
+    type_name: str
+    """Identifier of the node type, referenced by nodes."""
+    label: str
+    """Title shown in the node header and in the node palette."""
+    color: Optional[str]
+    """Accent color of the node header, as a CSS color. None for the theme's
+    primary color."""
+    inputs: Tuple[GuiNodeGraphPort, ...]
+    """Input ports, drawn on the left side of the node."""
+    outputs: Tuple[GuiNodeGraphPort, ...]
+    """Output ports, drawn on the right side of the node."""
+
+
+@dataclasses.dataclass
+class GuiNodeGraphNode:
+    """A node placed in a node graph."""
+
+    node_id: str
+    """Stable identifier of the node."""
+    type_name: str
+    """Node type of this node; one of the graph's node types."""
+    position: Tuple[float, float]
+    """Position of the node's top-left corner on the canvas, in pixels."""
+
+
+@dataclasses.dataclass
+class GuiNodeGraphEdge:
+    """A wire from an output port of one node to an input port of another."""
+
+    edge_id: str
+    """Stable identifier of the edge."""
+    source: str
+    """ID of the node the wire starts from."""
+    source_port: str
+    """Name of the output port on the source node."""
+    target: str
+    """ID of the node the wire ends at."""
+    target_port: str
+    """Name of the input port on the target node."""
+
+
+@dataclasses.dataclass
+class GuiNodeGraphNodeAction:
+    """A custom entry of the node context menu."""
+
+    action_id: str
+    """Identifier of the action, sent back when it is clicked."""
+    label: str
+    """Text of the menu entry."""
+    icon_html: Optional[str]
+    """SVG icon shown before the label, or None."""
+    type_names: Optional[Tuple[str, ...]]
+    """Node types the action is offered for. None for every type."""
+
+
+@dataclasses.dataclass
+class GuiNodeGraphMenuItem:
+    """An entry of the canvas context menu. The menu is a tree flattened in
+    display order: an item that other items name as their parent is shown as
+    a submenu."""
+
+    item_id: str
+    """Identifier of the item, sent back when it is clicked."""
+    parent_id: Optional[str]
+    """Submenu the item belongs to, or None for the top level."""
+    kind: Literal["item", "divider"]
+    """A clickable entry (or submenu), or a separator line."""
+    label: str
+    """Text of the entry. Empty for dividers."""
+    icon_html: Optional[str]
+    """SVG icon shown before the label, or None."""
+
+
+@dataclasses.dataclass
+class GuiNodeGraphProps(GuiBaseProps):
+    node_types: Tuple[GuiNodeGraphNodeType, ...]
+    """Node types that can be placed in the graph."""
+    nodes: Tuple[GuiNodeGraphNode, ...]
+    """Nodes in the graph."""
+    edges: Tuple[GuiNodeGraphEdge, ...]
+    """Wires between nodes."""
+    node_actions: Tuple[GuiNodeGraphNodeAction, ...]
+    """Custom entries of the node context menu, listed after Edit and Delete."""
+    canvas_menu: Tuple[GuiNodeGraphMenuItem, ...]
+    """Entries of the context menu opened by right-clicking the empty canvas.
+    No menu is shown when empty."""
+    height: int
+    """Height of the graph canvas in pixels when its container sizes to its
+    content. In a fixed-height container, the canvas fills it instead."""
+    show_minimap: bool
+    """Whether to show a minimap in the corner of the canvas."""
+
+
+@dataclasses.dataclass
+class GuiNodeGraphMessage(_CreateGuiComponentMessage):
+    container_uuid: str
+    props: GuiNodeGraphProps
+
+
+@dataclasses.dataclass
+class GuiNodeGraphNodeEventMessage(Message, include_in_scene_serialization=False):
+    """Message sent from client->server when the user acts on a node: a
+    double-click, or an entry of its context menu."""
+
+    uuid: str
+    node_id: str
+    kind: Literal["double_click", "edit", "action"]
+    action_id: str
+    """Clicked custom action for 'action'; empty otherwise."""
+
+
+@dataclasses.dataclass
+class GuiNodeGraphCanvasMenuMessage(Message, include_in_scene_serialization=False):
+    """Message sent from client->server when the user clicks an entry of the
+    canvas context menu."""
+
+    uuid: str
+    item_id: str
+    position: Tuple[float, float]
+    """Canvas position that was right-clicked, in the same coordinates as
+    node positions."""
+
+
+@dataclasses.dataclass
+class GuiNodeGraphDeleteMessage(Message, include_in_scene_serialization=False):
+    """Message sent from client->server when the user deletes nodes or wires."""
+
+    uuid: str
+    node_ids: Tuple[str, ...]
+    edge_ids: Tuple[str, ...]
+
+
+@dataclasses.dataclass
+class GuiNodeGraphMoveMessage(Message, include_in_scene_serialization=False):
+    """Message sent from client->server when the user finishes moving nodes."""
+
+    uuid: str
+    node_ids: Tuple[str, ...]
+    positions: Tuple[Tuple[float, float], ...]
+    """New position of each node in `node_ids`."""
+
+
+@dataclasses.dataclass
+class GuiNodeGraphConnectMessage(Message, include_in_scene_serialization=False):
+    """Message sent from client->server when the user draws a wire."""
+
+    uuid: str
+    source: str
+    source_port: str
+    target: str
+    target_port: str
+
+
+@dataclasses.dataclass
 class GuiUpdateMessage(
     Message,
     entity=EntityLifecycle("gui", "update_dict", "uuid"),

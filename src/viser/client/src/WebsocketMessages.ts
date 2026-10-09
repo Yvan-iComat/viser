@@ -1368,6 +1368,52 @@ export interface GuiChatMessage {
     model: string;
   };
 }
+/** GuiNodeGraphMessage(uuid: 'str', container_uuid: 'str', props: 'GuiNodeGraphProps')
+ *
+ * (automatically generated)
+ */
+export interface GuiNodeGraphMessage {
+  type: "GuiNodeGraphMessage";
+  uuid: string;
+  container_uuid: string;
+  props: {
+    order: number;
+    label: string;
+    hint: string | null;
+    visible: boolean;
+    disabled: boolean;
+    node_types: {
+      type_name: string;
+      label: string;
+      color: string | null;
+      inputs: { name: string; label: string; dtype: string }[];
+      outputs: { name: string; label: string; dtype: string }[];
+    }[];
+    nodes: { node_id: string; type_name: string; position: [number, number] }[];
+    edges: {
+      edge_id: string;
+      source: string;
+      source_port: string;
+      target: string;
+      target_port: string;
+    }[];
+    node_actions: {
+      action_id: string;
+      label: string;
+      icon_html: string | null;
+      type_names: string[] | null;
+    }[];
+    canvas_menu: {
+      item_id: string;
+      parent_id: string | null;
+      kind: "item" | "divider";
+      label: string;
+      icon_html: string | null;
+    }[];
+    height: number;
+    show_minimap: boolean;
+  };
+}
 /** Sent server->client to remove a GUI element.
  *
  * (automatically generated)
@@ -2094,6 +2140,61 @@ export interface GuiChatActionMessage {
   conversation_id: string;
   value: string;
 }
+/** Message sent from client->server when the user acts on a node: a
+ * double-click, or an entry of its context menu.
+ *
+ * (automatically generated)
+ */
+export interface GuiNodeGraphNodeEventMessage {
+  type: "GuiNodeGraphNodeEventMessage";
+  uuid: string;
+  node_id: string;
+  kind: "double_click" | "edit" | "action";
+  action_id: string;
+}
+/** Message sent from client->server when the user clicks an entry of the
+ * canvas context menu.
+ *
+ * (automatically generated)
+ */
+export interface GuiNodeGraphCanvasMenuMessage {
+  type: "GuiNodeGraphCanvasMenuMessage";
+  uuid: string;
+  item_id: string;
+  position: [number, number];
+}
+/** Message sent from client->server when the user deletes nodes or wires.
+ *
+ * (automatically generated)
+ */
+export interface GuiNodeGraphDeleteMessage {
+  type: "GuiNodeGraphDeleteMessage";
+  uuid: string;
+  node_ids: string[];
+  edge_ids: string[];
+}
+/** Message sent from client->server when the user finishes moving nodes.
+ *
+ * (automatically generated)
+ */
+export interface GuiNodeGraphMoveMessage {
+  type: "GuiNodeGraphMoveMessage";
+  uuid: string;
+  node_ids: string[];
+  positions: [number, number][];
+}
+/** Message sent from client->server when the user draws a wire.
+ *
+ * (automatically generated)
+ */
+export interface GuiNodeGraphConnectMessage {
+  type: "GuiNodeGraphConnectMessage";
+  uuid: string;
+  source: string;
+  source_port: string;
+  target: string;
+  target_port: string;
+}
 /** Sent client<->server when any property of a GUI component is changed.
  *
  * (automatically generated)
@@ -2497,6 +2598,7 @@ export type Message =
   | GuiTableDataMessage
   | GuiGalleryMessage
   | GuiChatMessage
+  | GuiNodeGraphMessage
   | GuiRemoveMessage
   | RunJavascriptMessage
   | NotificationShowMessage
@@ -2548,6 +2650,11 @@ export type Message =
   | GuiGalleryRenderReplyMessage
   | GuiChatSubmitMessage
   | GuiChatActionMessage
+  | GuiNodeGraphNodeEventMessage
+  | GuiNodeGraphCanvasMenuMessage
+  | GuiNodeGraphDeleteMessage
+  | GuiNodeGraphMoveMessage
+  | GuiNodeGraphConnectMessage
   | GuiUpdateMessage
   | SceneNodeUpdateMessage
   | ThemeConfigurationMessage
@@ -2630,7 +2737,8 @@ export type GuiComponentMessage =
   | GuiButtonGroupMessage
   | GuiTableDataMessage
   | GuiGalleryMessage
-  | GuiChatMessage;
+  | GuiChatMessage
+  | GuiNodeGraphMessage;
 const typeSetSceneNodeMessage = new Set([
   "CameraFrustumMessage",
   "GlbMessage",
@@ -2695,6 +2803,7 @@ const typeSetGuiComponentMessage = new Set([
   "GuiTableDataMessage",
   "GuiGalleryMessage",
   "GuiChatMessage",
+  "GuiNodeGraphMessage",
 ]);
 export function isGuiComponentMessage(
   message: Message,

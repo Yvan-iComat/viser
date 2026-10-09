@@ -28,6 +28,7 @@ from ._gui_handles import GuiImageHandle as GuiImageHandle
 from ._gui_handles import GuiInputHandle as GuiInputHandle
 from ._gui_handles import GuiMarkdownHandle as GuiMarkdownHandle
 from ._gui_handles import GuiMultiSliderHandle as GuiMultiSliderHandle
+from ._gui_handles import GuiNodeGraphHandle as GuiNodeGraphHandle
 from ._gui_handles import GuiNumberHandle as GuiNumberHandle
 from ._gui_handles import GuiPlotlyHandle as GuiPlotlyHandle
 from ._gui_handles import GuiRgbaHandle as GuiRgbaHandle
@@ -41,11 +42,17 @@ from ._gui_handles import GuiUplotHandle as GuiUplotHandle
 from ._gui_handles import GuiVector2Handle as GuiVector2Handle
 from ._gui_handles import GuiVector3Handle as GuiVector3Handle
 from ._gui_handles import MainPanelHandle as MainPanelHandle
+from ._gui_handles import NodeGraphActionHandle as NodeGraphActionHandle
+from ._gui_handles import NodeGraphCanvasEvent as NodeGraphCanvasEvent
+from ._gui_handles import NodeGraphChangeEvent as NodeGraphChangeEvent
+from ._gui_handles import NodeGraphMenuItemHandle as NodeGraphMenuItemHandle
+from ._gui_handles import NodeGraphNodeEvent as NodeGraphNodeEvent
 from ._gui_handles import PanelHandle as PanelHandle
 from ._gui_handles import PlaceableHandle as PlaceableHandle
 from ._gui_handles import UploadedFile as UploadedFile
 from ._icons_enum import Icon as Icon
 from ._icons_enum import IconName as IconName
+from ._node_graph import NodePort as NodePort
 from ._notification_handle import NotificationHandle as NotificationHandle
 from ._scene_api import SceneApi as SceneApi
 from ._scene_handles import AmbientLightHandle as AmbientLightHandle

@@ -32,6 +32,7 @@ import ColorbarComponent from "../components/Colorbar";
 import TableDataComponent from "../components/TableData";
 import GalleryComponent from "../components/Gallery";
 import ChatComponent from "../components/Chat";
+import NodeGraphComponent from "../components/NodeGraph";
 import DividerComponent from "../components/Divider";
 
 /** Root of generated inputs. */
@@ -233,6 +234,8 @@ function GeneratedInput(props: {
       ) : null;
     case "GuiChatMessage":
       return <ChatComponent {...conf} />;
+    case "GuiNodeGraphMessage":
+      return <NodeGraphComponent {...conf} />;
     case "GuiProgressBarMessage":
       return <ProgressBarComponent {...conf} />;
     default:

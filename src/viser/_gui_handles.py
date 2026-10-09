@@ -70,6 +70,13 @@ from ._messages import (
     GuiImageProps,
     GuiMarkdownProps,
     GuiMultiSliderProps,
+    GuiNodeGraphEdge,
+    GuiNodeGraphMenuItem,
+    GuiNodeGraphNode,
+    GuiNodeGraphNodeAction,
+    GuiNodeGraphNodeType,
+    GuiNodeGraphPort,
+    GuiNodeGraphProps,
     GuiNumberProps,
     GuiPanelProps,
     GuiPanelRemoveMessage,
@@ -96,6 +103,7 @@ from ._messages import (
     TimelineProps,
     TimelineRemoveMessage,
 )
+from ._node_graph import NodePort, dtypes_compatible
 from ._scene_api import _encode_image_binary
 from ._threadpool_exceptions import print_awaited_callback_error, print_task_error
 from .infra import ClientId
@@ -1564,6 +1572,717 @@ class GuiChatHandle(_GuiHandle[None], GuiChatProps):
                 self.rename_conversation(conversation_id, value)
         except (KeyError, ValueError) as e:
             warnings.warn(f"Chat history action {action!r} failed: {e}")
+
+
+@dataclasses.dataclass(frozen=True)
+class NodeGraphNodeEvent:
+    """Information associated with a user action on a node of a node graph.
+
+    Passed as input to :meth:`GuiNodeGraphHandle.on_node_double_click`,
+    :meth:`GuiNodeGraphHandle.on_node_edit`,
+    :meth:`GuiNodeGraphHandle.on_node_remove` and
+    :meth:`NodeGraphActionHandle.on_click` callbacks."""
+
+    client: ClientHandle | None
+    """Client that acted on the node. None when the node was removed from
+    Python."""
+    client_id: int | None
+    """ID of the client that acted on the node."""
+    graph: GuiNodeGraphHandle
+    """Graph the node belongs to."""
+    node_id: str
+    """ID of the node."""
+    type_name: str
+    """Node type of the node."""
+
+
+NodeGraphCallback: TypeAlias = Callable[[NodeGraphNodeEvent], Union[None, Coroutine]]
+
+
+@dataclasses.dataclass(frozen=True)
+class NodeGraphChangeEvent:
+    """What one edit of a node graph changed.
+
+    Passed as input to :meth:`GuiNodeGraphHandle.on_change` callbacks. Removing
+    a node also removes its wires, so both show up in the same event."""
+
+    client: ClientHandle | None
+    """Client whose edit in the browser made the change. None for changes made
+    from Python, including from inside other callbacks."""
+    client_id: int | None
+    """ID of the client whose edit made the change."""
+    graph: GuiNodeGraphHandle
+    """Graph that changed."""
+    added_nodes: Tuple[str, ...]
+    """IDs of the nodes that were added."""
+    removed_nodes: Tuple[str, ...]
+    """IDs of the nodes that were removed."""
+    moved_nodes: Tuple[str, ...]
+    """IDs of the nodes that were moved."""
+    added_edges: Tuple[str, ...]
+    """IDs of the wires that were added."""
+    removed_edges: Tuple[str, ...]
+    """IDs of the wires that were removed."""
+
+
+@dataclasses.dataclass(frozen=True)
+class _NodeGraphChange:
+    """Difference between two states of a node graph."""
+
+    added_nodes: Tuple[str, ...]
+    removed_nodes: Tuple[GuiNodeGraphNode, ...]
+    moved_nodes: Tuple[str, ...]
+    added_edges: Tuple[str, ...]
+    removed_edges: Tuple[str, ...]
+
+    @staticmethod
+    def between(
+        old_nodes: Tuple[GuiNodeGraphNode, ...],
+        old_edges: Tuple[GuiNodeGraphEdge, ...],
+        new_nodes: Tuple[GuiNodeGraphNode, ...],
+        new_edges: Tuple[GuiNodeGraphEdge, ...],
+    ) -> _NodeGraphChange | None:
+        """Returns None when nothing changed."""
+        old_position = {n.node_id: n.position for n in old_nodes}
+        new_node_ids = {n.node_id for n in new_nodes}
+        old_edge_ids = {e.edge_id for e in old_edges}
+        new_edge_ids = {e.edge_id for e in new_edges}
+        change = _NodeGraphChange(
+            added_nodes=tuple(
+                n.node_id for n in new_nodes if n.node_id not in old_position
+            ),
+            removed_nodes=tuple(n for n in old_nodes if n.node_id not in new_node_ids),
+            moved_nodes=tuple(
+                n.node_id
+                for n in new_nodes
+                if n.node_id in old_position and old_position[n.node_id] != n.position
+            ),
+            added_edges=tuple(
+                e.edge_id for e in new_edges if e.edge_id not in old_edge_ids
+            ),
+            removed_edges=tuple(
+                e.edge_id for e in old_edges if e.edge_id not in new_edge_ids
+            ),
+        )
+        return change if any(dataclasses.astuple(change)) else None
+
+
+class NodeGraphActionHandle:
+    """A custom entry of a node graph's node context menu.
+
+    Created by :meth:`GuiNodeGraphHandle.add_node_action`."""
+
+    def __init__(self, graph: GuiNodeGraphHandle, action_id: str) -> None:
+        self._graph = graph
+        self._action_id = action_id
+        self._click_cb: list[NodeGraphCallback] = []
+
+    def on_click(
+        self, func: Callable[[NodeGraphNodeEvent], NoneOrCoroutine]
+    ) -> Callable[[NodeGraphNodeEvent], NoneOrCoroutine]:
+        """Attach a callback for when the action is picked from a node's
+        context menu.
+
+        Note:
+            - If `func` is a regular function (defined with `def`), it will be executed in a thread pool.
+            - If `func` is an async function (defined with `async def`), it will be executed in the event loop.
+        """
+        self._click_cb.append(func)
+        return func
+
+    def remove(self) -> None:
+        """Remove the action from the context menu."""
+        graph = self._graph
+        with graph._lock:
+            graph._action_handles.pop(self._action_id, None)
+            graph._set_props(
+                node_actions=tuple(
+                    a for a in graph.node_actions if a.action_id != self._action_id
+                )
+            )
+
+
+@dataclasses.dataclass(frozen=True)
+class NodeGraphCanvasEvent:
+    """Information associated with a click on an entry of a node graph's
+    canvas context menu.
+
+    Passed as input to :meth:`NodeGraphMenuItemHandle.on_click` callbacks."""
+
+    client: ClientHandle | None
+    """Client that clicked the entry."""
+    client_id: int | None
+    """ID of the client that clicked the entry."""
+    graph: GuiNodeGraphHandle
+    """Graph whose canvas was right-clicked."""
+    position: Tuple[float, float]
+    """Canvas position that was right-clicked, in the same coordinates as node
+    positions -- e.g. to place a new node with
+    :meth:`GuiNodeGraphHandle.add_node`."""
+
+
+class NodeGraphMenuItemHandle:
+    """An entry of a node graph's canvas context menu.
+
+    Created by :meth:`GuiNodeGraphHandle.add_canvas_menu_item`. An entry that
+    has entries of its own is shown as a submenu."""
+
+    def __init__(self, graph: GuiNodeGraphHandle, item_id: str) -> None:
+        self._graph = graph
+        self._item_id = item_id
+        self._click_cb: list[
+            Callable[[NodeGraphCanvasEvent], Union[None, Coroutine]]
+        ] = []
+
+    def add_item(
+        self, label: str, *, icon: IconName | None = None
+    ) -> NodeGraphMenuItemHandle:
+        """Add an entry to this entry's submenu, turning it into one."""
+        return self._graph.add_canvas_menu_item(label, icon=icon, parent=self)
+
+    def add_divider(self) -> NodeGraphMenuItemHandle:
+        """Add a separator line to this entry's submenu."""
+        return self._graph.add_canvas_menu_divider(parent=self)
+
+    def on_click(
+        self, func: Callable[[NodeGraphCanvasEvent], NoneOrCoroutine]
+    ) -> Callable[[NodeGraphCanvasEvent], NoneOrCoroutine]:
+        """Attach a callback for when the entry is clicked. Entries shown as a
+        submenu open it instead, and never fire.
+
+        Note:
+            - If `func` is a regular function (defined with `def`), it will be executed in a thread pool.
+            - If `func` is an async function (defined with `async def`), it will be executed in the event loop.
+        """
+        self._click_cb.append(func)
+        return func
+
+    def remove(self) -> None:
+        """Remove the entry from the menu, along with its submenu."""
+        graph = self._graph
+        with graph._lock:
+            removed = {self._item_id}
+            # Items are stored parents-first, so one pass finds every descendant.
+            for item in graph.canvas_menu:
+                if item.parent_id in removed:
+                    removed.add(item.item_id)
+            for item_id in removed:
+                graph._menu_item_handles.pop(item_id, None)
+            graph._set_props(
+                canvas_menu=tuple(
+                    i for i in graph.canvas_menu if i.item_id not in removed
+                )
+            )
+
+
+class GuiNodeGraphHandle(_GuiHandle[None], GuiNodeGraphProps):
+    """Handle for a node graph editor: typed nodes joined by wires.
+
+    Register the kinds of node with :meth:`add_node_type`, then build the graph
+    with :meth:`add_node` and :meth:`connect`. Users can also edit the graph in
+    the browser -- move, wire and delete nodes -- and these edits are applied
+    to the handle's state.
+
+    Right-clicking a node opens a context menu with the built-in Edit (see
+    :meth:`on_node_edit`) and Delete entries, followed by custom actions added
+    with :meth:`add_node_action`. Right-clicking the empty canvas opens a menu
+    built with :meth:`add_canvas_menu_item`.
+
+    Every edit, from the browser or from Python, is reported to
+    :meth:`on_change` callbacks, and every removed node to
+    :meth:`on_node_remove` callbacks.
+    """
+
+    def __init__(self, _impl: _GuiHandleState) -> None:
+        super().__init__(impl=_impl)
+        self._lock = threading.RLock()
+        self._double_click_cb: list[NodeGraphCallback] = []
+        self._edit_cb: list[NodeGraphCallback] = []
+        self._node_remove_cb: list[NodeGraphCallback] = []
+        self._change_cb: list[
+            Callable[[NodeGraphChangeEvent], Union[None, Coroutine]]
+        ] = []
+        self._action_handles: dict[str, NodeGraphActionHandle] = {}
+        self._menu_item_handles: dict[str, NodeGraphMenuItemHandle] = {}
+
+    def _set_props(self, **changes: Any) -> None:
+        """Assign several props in one update message, so clients apply them
+        together (e.g. removing a node and the wires attached to it)."""
+        if self._impl.removed:
+            return
+        for name, value in changes.items():
+            setattr(self._impl.props, name, value)
+        self._impl.gui_api._websock_interface.queue_message(
+            GuiUpdateMessage(self._impl.uuid, changes)
+        )
+
+    def _set_graph(
+        self,
+        *,
+        nodes: Tuple[GuiNodeGraphNode, ...] | None = None,
+        edges: Tuple[GuiNodeGraphEdge, ...] | None = None,
+    ) -> _NodeGraphChange | None:
+        """Replace the nodes and/or edges, sending nothing when they are
+        unchanged. Call with the lock held, then report the returned change
+        with :meth:`_report_change` once the lock is released."""
+        new_nodes = self.nodes if nodes is None else nodes
+        new_edges = self.edges if edges is None else edges
+        change = _NodeGraphChange.between(self.nodes, self.edges, new_nodes, new_edges)
+        if change is None or self._impl.removed:
+            return None
+        changes: dict[str, Any] = {}
+        if nodes is not None:
+            changes["nodes"] = nodes
+        if edges is not None:
+            changes["edges"] = edges
+        self._set_props(**changes)
+        return change
+
+    def _change_callbacks(
+        self,
+        change: _NodeGraphChange,
+        client: ClientHandle | None,
+        client_id: int | None,
+    ) -> list[tuple[Callable[[Any], Union[None, Coroutine]], Any]]:
+        """Pairs of callback and event to run for a change: one per removed
+        node and :meth:`on_node_remove` callback, then the :meth:`on_change`
+        callbacks."""
+        calls: list[tuple[Callable[[Any], Union[None, Coroutine]], Any]] = []
+        for node in change.removed_nodes:
+            node_event = NodeGraphNodeEvent(
+                client=client,
+                client_id=client_id,
+                graph=self,
+                node_id=node.node_id,
+                type_name=node.type_name,
+            )
+            calls.extend((cb, node_event) for cb in self._node_remove_cb)
+        change_event = NodeGraphChangeEvent(
+            client=client,
+            client_id=client_id,
+            graph=self,
+            added_nodes=change.added_nodes,
+            removed_nodes=tuple(n.node_id for n in change.removed_nodes),
+            moved_nodes=change.moved_nodes,
+            added_edges=change.added_edges,
+            removed_edges=change.removed_edges,
+        )
+        calls.extend((cb, change_event) for cb in self._change_cb)
+        return calls
+
+    def _report_change(self, change: _NodeGraphChange | None) -> None:
+        """Run the callbacks for an edit made from Python. As for assignments
+        to GUI input values, they run on the calling thread, so the edit's
+        effects are in place when it returns."""
+        if change is None:
+            return
+        for cb, event in self._change_callbacks(change, None, None):
+            cb_out = cb(event)
+            if isinstance(cb_out, Coroutine):
+                # run_coroutine_threadsafe, not create_task: edits typically
+                # happen on a user thread.
+                asyncio.run_coroutine_threadsafe(
+                    cb_out, self._impl.gui_api._event_loop
+                ).add_done_callback(print_task_error)
+
+    def _node_type(self, type_name: str) -> GuiNodeGraphNodeType:
+        for node_type in self.node_types:
+            if node_type.type_name == type_name:
+                return node_type
+        raise KeyError(f"Node graph has no node type {type_name!r}.")
+
+    def _node(self, node_id: str) -> GuiNodeGraphNode:
+        for node in self.nodes:
+            if node.node_id == node_id:
+                return node
+        raise KeyError(f"Node graph has no node {node_id!r}.")
+
+    def add_node_type(
+        self,
+        type_name: str,
+        *,
+        label: str | None = None,
+        color: str | None = None,
+        inputs: Sequence[NodePort] = (),
+        outputs: Sequence[NodePort] = (),
+    ) -> None:
+        """Register a kind of node that can be placed in the graph.
+
+        Args:
+            type_name: Identifier of the node type, used by :meth:`add_node`.
+            label: Title shown in the node header. Defaults to ``type_name``.
+            color: Accent color of the node header, as a CSS color. Defaults
+                to the theme's primary color.
+            inputs: Input ports, drawn on the left side of the node.
+            outputs: Output ports, drawn on the right side of the node.
+        """
+        for kind, ports in (("input", inputs), ("output", outputs)):
+            names = [port.name for port in ports]
+            if len(set(names)) != len(names):
+                raise ValueError(f"Duplicate {kind} port names in {names!r}.")
+
+        def to_wire(ports: Sequence[NodePort]) -> Tuple[GuiNodeGraphPort, ...]:
+            return tuple(
+                GuiNodeGraphPort(
+                    name=port.name,
+                    label=port.name if port.label is None else port.label,
+                    dtype=port.dtype,
+                )
+                for port in ports
+            )
+
+        node_type = GuiNodeGraphNodeType(
+            type_name=type_name,
+            label=type_name if label is None else label,
+            color=color,
+            inputs=to_wire(inputs),
+            outputs=to_wire(outputs),
+        )
+        with self._lock:
+            if any(t.type_name == type_name for t in self.node_types):
+                raise ValueError(f"Node type {type_name!r} is already registered.")
+            self._set_props(node_types=self.node_types + (node_type,))
+
+    def add_node(
+        self,
+        type_name: str,
+        position: Tuple[float, float] = (0.0, 0.0),
+        *,
+        node_id: str | None = None,
+    ) -> str:
+        """Place a node in the graph.
+
+        Args:
+            type_name: Node type of the new node; see :meth:`add_node_type`.
+            position: Position of the node's top-left corner on the canvas,
+                in pixels.
+            node_id: Optional stable identifier. Generated if omitted.
+
+        Returns:
+            The ID of the new node.
+        """
+        node_id = _make_uuid() if node_id is None else node_id
+        with self._lock:
+            self._node_type(type_name)
+            if any(node.node_id == node_id for node in self.nodes):
+                raise ValueError(f"Node graph already has a node {node_id!r}.")
+            node = GuiNodeGraphNode(
+                node_id=node_id,
+                type_name=type_name,
+                position=(float(position[0]), float(position[1])),
+            )
+            change = self._set_graph(nodes=self.nodes + (node,))
+        self._report_change(change)
+        return node_id
+
+    def remove_node(self, node_id: str) -> None:
+        """Remove a node, along with every wire attached to it."""
+        with self._lock:
+            self._node(node_id)
+            change = self._set_graph(
+                nodes=tuple(n for n in self.nodes if n.node_id != node_id),
+                edges=tuple(
+                    e for e in self.edges if node_id not in (e.source, e.target)
+                ),
+            )
+        self._report_change(change)
+
+    def connect(
+        self,
+        source: str,
+        source_port: str,
+        target: str,
+        target_port: str,
+    ) -> str:
+        """Wire an output port of one node to an input port of another.
+
+        An input port accepts a single wire, so an existing wire into
+        ``target_port`` is replaced.
+
+        Returns:
+            The ID of the new edge.
+        """
+        with self._lock:
+            edge_id, change = self._connect(source, source_port, target, target_port)
+        self._report_change(change)
+        return edge_id
+
+    def _connect(
+        self, source: str, source_port: str, target: str, target_port: str
+    ) -> tuple[str, _NodeGraphChange | None]:
+        """Checks and adds a wire. Returns its ID and the change to report."""
+        with self._lock:
+            out_port = _find_port(
+                self._node_type(self._node(source).type_name).outputs, source_port
+            )
+            in_port = _find_port(
+                self._node_type(self._node(target).type_name).inputs, target_port
+            )
+            if source == target:
+                raise ValueError("Cannot wire a node to itself.")
+            if not dtypes_compatible(out_port.dtype, in_port.dtype):
+                raise ValueError(
+                    f"Cannot wire output {source_port!r} ({out_port.dtype}) to "
+                    f"input {target_port!r} ({in_port.dtype})."
+                )
+            edge = GuiNodeGraphEdge(
+                edge_id=_make_uuid(),
+                source=source,
+                source_port=source_port,
+                target=target,
+                target_port=target_port,
+            )
+            change = self._set_graph(
+                edges=tuple(
+                    e
+                    for e in self.edges
+                    if not (e.target == target and e.target_port == target_port)
+                )
+                + (edge,)
+            )
+        return edge.edge_id, change
+
+    def disconnect(self, edge_id: str) -> None:
+        """Remove a wire."""
+        with self._lock:
+            if not any(e.edge_id == edge_id for e in self.edges):
+                raise KeyError(f"Node graph has no edge {edge_id!r}.")
+            change = self._set_graph(
+                edges=tuple(e for e in self.edges if e.edge_id != edge_id)
+            )
+        self._report_change(change)
+
+    def add_node_action(
+        self,
+        label: str,
+        *,
+        icon: IconName | None = None,
+        type_names: Sequence[str] | None = None,
+    ) -> NodeGraphActionHandle:
+        """Add a custom entry to the node context menu, after Edit and Delete.
+
+        Args:
+            label: Text of the menu entry.
+            icon: Optional icon shown before the label.
+            type_names: Node types the action is offered for. Defaults to every
+                node type.
+
+        Returns:
+            A handle used to attach callbacks with
+            :meth:`NodeGraphActionHandle.on_click`.
+
+        Example:
+            >>> run = graph.add_node_action(
+            >>>     "Run", icon=viser.Icon.PLAYER_PLAY, type_names=["simulate"]
+            >>> )
+            >>> @run.on_click
+            >>> def _(event: viser.NodeGraphNodeEvent) -> None:
+            >>>     print("Running", event.node_id)
+        """
+        action = GuiNodeGraphNodeAction(
+            action_id=_make_uuid(),
+            label=label,
+            icon_html=None if icon is None else svg_from_icon(icon),
+            type_names=None if type_names is None else tuple(type_names),
+        )
+        handle = NodeGraphActionHandle(self, action.action_id)
+        with self._lock:
+            self._action_handles[action.action_id] = handle
+            self._set_props(node_actions=self.node_actions + (action,))
+        return handle
+
+    def add_canvas_menu_item(
+        self,
+        label: str,
+        *,
+        icon: IconName | None = None,
+        parent: NodeGraphMenuItemHandle | None = None,
+    ) -> NodeGraphMenuItemHandle:
+        """Add an entry to the context menu opened by right-clicking the empty
+        canvas. Entries are shown in the order they are added.
+
+        Args:
+            label: Text of the entry.
+            icon: Optional icon shown before the label.
+            parent: Entry whose submenu the new entry goes in. Defaults to the
+                top level of the menu.
+
+        Returns:
+            A handle used to attach callbacks with
+            :meth:`NodeGraphMenuItemHandle.on_click`, or to add entries to its
+            submenu.
+
+        Example:
+            >>> add = graph.add_canvas_menu_item("Add node", icon=viser.Icon.PLUS)
+            >>> for type_name in ("load", "slice"):
+            >>>     item = add.add_item(type_name)
+            >>>     @item.on_click
+            >>>     def _(event: viser.NodeGraphCanvasEvent, type_name=type_name) -> None:
+            >>>         graph.add_node(type_name, event.position)
+        """
+        return self._add_menu_entry("item", label, icon, parent)
+
+    def add_canvas_menu_divider(
+        self, *, parent: NodeGraphMenuItemHandle | None = None
+    ) -> NodeGraphMenuItemHandle:
+        """Add a separator line to the canvas context menu, or to the submenu of
+        ``parent``."""
+        return self._add_menu_entry("divider", "", None, parent)
+
+    def _add_menu_entry(
+        self,
+        kind: Literal["item", "divider"],
+        label: str,
+        icon: IconName | None,
+        parent: NodeGraphMenuItemHandle | None,
+    ) -> NodeGraphMenuItemHandle:
+        item = GuiNodeGraphMenuItem(
+            item_id=_make_uuid(),
+            parent_id=None if parent is None else parent._item_id,
+            kind=kind,
+            label=label,
+            icon_html=None if icon is None else svg_from_icon(icon),
+        )
+        handle = NodeGraphMenuItemHandle(self, item.item_id)
+        with self._lock:
+            if parent is not None:
+                if parent._graph is not self:
+                    raise ValueError("`parent` belongs to another node graph.")
+                if parent._item_id not in self._menu_item_handles:
+                    raise ValueError("`parent` was removed from the menu.")
+                if any(
+                    i.item_id == parent._item_id and i.kind == "divider"
+                    for i in self.canvas_menu
+                ):
+                    raise ValueError("A divider can't hold a submenu.")
+            self._menu_item_handles[item.item_id] = handle
+            self._set_props(canvas_menu=self.canvas_menu + (item,))
+        return handle
+
+    def on_node_double_click(
+        self, func: Callable[[NodeGraphNodeEvent], NoneOrCoroutine]
+    ) -> Callable[[NodeGraphNodeEvent], NoneOrCoroutine]:
+        """Attach a callback for when the user double-clicks a node.
+
+        Note:
+            - If `func` is a regular function (defined with `def`), it will be executed in a thread pool.
+            - If `func` is an async function (defined with `async def`), it will be executed in the event loop.
+        """
+        self._double_click_cb.append(func)
+        return func
+
+    def on_node_edit(
+        self, func: Callable[[NodeGraphNodeEvent], NoneOrCoroutine]
+    ) -> Callable[[NodeGraphNodeEvent], NoneOrCoroutine]:
+        """Attach a callback for the Edit entry of the node context menu, e.g.
+        to open the node's settings.
+
+        Note:
+            - If `func` is a regular function (defined with `def`), it will be executed in a thread pool.
+            - If `func` is an async function (defined with `async def`), it will be executed in the event loop.
+        """
+        self._edit_cb.append(func)
+        return func
+
+    def on_node_remove(
+        self, func: Callable[[NodeGraphNodeEvent], NoneOrCoroutine]
+    ) -> Callable[[NodeGraphNodeEvent], NoneOrCoroutine]:
+        """Attach a callback for when a node is removed, once per node: by the
+        user in the browser (Delete key or context menu), or from Python with
+        :meth:`remove_node`. The node is already gone when it runs.
+
+        Note:
+            - Removals made from Python run the callback on the calling
+              thread, before :meth:`remove_node` returns.
+            - Otherwise, if `func` is a regular function (defined with `def`), it will be executed in a thread pool.
+            - If `func` is an async function (defined with `async def`), it will be executed in the event loop.
+        """
+        self._node_remove_cb.append(func)
+        return func
+
+    def on_change(
+        self, func: Callable[[NodeGraphChangeEvent], NoneOrCoroutine]
+    ) -> Callable[[NodeGraphChangeEvent], NoneOrCoroutine]:
+        """Attach a callback for when nodes or wires are added, removed or
+        moved, by the user in the browser or from Python. Each edit is
+        reported once, e.g. a node removed with its wires.
+
+        Edits made inside the callback are reported to it again, so it must
+        not edit the graph on every call.
+
+        Note:
+            - Edits made from Python run the callback on the calling thread,
+              before the editing method returns.
+            - Otherwise, if `func` is a regular function (defined with `def`), it will be executed in a thread pool.
+            - If `func` is an async function (defined with `async def`), it will be executed in the event loop.
+        """
+        self._change_cb.append(func)
+        return func
+
+    def _node_event_callbacks(
+        self, kind: Literal["double_click", "edit", "action"], action_id: str
+    ) -> list[NodeGraphCallback]:
+        if kind == "double_click":
+            return list(self._double_click_cb)
+        if kind == "edit":
+            return list(self._edit_cb)
+        action = self._action_handles.get(action_id, None)
+        return [] if action is None else list(action._click_cb)
+
+    # Edits made by users in the browser. They race edits from Python, so stale
+    # ids are skipped rather than raised. Each returns the change, which the
+    # caller reports along with the client that made it.
+
+    def _apply_client_delete(
+        self, node_ids: Sequence[str], edge_ids: Sequence[str]
+    ) -> _NodeGraphChange | None:
+        with self._lock:
+            removed = set(node_ids)
+            return self._set_graph(
+                nodes=tuple(n for n in self.nodes if n.node_id not in removed),
+                edges=tuple(
+                    e
+                    for e in self.edges
+                    if e.edge_id not in edge_ids
+                    and e.source not in removed
+                    and e.target not in removed
+                ),
+            )
+
+    def _apply_client_move(
+        self,
+        node_ids: Sequence[str],
+        positions: Sequence[Tuple[float, float]],
+    ) -> _NodeGraphChange | None:
+        with self._lock:
+            position_from_id = {
+                node_id: (float(x), float(y))
+                for node_id, (x, y) in zip(node_ids, positions)
+            }
+            return self._set_graph(
+                nodes=tuple(
+                    dataclasses.replace(n, position=position_from_id[n.node_id])
+                    if n.node_id in position_from_id
+                    else n
+                    for n in self.nodes
+                )
+            )
+
+    def _apply_client_connect(
+        self, source: str, source_port: str, target: str, target_port: str
+    ) -> _NodeGraphChange | None:
+        try:
+            return self._connect(source, source_port, target, target_port)[1]
+        except (KeyError, ValueError) as e:
+            warnings.warn(f"Ignoring invalid wire from the client: {e}")
+            return None
+
+
+def _find_port(ports: Tuple[GuiNodeGraphPort, ...], name: str) -> GuiNodeGraphPort:
+    for port in ports:
+        if port.name == name:
+            return port
+    raise KeyError(f"No port {name!r}; available: {[p.name for p in ports]!r}.")
 
 
 class _TabContainerMixin:

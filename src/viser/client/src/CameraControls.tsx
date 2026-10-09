@@ -12,7 +12,7 @@ import { PerspectiveCamera } from "three";
 import * as THREE from "three";
 import { computeT_threeworld_world } from "./WorldTransformUtils";
 import { useThrottledMessageSender } from "./WebsocketUtils";
-import { isFormElement } from "./utils/isFormElement";
+import { capturesKeyboard } from "./utils/isFormElement";
 import { EXCLUDE_FROM_BOUNDS } from "./utils/sceneBounds";
 
 // Rotation from the three.js camera convention to the OpenCV one. Constant, so
@@ -619,7 +619,7 @@ export function SynchronizedCameraControls() {
     const held = heldKeysRef.current;
     const onKeyDown = (event: KeyboardEvent) => {
       if (!CAMERA_MOVEMENT_KEYS.has(event.code)) return;
-      if (isFormElement(event.target)) return;
+      if (capturesKeyboard(event.target)) return;
       // Ignore auto-repeat: only a fresh press counts as a new hold.
       if (held.has(event.code)) return;
       held.add(event.code);

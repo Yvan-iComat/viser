@@ -25,6 +25,7 @@
     "@types/three": "^0.185.4",
     "@vanilla-extract/css": "^1.21.2",
     "@vitejs/plugin-react": "^6.0.5",
+    "@xyflow/react": "^12.12.0",
     "acorn": "^8.18.0",
     "await-lock": "^3.0.0",
     "browserslist": "^4.28.8",

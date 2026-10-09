@@ -65,6 +65,7 @@ from ._gui_handles import (
     GuiMarkdownHandle,
     GuiModalHandle,
     GuiMultiSliderHandle,
+    GuiNodeGraphHandle,
     GuiNumberHandle,
     GuiPlotlyHandle,
     GuiProgressBarHandle,
@@ -80,6 +81,8 @@ from ._gui_handles import (
     GuiVector2Handle,
     GuiVector3Handle,
     MainPanelHandle,
+    NodeGraphCanvasEvent,
+    NodeGraphNodeEvent,
     PanelHandle,
     SupportsRemoveProtocol,
     TimelineHandle,
@@ -91,6 +94,7 @@ from ._gui_handles import (
     _GuiHandleState,
     _GuiInputHandle,
     _make_uuid,
+    _NodeGraphChange,
 )
 from ._icons import svg_from_icon
 from ._icons_enum import IconName
@@ -377,6 +381,7 @@ class GuiApi:
         self._command_handle_from_uuid: dict[str, CommandHandle] = {}
         self._gallery_handle_from_uuid: dict[str, GuiGalleryHandle] = {}
         self._chat_handle_from_uuid: dict[str, GuiChatHandle] = {}
+        self._node_graph_handle_from_uuid: dict[str, GuiNodeGraphHandle] = {}
         self._current_file_upload_states: dict[str, _FileUploadState] = {}
 
         # Set to True when plotly.min.js has been sent to client.
@@ -419,6 +424,22 @@ class GuiApi:
         )
         self._websock_interface.register_handler(
             _messages.GuiChatActionMessage, self._handle_chat_action
+        )
+        self._websock_interface.register_handler(
+            _messages.GuiNodeGraphNodeEventMessage, self._handle_node_graph_node_event
+        )
+        self._websock_interface.register_handler(
+            _messages.GuiNodeGraphCanvasMenuMessage,
+            self._handle_node_graph_canvas_menu,
+        )
+        self._websock_interface.register_handler(
+            _messages.GuiNodeGraphDeleteMessage, self._handle_node_graph_delete
+        )
+        self._websock_interface.register_handler(
+            _messages.GuiNodeGraphMoveMessage, self._handle_node_graph_move
+        )
+        self._websock_interface.register_handler(
+            _messages.GuiNodeGraphConnectMessage, self._handle_node_graph_connect
         )
 
     def _resolve_client(self, client_id: ClientId) -> ClientHandle | None:
@@ -662,6 +683,121 @@ class GuiApi:
         if chat is None or chat._impl.removed:
             return
         chat._handle_action(message.action, message.conversation_id, message.value)
+
+    def _live_node_graph(self, uuid: str) -> GuiNodeGraphHandle | None:
+        graph = self._node_graph_handle_from_uuid.get(uuid, None)
+        return None if graph is None or graph._impl.removed else graph
+
+    async def _handle_node_graph_node_event(
+        self, client_id: ClientId, message: _messages.GuiNodeGraphNodeEventMessage
+    ) -> None:
+        """Callback for double-clicks and context menu entries on a node."""
+        graph = self._live_node_graph(message.uuid)
+        if graph is None:
+            return
+        # The node may have been removed between the click and its dispatch.
+        node = next((n for n in graph.nodes if n.node_id == message.node_id), None)
+        if node is None:
+            return
+
+        client = self._resolve_client(client_id)
+        if client is None:
+            return
+
+        event = NodeGraphNodeEvent(
+            client=client,
+            client_id=client_id,
+            graph=graph,
+            node_id=node.node_id,
+            type_name=node.type_name,
+        )
+        for cb in graph._node_event_callbacks(message.kind, message.action_id):
+            if asyncio.iscoroutinefunction(cb):
+                await cb(event)
+            else:
+                self._thread_executor.submit(cb, event).add_done_callback(
+                    print_threadpool_errors
+                )
+
+    async def _handle_node_graph_canvas_menu(
+        self, client_id: ClientId, message: _messages.GuiNodeGraphCanvasMenuMessage
+    ) -> None:
+        """Callback for entries of the canvas context menu."""
+        graph = self._live_node_graph(message.uuid)
+        if graph is None:
+            return
+        # The entry may have been removed while the menu was open.
+        item = graph._menu_item_handles.get(message.item_id, None)
+        if item is None:
+            return
+
+        client = self._resolve_client(client_id)
+        if client is None:
+            return
+
+        x, y = message.position
+        event = NodeGraphCanvasEvent(
+            client=client,
+            client_id=client_id,
+            graph=graph,
+            position=(float(x), float(y)),
+        )
+        for cb in list(item._click_cb):
+            if asyncio.iscoroutinefunction(cb):
+                await cb(event)
+            else:
+                self._thread_executor.submit(cb, event).add_done_callback(
+                    print_threadpool_errors
+                )
+
+    async def _report_node_graph_change(
+        self,
+        client_id: ClientId,
+        graph: GuiNodeGraphHandle,
+        change: _NodeGraphChange | None,
+    ) -> None:
+        """Run the callbacks for an edit made in the browser."""
+        if change is None:
+            return
+        # The edit is applied even if its client has since disconnected, so it
+        # is reported regardless, without a client handle.
+        client = self._resolve_client(client_id)
+        for cb, event in graph._change_callbacks(change, client, client_id):
+            if asyncio.iscoroutinefunction(cb):
+                await cb(event)
+            else:
+                self._thread_executor.submit(cb, event).add_done_callback(
+                    print_threadpool_errors
+                )
+
+    async def _handle_node_graph_delete(
+        self, client_id: ClientId, message: _messages.GuiNodeGraphDeleteMessage
+    ) -> None:
+        graph = self._live_node_graph(message.uuid)
+        if graph is not None:
+            change = graph._apply_client_delete(message.node_ids, message.edge_ids)
+            await self._report_node_graph_change(client_id, graph, change)
+
+    async def _handle_node_graph_move(
+        self, client_id: ClientId, message: _messages.GuiNodeGraphMoveMessage
+    ) -> None:
+        graph = self._live_node_graph(message.uuid)
+        if graph is not None:
+            change = graph._apply_client_move(message.node_ids, message.positions)
+            await self._report_node_graph_change(client_id, graph, change)
+
+    async def _handle_node_graph_connect(
+        self, client_id: ClientId, message: _messages.GuiNodeGraphConnectMessage
+    ) -> None:
+        graph = self._live_node_graph(message.uuid)
+        if graph is not None:
+            change = graph._apply_client_connect(
+                message.source,
+                message.source_port,
+                message.target,
+                message.target_port,
+            )
+            await self._report_node_graph_change(client_id, graph, change)
 
     async def _handle_gui_form_submit(
         self, client_id: ClientId, message: _messages.GuiFormSubmitMessage
@@ -2854,6 +2990,98 @@ class GuiApi:
         message.props.active_conversation_id = handle.conversation.conversation_id
         self._websock_interface.queue_message(message)
         self._chat_handle_from_uuid[message.uuid] = handle
+        return handle
+
+    def add_node_graph(
+        self,
+        label: str = "Node graph",
+        *,
+        height: int = 400,
+        show_minimap: bool = True,
+        parent: GuiContainerProtocol | None = None,
+        visible: bool = True,
+        order: float | None = None,
+    ) -> GuiNodeGraphHandle:
+        """Add a node graph editor: nodes with typed input and output ports,
+        joined by wires.
+
+        The graph is best placed in a panel tab, so it can be floated and
+        resized. Register node types with
+        :meth:`GuiNodeGraphHandle.add_node_type`, then build the graph with
+        :meth:`GuiNodeGraphHandle.add_node` and
+        :meth:`GuiNodeGraphHandle.connect`.
+
+        Args:
+            label: Label of the graph.
+            height: Height of the canvas in pixels while its container
+                sizes itself to its content. In a fixed-height container -- a
+                docked or resized panel -- the canvas fills it instead.
+            show_minimap: Whether to show a minimap in the corner of the canvas.
+            parent: Container to place the graph in, e.g. a panel tab. Defaults
+                to the current ``with`` container.
+            visible: Whether the graph is visible initially.
+            order: Optional ordering, smallest values will be displayed first.
+
+        Returns:
+            A handle used to edit the graph.
+
+        Example:
+            >>> panel = server.gui.add_panel()
+            >>> graph = server.gui.add_node_graph(parent=panel.add_tab("Flow"))
+            >>> panel.float(x=-15, y=15, width=900, height=560)
+            >>> graph.add_node_type(
+            >>>     "load", outputs=[viser.NodePort("mesh", dtype="Mesh")]
+            >>> )
+            >>> graph.add_node_type(
+            >>>     "slice", inputs=[viser.NodePort("mesh", dtype="Mesh")]
+            >>> )
+            >>> a = graph.add_node("load", (0, 0))
+            >>> b = graph.add_node("slice", (250, 0))
+            >>> graph.connect(a, "mesh", b, "mesh")
+        """
+        if height <= 0:
+            raise ValueError("`height` must be positive.")
+        if isinstance(parent, PanelHandle):
+            raise TypeError(
+                "A panel holds tabs, not content directly. Add the graph to one "
+                "of its tabs:\n"
+                "    panel = server.gui.add_panel()\n"
+                '    graph = server.gui.add_node_graph(parent=panel.add_tab("Flow"))'
+            )
+        container_uuid = (
+            self._get_container_uuid()
+            if parent is None
+            else self._container_uuid_from_handle(parent)
+        )
+        message = _messages.GuiNodeGraphMessage(
+            uuid=_make_uuid(),
+            container_uuid=container_uuid,
+            props=_messages.GuiNodeGraphProps(
+                order=_apply_default_order(order),
+                label=label,
+                hint=None,
+                visible=visible,
+                disabled=False,
+                node_types=(),
+                nodes=(),
+                edges=(),
+                node_actions=(),
+                canvas_menu=(),
+                height=height,
+                show_minimap=show_minimap,
+            ),
+        )
+        self._websock_interface.queue_message(message)
+        handle = GuiNodeGraphHandle(
+            _GuiHandleState(
+                message.uuid,
+                self,
+                None,
+                props=message.props,
+                parent_container_id=message.container_uuid,
+            )
+        )
+        self._node_graph_handle_from_uuid[message.uuid] = handle
         return handle
 
     @deprecated_positional_shim

@@ -33,6 +33,7 @@ import {
   GuiChatMessage,
   GuiChatSubmitMessage,
 } from "../WebsocketMessages";
+import { useFillHeight } from "./useFillHeight";
 
 type ChatEntry = GuiChatMessage["props"]["messages"][number];
 type Upload = GuiChatSubmitMessage["attachments"][number];
@@ -43,59 +44,6 @@ const MAX_ATTACHMENT_BYTES = 20 * 1024 * 1024;
 const THUMBNAIL_SIZE = 256;
 /** Smallest height the chat shrinks to when filling a short panel. */
 const MIN_FILL_HEIGHT = 240;
-
-/** Height that makes the chat fill its container's scroll viewport.
- *
- * Panel bodies (and the control panel) wrap content in a Mantine ScrollArea,
- * so CSS `height: 100%` has nothing definite to resolve against. Instead,
- * measure: the viewport height minus everything else in the scrolled content
- * (padding, sibling components) is the space left for the chat.
- *
- * In a content-sized container (an un-resized floating panel) the viewport
- * equals the content, so this is a fixed point at the current height and the
- * `initial` height is kept. In a fixed-height one (docked or resized panel)
- * the chat grows or shrinks with it, down to MIN_FILL_HEIGHT.
- *
- * Also returns a negative top margin that absorbs the container's top padding
- * when the chat is its first child, so the chat sits flush under the tab strip. */
-function useFillHeight(
-  ref: React.RefObject<HTMLDivElement | null>,
-  initial: number,
-  enabled: boolean,
-) {
-  const [height, setHeight] = useState(initial);
-  const [marginTop, setMarginTop] = useState(0);
-  useEffect(() => {
-    const root = ref.current;
-    const viewport = root?.closest<HTMLElement>(".mantine-ScrollArea-viewport");
-    const content = viewport?.firstElementChild;
-    if (!enabled || !root || !viewport || !(content instanceof HTMLElement))
-      return;
-    const parent = root.parentElement;
-    if (parent !== null && parent.firstElementChild === root) {
-      setMarginTop(-(parseFloat(getComputedStyle(parent).paddingTop) || 0));
-    }
-    const update = () => {
-      // Fractional rects, floored once: integer offset/client heights round
-      // independently and can overshoot the viewport by a pixel.
-      const other =
-        content.getBoundingClientRect().height -
-        root.getBoundingClientRect().height;
-      const target = Math.max(
-        MIN_FILL_HEIGHT,
-        Math.floor(viewport.getBoundingClientRect().height - other),
-      );
-      // Tolerance avoids a resize-observer ping-pong on sub-pixel rounding.
-      setHeight((h) => (Math.abs(h - target) < 1 ? h : target));
-    };
-    const observer = new ResizeObserver(update);
-    observer.observe(viewport);
-    observer.observe(content);
-    update();
-    return () => observer.disconnect();
-  }, [ref, enabled]);
-  return { height, marginTop };
-}
 
 /** Downscale an image to a small JPEG preview, or null if it can't be decoded. */
 async function makeThumbnail(
@@ -466,6 +414,7 @@ export default function ChatComponent({ uuid, props }: GuiChatMessage) {
     rootRef,
     props.height,
     props.visible,
+    MIN_FILL_HEIGHT,
   );
 
   // Sent unthrottled: the shared throttled sender coalesces to the latest

@@ -42,6 +42,8 @@ GUI Handles
 
 .. autoclass:: viser.GuiMultiSliderHandle
 
+.. autoclass:: viser.GuiNodeGraphHandle
+
 .. autoclass:: viser.GuiNumberHandle
 
 .. autoclass:: viser.GuiPlotlyHandle
@@ -67,6 +69,10 @@ GUI Handles
 .. autoclass:: viser.GuiVector3Handle
 
 .. autoclass:: viser.MainPanelHandle
+
+.. autoclass:: viser.NodeGraphActionHandle
+
+.. autoclass:: viser.NodeGraphMenuItemHandle
 
 .. autoclass:: viser.PanelHandle
 

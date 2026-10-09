@@ -8,6 +8,7 @@ Advanced features for complex applications.
 
    events
    chat
+   node_graph
    icons
    theme
    uplot
