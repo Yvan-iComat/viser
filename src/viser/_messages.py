@@ -168,7 +168,9 @@ LabelAnchor = Literal[
 
 
 # Entity lifecycle markers. See architecture_hardening.md for design rationale.
-EntityType: TypeAlias = Literal["gui", "scene", "command", "notification", "modal"]
+EntityType: TypeAlias = Literal[
+    "gui", "scene", "command", "titlebar_item", "notification", "modal"
+]
 """Kinds of removable entities in the protocol."""
 
 LifecyclePhase: TypeAlias = Literal["create", "update_dict", "update_simple", "remove"]
@@ -2973,6 +2975,69 @@ class RemoveCommandMessage(
 @dataclasses.dataclass
 class CommandTriggerMessage(Message, include_in_scene_serialization=False):
     """Message from client->server when a command is triggered from the command palette."""
+
+    uuid: str
+
+
+@dataclasses.dataclass
+class TitlebarItemProps:
+    """Properties for a custom item (button or separator) in the titlebar."""
+
+    _kind: Literal["button", "separator"]
+    """(Private) Whether this item is a clickable button or a vertical
+    separator. Fixed at creation."""
+    text: Optional[str]
+    """Text shown on a button. Mutually exclusive with the icon."""
+    _icon_html: Optional[str]
+    """(Private) HTML string for the icon shown on a button."""
+    tooltip: Optional[str]
+    """Tooltip text shown when hovering a button."""
+    order: float
+    """Sort key; items are laid out left-to-right in increasing order."""
+    disabled: bool
+    """Whether the button is disabled (visible but not clickable)."""
+    visible: bool
+    """Whether the item is shown."""
+
+
+@dataclasses.dataclass
+class RegisterTitlebarItemMessage(
+    Message,
+    entity=EntityLifecycle("titlebar_item", "create", "uuid"),
+    include_in_scene_serialization=False,
+):
+    """Message from server->client to add a custom item to the titlebar."""
+
+    uuid: str
+    props: TitlebarItemProps
+
+
+@dataclasses.dataclass
+class TitlebarItemUpdateMessage(
+    Message,
+    entity=EntityLifecycle("titlebar_item", "update_dict", "uuid"),
+    include_in_scene_serialization=False,
+):
+    """Message from server->client to update properties of a titlebar item."""
+
+    uuid: str
+    updates: Dict[str, Any]
+
+
+@dataclasses.dataclass
+class RemoveTitlebarItemMessage(
+    Message,
+    entity=EntityLifecycle("titlebar_item", "remove", "uuid"),
+    include_in_scene_serialization=False,
+):
+    """Message from server->client to remove an item from the titlebar."""
+
+    uuid: str
+
+
+@dataclasses.dataclass
+class TitlebarButtonClickMessage(Message, include_in_scene_serialization=False):
+    """Message from client->server when a custom titlebar button is clicked."""
 
     uuid: str
 

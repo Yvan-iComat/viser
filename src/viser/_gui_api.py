@@ -83,6 +83,9 @@ from ._gui_handles import (
     PanelHandle,
     SupportsRemoveProtocol,
     TimelineHandle,
+    TitlebarButtonEvent,
+    TitlebarButtonHandle,
+    TitlebarSeparatorHandle,
     UploadedFile,
     _colors_to_int_tuple,
     _CommandHandleState,
@@ -91,6 +94,7 @@ from ._gui_handles import (
     _GuiHandleState,
     _GuiInputHandle,
     _make_uuid,
+    _TitlebarItemHandleState,
 )
 from ._icons import svg_from_icon
 from ._icons_enum import IconName
@@ -375,6 +379,9 @@ class GuiApi:
         # restarted server's counter restart would otherwise read as stale).
         self._layout_run_id = uuid.uuid4().hex[:8]
         self._command_handle_from_uuid: dict[str, CommandHandle] = {}
+        self._titlebar_item_from_uuid: dict[
+            str, TitlebarButtonHandle | TitlebarSeparatorHandle
+        ] = {}
         self._gallery_handle_from_uuid: dict[str, GuiGalleryHandle] = {}
         self._chat_handle_from_uuid: dict[str, GuiChatHandle] = {}
         self._current_file_upload_states: dict[str, _FileUploadState] = {}
@@ -407,6 +414,9 @@ class GuiApi:
         )
         self._websock_interface.register_handler(
             _messages.CommandTriggerMessage, self._handle_command_trigger
+        )
+        self._websock_interface.register_handler(
+            _messages.TitlebarButtonClickMessage, self._handle_titlebar_button_click
         )
         self._websock_interface.register_handler(
             _messages.GuiGalleryClickMessage, self._handle_gallery_click
@@ -877,6 +887,30 @@ class GuiApi:
                     cb, CommandEvent(client, client_id, handle)
                 ).add_done_callback(print_threadpool_errors)
 
+    async def _handle_titlebar_button_click(
+        self, client_id: ClientId, message: _messages.TitlebarButtonClickMessage
+    ) -> None:
+        """Callback for handling clicks on custom titlebar buttons."""
+        handle = self._titlebar_item_from_uuid.get(message.uuid, None)
+        if not isinstance(handle, TitlebarButtonHandle):
+            return
+        handle_state = handle._impl
+        if handle_state.removed or handle_state.props.disabled:
+            return
+
+        client = self._resolve_client(client_id)
+        if client is None:
+            return
+
+        event = TitlebarButtonEvent(client, client_id, handle)
+        for cb in handle_state.click_cb:
+            if asyncio.iscoroutinefunction(cb):
+                await cb(event)
+            else:
+                self._thread_executor.submit(cb, event).add_done_callback(
+                    print_threadpool_errors
+                )
+
     def _handle_folder_select(
         self, client_id: ClientId, message: _messages.FolderSelectMessage
     ) -> None:
@@ -1127,6 +1161,8 @@ class GuiApi:
             next(iter(self._panel_handle_from_uuid.values())).remove()
         while self._command_handle_from_uuid:
             next(iter(self._command_handle_from_uuid.values())).remove()
+        while self._titlebar_item_from_uuid:
+            next(iter(self._titlebar_item_from_uuid.values())).remove()
 
         # Reset any server-authored main-panel placement (from `main_panel`
         # commands or the deprecated `control_layout`) back to the default. The
@@ -1460,6 +1496,123 @@ class GuiApi:
             )
         )
         return handle
+
+    def add_titlebar_button(
+        self,
+        text: str | None = None,
+        *,
+        icon: IconName | None = None,
+        tooltip: str | None = None,
+        order: float | None = None,
+        disabled: bool = False,
+        visible: bool = True,
+    ) -> TitlebarButtonHandle:
+        """Add a custom button to the titlebar, to the right of the titlebar
+        image. The titlebar is shown whenever it has custom items, even if
+        :meth:`configure_theme` was not given ``titlebar_content``.
+
+        Scope follows the owner of this :class:`GuiApi`:
+        ``server.gui.add_titlebar_button(...)`` adds the button for every
+        connected client (and any that connect later), while
+        ``client.gui.add_titlebar_button(...)`` adds it only for that client.
+
+        Args:
+            text: Text shown on the button. Exactly one of ``text`` and
+                ``icon`` must be set.
+            icon: Icon shown on the button. Exactly one of ``text`` and
+                ``icon`` must be set.
+            tooltip: Optional tooltip shown on hover. Recommended for icon
+                buttons.
+            order: Optional sort key; titlebar items (buttons and separators)
+                are laid out left-to-right in increasing order. Defaults to
+                insertion order.
+            disabled: If True, the button is shown but cannot be clicked.
+            visible: Whether the button is shown.
+
+        Returns:
+            A handle that can be used to attach callbacks via
+            :meth:`TitlebarButtonHandle.on_click`, update properties, or
+            remove the button.
+        """
+        if (text is None) == (icon is None):
+            raise ValueError(
+                "add_titlebar_button() requires exactly one of text= or icon=."
+            )
+        handle = TitlebarButtonHandle(
+            self._new_titlebar_item_state(
+                kind="button",
+                text=text,
+                tooltip=tooltip,
+                order=order,
+                disabled=disabled,
+                visible=visible,
+                icon=icon,
+            )
+        )
+        self._register_titlebar_item(handle)
+        return handle
+
+    def add_titlebar_separator(
+        self, *, order: float | None = None
+    ) -> TitlebarSeparatorHandle:
+        """Add a vertical separator to the titlebar, used to visually group
+        the custom buttons added with :meth:`add_titlebar_button`.
+
+        Args:
+            order: Optional sort key, shared with titlebar buttons. Defaults
+                to insertion order.
+
+        Returns:
+            A handle that can be used to remove the separator.
+        """
+        handle = TitlebarSeparatorHandle(
+            self._new_titlebar_item_state(
+                kind="separator",
+                text=None,
+                tooltip=None,
+                order=order,
+                disabled=False,
+                visible=True,
+                icon=None,
+            )
+        )
+        self._register_titlebar_item(handle)
+        return handle
+
+    def _new_titlebar_item_state(
+        self,
+        *,
+        kind: Literal["button", "separator"],
+        text: str | None,
+        tooltip: str | None,
+        order: float | None,
+        disabled: bool,
+        visible: bool,
+        icon: IconName | None,
+    ) -> _TitlebarItemHandleState:
+        props = _messages.TitlebarItemProps(
+            _kind=kind,
+            text=text,
+            _icon_html=None if icon is None else svg_from_icon(icon),
+            tooltip=tooltip,
+            order=_apply_default_order(order),
+            disabled=disabled,
+            visible=visible,
+        )
+        return _TitlebarItemHandleState(
+            uuid=_make_uuid(), gui_api=self, props=props, icon=icon
+        )
+
+    def _register_titlebar_item(
+        self, handle: TitlebarButtonHandle | TitlebarSeparatorHandle
+    ) -> None:
+        # Register in the local map before publishing, so an immediate click
+        # from the client can be resolved here.
+        impl = handle._impl
+        self._titlebar_item_from_uuid[impl.uuid] = handle
+        self._websock_interface.queue_message(
+            _messages.RegisterTitlebarItemMessage(uuid=impl.uuid, props=impl.props)
+        )
 
     @deprecated_positional_shim
     def add_folder(

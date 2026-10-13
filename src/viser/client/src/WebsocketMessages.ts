@@ -2393,6 +2393,48 @@ export interface CommandTriggerMessage {
   type: "CommandTriggerMessage";
   uuid: string;
 }
+/** Message from server->client to add a custom item to the titlebar.
+ *
+ * (automatically generated)
+ */
+export interface RegisterTitlebarItemMessage {
+  type: "RegisterTitlebarItemMessage";
+  uuid: string;
+  props: {
+    _kind: "button" | "separator";
+    text: string | null;
+    _icon_html: string | null;
+    tooltip: string | null;
+    order: number;
+    disabled: boolean;
+    visible: boolean;
+  };
+}
+/** Message from server->client to update properties of a titlebar item.
+ *
+ * (automatically generated)
+ */
+export interface TitlebarItemUpdateMessage {
+  type: "TitlebarItemUpdateMessage";
+  uuid: string;
+  updates: { [key: string]: any };
+}
+/** Message from server->client to remove an item from the titlebar.
+ *
+ * (automatically generated)
+ */
+export interface RemoveTitlebarItemMessage {
+  type: "RemoveTitlebarItemMessage";
+  uuid: string;
+}
+/** Message from client->server when a custom titlebar button is clicked.
+ *
+ * (automatically generated)
+ */
+export interface TitlebarButtonClickMessage {
+  type: "TitlebarButtonClickMessage";
+  uuid: string;
+}
 /** Set a key in the client's localStorage.
  *
  * (automatically generated)
@@ -2568,6 +2610,10 @@ export type Message =
   | CommandUpdateMessage
   | RemoveCommandMessage
   | CommandTriggerMessage
+  | RegisterTitlebarItemMessage
+  | TitlebarItemUpdateMessage
+  | RemoveTitlebarItemMessage
+  | TitlebarButtonClickMessage
   | LocalStorageSetItemMessage
   | LocalStorageRemoveItemMessage
   | LocalStorageClearMessage

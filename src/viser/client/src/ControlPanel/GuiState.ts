@@ -13,6 +13,7 @@ import {
   GuiPanelMessage,
   GuiSetPanelPositionMessage,
   RegisterCommandMessage,
+  RegisterTitlebarItemMessage,
   ThemeConfigurationMessage,
   TimelineMessage,
   ToolbarConfigMessage,
@@ -136,6 +137,8 @@ export interface GuiState {
   };
   /** Registered command palette actions, keyed by UUID. */
   commands: { [uuid: string]: RegisterCommandMessage };
+  /** Custom titlebar buttons and separators, keyed by UUID. */
+  titlebarItems: { [uuid: string]: RegisterTitlebarItemMessage };
   /** Client-owned placement state, keyed by panel uuid (and CONTROL_PANEL_ID
    * for the main panel). Built up by the four write-only `GuiSetPanel*`
    * messages; the dock applies whatever fields are present. */
@@ -205,6 +208,9 @@ export interface GuiActions {
   addCommand: (command: RegisterCommandMessage) => void;
   updateCommand: (uuid: string, updates: { [key: string]: any }) => void;
   removeCommand: (uuid: string) => void;
+  addTitlebarItem: (item: RegisterTitlebarItemMessage) => void;
+  updateTitlebarItem: (uuid: string, updates: { [key: string]: any }) => void;
+  removeTitlebarItem: (uuid: string) => void;
   setPanelPosition: (
     uuid: string,
     position: GuiSetPanelPositionMessage["position"],
@@ -276,6 +282,7 @@ const cleanGuiState: GuiState = {
   dirtyFormUuids: {},
   uploadsInProgress: {},
   commands: {},
+  titlebarItems: {},
   panelPlacement: {},
   panelLayoutTracking: {},
   layoutResetNonce: 0,
@@ -529,6 +536,7 @@ export function useGuiState(initialServer: string) {
           dirtyFormUuids: cleanGuiState.dirtyFormUuids,
           uploadsInProgress: cleanGuiState.uploadsInProgress,
           commands: cleanGuiState.commands,
+          titlebarItems: cleanGuiState.titlebarItems,
           panelPlacement: cleanGuiState.panelPlacement,
           // The (re)connect replay is now in flight. Reconnect-sensitive
           // consumers (the dock's pane registry, the main-panel width effect)
@@ -624,6 +632,30 @@ export function useGuiState(initialServer: string) {
           const next = { ...state.commands };
           delete next[uuid];
           return { commands: next };
+        });
+      },
+      addTitlebarItem: (item) => {
+        store.set((state) => ({
+          titlebarItems: { ...state.titlebarItems, [item.uuid]: item },
+        }));
+      },
+      updateTitlebarItem: (uuid, updates) => {
+        store.set((state) => {
+          const existing = state.titlebarItems[uuid];
+          if (existing === undefined) return state;
+          const merged: RegisterTitlebarItemMessage = {
+            ...existing,
+            props: { ...existing.props, ...updates },
+          };
+          return { titlebarItems: { ...state.titlebarItems, [uuid]: merged } };
+        });
+      },
+      removeTitlebarItem: (uuid) => {
+        store.set((state) => {
+          if (!(uuid in state.titlebarItems)) return state;
+          const next = { ...state.titlebarItems };
+          delete next[uuid];
+          return { titlebarItems: next };
         });
       },
       // The four write-only GuiSetPanel* messages each merge their single AXIS

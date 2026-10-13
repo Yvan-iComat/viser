@@ -43,6 +43,9 @@ from ._gui_handles import GuiVector3Handle as GuiVector3Handle
 from ._gui_handles import MainPanelHandle as MainPanelHandle
 from ._gui_handles import PanelHandle as PanelHandle
 from ._gui_handles import PlaceableHandle as PlaceableHandle
+from ._gui_handles import TitlebarButtonEvent as TitlebarButtonEvent
+from ._gui_handles import TitlebarButtonHandle as TitlebarButtonHandle
+from ._gui_handles import TitlebarSeparatorHandle as TitlebarSeparatorHandle
 from ._gui_handles import UploadedFile as UploadedFile
 from ._icons_enum import Icon as Icon
 from ._icons_enum import IconName as IconName

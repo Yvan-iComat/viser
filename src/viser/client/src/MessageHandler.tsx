@@ -111,6 +111,9 @@ function useMessageHandler() {
   const addCommand = viewer.guiActions.addCommand;
   const updateCommand = viewer.guiActions.updateCommand;
   const removeCommand = viewer.guiActions.removeCommand;
+  const addTitlebarItem = viewer.guiActions.addTitlebarItem;
+  const updateTitlebarItem = viewer.guiActions.updateTitlebarItem;
+  const removeTitlebarItem = viewer.guiActions.removeTitlebarItem;
   const setTimeline = viewer.guiActions.setTimeline;
   const setToolbarConfig = viewer.guiActions.setToolbarConfig;
 
@@ -561,6 +564,20 @@ function useMessageHandler() {
       }
       case "RemoveCommandMessage": {
         removeCommand(message.uuid);
+        return;
+      }
+
+      // Register, update, or remove custom titlebar buttons/separators.
+      case "RegisterTitlebarItemMessage": {
+        addTitlebarItem(message);
+        return;
+      }
+      case "TitlebarItemUpdateMessage": {
+        updateTitlebarItem(message.uuid, message.updates);
+        return;
+      }
+      case "RemoveTitlebarItemMessage": {
+        removeTitlebarItem(message.uuid);
         return;
       }
 

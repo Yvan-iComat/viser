@@ -1,14 +1,21 @@
 import { ViewerContext } from "./ViewerContext";
-import { ThemeConfigurationMessage } from "./WebsocketMessages";
 import {
+  RegisterTitlebarItemMessage,
+  ThemeConfigurationMessage,
+} from "./WebsocketMessages";
+import { htmlIconWrapper } from "./components/ComponentStyles.css";
+import {
+  ActionIcon,
   Burger,
   Button,
   Container,
+  Divider,
   Group,
   Paper,
   Box,
   useMantineColorScheme,
   Portal,
+  Tooltip,
 } from "@mantine/core";
 import {
   IconBrandGithub,
@@ -16,7 +23,7 @@ import {
   IconKeyboard,
 } from "@tabler/icons-react";
 import { useDisclosure } from "@mantine/hooks";
-import { useContext } from "react";
+import { useContext, useMemo } from "react";
 
 // Type helpers.
 type ArrayElement<ArrayType extends readonly unknown[]> =
@@ -122,19 +129,75 @@ export function TitlebarImage(
   );
 }
 
+/** A custom titlebar item (button or vertical separator) registered from
+ * Python via `add_titlebar_button` / `add_titlebar_separator`. */
+function TitlebarItem({ uuid, props }: RegisterTitlebarItemMessage) {
+  const viewer = useContext(ViewerContext)!;
+  if (props._kind === "separator") {
+    return <Divider orientation="vertical" my="0.6em" />;
+  }
+  const onClick = () =>
+    viewer.mutable.current.sendMessage({
+      type: "TitlebarButtonClickMessage",
+      uuid,
+    });
+  const button =
+    props._icon_html !== null ? (
+      <ActionIcon
+        variant="subtle"
+        color="gray"
+        size="md"
+        disabled={props.disabled}
+        onClick={onClick}
+        aria-label={props.tooltip ?? undefined}
+      >
+        <div
+          className={htmlIconWrapper}
+          dangerouslySetInnerHTML={{ __html: props._icon_html }}
+        />
+      </ActionIcon>
+    ) : (
+      <Button
+        variant="subtle"
+        color="gray"
+        size="compact-sm"
+        disabled={props.disabled}
+        onClick={onClick}
+      >
+        {props.text}
+      </Button>
+    );
+  if (props.tooltip === null) return button;
+  return (
+    <Tooltip label={props.tooltip} withinPortal>
+      {button}
+    </Tooltip>
+  );
+}
+
 export function Titlebar() {
   const viewer = useContext(ViewerContext)!;
   const content = viewer.useGui((state) => state.theme.titlebar_content);
+  const titlebarItems = viewer.useGui((state) => state.titlebarItems);
   const colorScheme = useMantineColorScheme().colorScheme;
 
   const [burgerOpen, burgerHandlers] = useDisclosure(false);
 
-  if (content == null) {
+  const customItems = useMemo(
+    () =>
+      Object.values(titlebarItems)
+        .filter((item) => item.props.visible)
+        .sort((a, b) => a.props.order - b.props.order),
+    [titlebarItems],
+  );
+
+  // Custom items keep the titlebar visible even without `titlebar_content`.
+  if (content == null && customItems.length === 0) {
     return null;
   }
 
-  const buttons = content.buttons;
-  const imageData = content.image;
+  const buttons = content?.buttons ?? null;
+  const imageData = content?.image ?? null;
 
   return (
     <Box
@@ -154,8 +217,15 @@ export function Titlebar() {
             alignItems: "center",
           })}
         >
-          <Group style={() => ({ marginRight: "auto" })}>
+          <Group
+            gap="xs"
+            wrap="nowrap"
+            style={() => ({ marginRight: "auto", height: "100%" })}
+          >
             {imageData !== null ? TitlebarImage(imageData, colorScheme) : null}
+            {customItems.map((item) => (
+              <TitlebarItem {...item} key={item.uuid} />
+            ))}
           </Group>
           <Group
             display={{ base: "none", xs: "flex" }}

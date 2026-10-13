@@ -92,9 +92,12 @@ from ._messages import (
     GuiVector2Props,
     GuiVector3Props,
     RemoveCommandMessage,
+    RemoveTitlebarItemMessage,
     SplitPlacement,
     TimelineProps,
     TimelineRemoveMessage,
+    TitlebarItemProps,
+    TitlebarItemUpdateMessage,
 )
 from ._scene_api import _encode_image_binary
 from ._threadpool_exceptions import print_awaited_callback_error, print_task_error
@@ -2757,3 +2760,122 @@ class CommandHandle(AssignablePropsBase[_CommandHandleState], CommandProps):
         gui_api = self._impl.gui_api
         gui_api._websock_interface.queue_message(RemoveCommandMessage(self._impl.uuid))
         gui_api._command_handle_from_uuid.pop(self._impl.uuid, None)
+
+
+@dataclasses.dataclass(frozen=True)
+class TitlebarButtonEvent:
+    """Information associated with a click on a custom titlebar button.
+
+    Passed as input to callback functions. As with :class:`CommandEvent`,
+    clicks always originate from a real client, so ``client`` and
+    ``client_id`` are non-None in practice."""
+
+    client: ClientHandle | None
+    """Client that clicked the button."""
+    client_id: int | None
+    """ID of client that clicked the button."""
+    target: TitlebarButtonHandle
+    """Titlebar button handle that was clicked."""
+
+
+@dataclasses.dataclass
+class _TitlebarItemHandleState:
+    """Internal state for a custom titlebar item (button or separator)."""
+
+    uuid: str
+    gui_api: GuiApi
+    props: TitlebarItemProps
+    icon: IconName | None
+    click_cb: list[Callable[[TitlebarButtonEvent], None | Coroutine]] = (
+        dataclasses.field(default_factory=list)
+    )
+    removed: bool = False
+
+
+def _remove_titlebar_item(impl: _TitlebarItemHandleState, type_name: str) -> None:
+    if impl.removed:
+        warnings.warn(
+            f"Attempted to remove an already removed {type_name}.", stacklevel=3
+        )
+        return
+    impl.removed = True
+    gui_api = impl.gui_api
+    gui_api._websock_interface.queue_message(RemoveTitlebarItemMessage(impl.uuid))
+    gui_api._titlebar_item_from_uuid.pop(impl.uuid, None)
+
+
+class TitlebarButtonHandle(
+    AssignablePropsBase[_TitlebarItemHandleState], TitlebarItemProps
+):
+    """Handle for a custom button in the titlebar, shown to the right of the
+    titlebar image. A button shows either ``text`` or ``icon``: assigning one
+    of them clears the other."""
+
+    def __init__(self, _impl: _TitlebarItemHandleState) -> None:
+        super().__init__(impl=_impl)
+
+    @property
+    def icon(self) -> IconName | None:
+        """Icon shown on the button. Setting it clears the text."""
+        return self._impl.icon
+
+    @icon.setter
+    def icon(self, icon: IconName | None) -> None:
+        if icon is not None and self._impl.props.text is not None:
+            self._impl.props.text = None
+            self._queue_update("text", None)
+        self._set_icon(icon)
+
+    @override
+    def _on_prop_assigned(self, name: str) -> None:
+        # Setting ``text`` clears the icon, so the button shows one or the other.
+        if name == "text" and self._impl.props.text is not None:
+            if self._impl.icon is not None:
+                self._set_icon(None)
+
+    def _set_icon(self, icon: IconName | None) -> None:
+        self._impl.icon = icon
+        self._impl.props._icon_html = None if icon is None else svg_from_icon(icon)
+        self._queue_update("_icon_html", self._impl.props._icon_html)
+
+    def _queue_update(self, name: str, value: Any) -> None:
+        self._impl.gui_api._websock_interface.queue_message(
+            TitlebarItemUpdateMessage(uuid=self._impl.uuid, updates={name: value})
+        )
+
+    def on_click(
+        self, func: Callable[[TitlebarButtonEvent], NoneOrCoroutine]
+    ) -> Callable[[TitlebarButtonEvent], NoneOrCoroutine]:
+        """Attach a function to call when this button is clicked.
+
+        Note:
+        - If `func` is a regular function (defined with `def`), it will be executed in a thread pool.
+        - If `func` is an async function (defined with `async def`), it will be executed in the event loop.
+        """
+        if self._impl.removed:
+            raise RuntimeError(
+                "Cannot attach a click callback to a removed TitlebarButtonHandle."
+            )
+        self._impl.click_cb.append(func)
+        return func
+
+    def remove(self) -> None:
+        """Remove this button from the titlebar."""
+        _remove_titlebar_item(self._impl, "TitlebarButtonHandle")
+
+
+class TitlebarSeparatorHandle:
+    """Handle for a vertical separator in the titlebar, used to group
+    custom titlebar buttons."""
+
+    def __init__(self, _impl: _TitlebarItemHandleState) -> None:
+        self._impl = _impl
+
+    @property
+    def order(self) -> float:
+        """Sort key of the separator among the custom titlebar items."""
+        return self._impl.props.order
+
+    def remove(self) -> None:
+        """Remove this separator from the titlebar."""
+        _remove_titlebar_item(self._impl, "TitlebarSeparatorHandle")
