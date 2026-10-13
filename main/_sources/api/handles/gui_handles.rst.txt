@@ -72,5 +72,9 @@ GUI Handles
 
 .. autodata:: viser.PlaceableHandle
 
+.. autoclass:: viser.TitlebarButtonHandle
+
+.. autoclass:: viser.TitlebarSeparatorHandle
+
 .. autoclass:: viser.UploadedFile
 

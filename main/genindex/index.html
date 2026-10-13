@@ -643,6 +643,10 @@
           <li><a href="../api/core/server/#viser.ViserServer.add_timeline">(viser.ViserServer method)</a>
 </li>
         </ul></li>
+        <li><a href="../api/core/gui_api/#viser.GuiApi.add_titlebar_button">add_titlebar_button() (viser.GuiApi method)</a>
+</li>
+        <li><a href="../api/core/gui_api/#viser.GuiApi.add_titlebar_separator">add_titlebar_separator() (viser.GuiApi method)</a>
+</li>
         <li><a href="../api/core/scene_api/#viser.SceneApi.add_transform_controls">add_transform_controls() (viser.SceneApi method)</a>
 </li>
         <li><a href="../api/core/gui_api/#viser.GuiApi.add_upload_button">add_upload_button() (viser.GuiApi method)</a>
@@ -975,10 +979,10 @@
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.ARMCHAIR_2">ARMCHAIR_2 (viser.Icon attribute)</a>
 </li>
-        <li><a href="../api/advanced/icons/#viser.Icon.ARMCHAIR_2_OFF">ARMCHAIR_2_OFF (viser.Icon attribute)</a>
-</li>
     </ul></td>
     <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="../api/advanced/icons/#viser.Icon.ARMCHAIR_2_OFF">ARMCHAIR_2_OFF (viser.Icon attribute)</a>
+</li>
         <li><a href="../api/advanced/icons/#viser.Icon.ARMCHAIR_OFF">ARMCHAIR_OFF (viser.Icon attribute)</a>
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.ARROW_AUTOFIT_CONTENT">ARROW_AUTOFIT_CONTENT (viser.Icon attribute)</a>
@@ -3602,6 +3606,8 @@
 </li>
           <li><a href="../api/advanced/events/#viser.SceneRectSelectEvent.client">(viser.SceneRectSelectEvent attribute)</a>
 </li>
+          <li><a href="../api/advanced/events/#viser.TitlebarButtonEvent.client">(viser.TitlebarButtonEvent attribute)</a>
+</li>
           <li><a href="../api/advanced/events/#viser.TransformControlsEvent.client">(viser.TransformControlsEvent attribute)</a>
 </li>
         </ul></li>
@@ -3627,6 +3633,8 @@
           <li><a href="../api/advanced/events/#viser.ScenePointerEvent.client_id">(viser.ScenePointerEvent attribute)</a>
 </li>
           <li><a href="../api/advanced/events/#viser.SceneRectSelectEvent.client_id">(viser.SceneRectSelectEvent attribute)</a>
+</li>
+          <li><a href="../api/advanced/events/#viser.TitlebarButtonEvent.client_id">(viser.TitlebarButtonEvent attribute)</a>
 </li>
           <li><a href="../api/advanced/events/#viser.TransformControlsEvent.client_id">(viser.TransformControlsEvent attribute)</a>
 </li>
@@ -4733,10 +4741,10 @@
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.DEVICE_TABLET_PAUSE">DEVICE_TABLET_PAUSE (viser.Icon attribute)</a>
 </li>
-    </ul></td>
-    <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="../api/advanced/icons/#viser.Icon.DEVICE_TABLET_PIN">DEVICE_TABLET_PIN (viser.Icon attribute)</a>
 </li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="../api/advanced/icons/#viser.Icon.DEVICE_TABLET_PLUS">DEVICE_TABLET_PLUS (viser.Icon attribute)</a>
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.DEVICE_TABLET_QUESTION">DEVICE_TABLET_QUESTION (viser.Icon attribute)</a>
@@ -4978,6 +4986,8 @@
 </li>
         </ul></li>
         <li><a href="../api/advanced/icons/#viser.Icon.DISABLED">DISABLED (viser.Icon attribute)</a>
+</li>
+        <li><a href="../api/handles/gui_handles/#viser.TitlebarButtonHandle.disabled">disabled (viser.TitlebarButtonHandle attribute)</a>
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.DISABLED_2">DISABLED_2 (viser.Icon attribute)</a>
 </li>
@@ -6695,6 +6705,8 @@
           <li><a href="../api/handles/gui_handles/#viser.GuiTabHandle.icon">(viser.GuiTabHandle property)</a>
 </li>
           <li><a href="../api/handles/gui_handles/#viser.GuiUploadButtonHandle.icon">(viser.GuiUploadButtonHandle property)</a>
+</li>
+          <li><a href="../api/handles/gui_handles/#viser.TitlebarButtonHandle.icon">(viser.TitlebarButtonHandle property)</a>
 </li>
         </ul></li>
         <li><a href="../api/advanced/icons/#viser.Icon.ICON_123">ICON_123 (viser.Icon attribute)</a>
@@ -8521,6 +8533,8 @@
 </li>
           <li><a href="../api/core/scene_api/#viser.SceneApi.on_click">(viser.SceneApi method)</a>
 </li>
+          <li><a href="../api/handles/gui_handles/#viser.TitlebarButtonHandle.on_click">(viser.TitlebarButtonHandle method)</a>
+</li>
         </ul></li>
         <li><a href="../api/auxiliary/infrastructure/#viser.infra.WebsockServer.on_client_connect">on_client_connect() (viser.infra.WebsockServer method)</a>
 
@@ -8704,6 +8718,10 @@
           <li><a href="../api/handles/gui_handles/#viser.GuiVector3Handle.order">(viser.GuiVector3Handle attribute)</a>
 </li>
           <li><a href="../api/handles/gui_handles/#viser.PanelHandle.order">(viser.PanelHandle attribute)</a>
+</li>
+          <li><a href="../api/handles/gui_handles/#viser.TitlebarButtonHandle.order">(viser.TitlebarButtonHandle attribute)</a>
+</li>
+          <li><a href="../api/handles/gui_handles/#viser.TitlebarSeparatorHandle.order">(viser.TitlebarSeparatorHandle property)</a>
 </li>
         </ul></li>
         <li><a href="../api/advanced/uplot/#viser.uplot.Scale.ori">ori (viser.uplot.Scale attribute)</a>
@@ -9711,15 +9729,19 @@
 </li>
           <li><a href="../api/handles/scene_handles/#viser.SpotLightHandle.remove">(viser.SpotLightHandle method)</a>
 </li>
+          <li><a href="../api/handles/gui_handles/#viser.TitlebarButtonHandle.remove">(viser.TitlebarButtonHandle method)</a>
+</li>
+          <li><a href="../api/handles/gui_handles/#viser.TitlebarSeparatorHandle.remove">(viser.TitlebarSeparatorHandle method)</a>
+</li>
           <li><a href="../api/handles/scene_handles/#viser.TransformControlsHandle.remove">(viser.TransformControlsHandle method)</a>
 </li>
         </ul></li>
         <li><a href="../api/handles/gui_handles/#viser.GuiGalleryHandle.remove_block">remove_block() (viser.GuiGalleryHandle method)</a>
 </li>
-        <li><a href="../api/core/scene_api/#viser.SceneApi.remove_by_name">remove_by_name() (viser.SceneApi method)</a>
-</li>
     </ul></td>
     <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="../api/core/scene_api/#viser.SceneApi.remove_by_name">remove_by_name() (viser.SceneApi method)</a>
+</li>
         <li><a href="../api/handles/scene_handles/#viser.BatchedAxesHandle.remove_click_callback">remove_click_callback() (viser.BatchedAxesHandle method)</a>
 
         <ul>
@@ -11433,6 +11455,8 @@
         <ul>
           <li><a href="../api/advanced/events/#viser.SceneNodePointerEvent.target">(viser.SceneNodePointerEvent attribute)</a>
 </li>
+          <li><a href="../api/advanced/events/#viser.TitlebarButtonEvent.target">(viser.TitlebarButtonEvent attribute)</a>
+</li>
           <li><a href="../api/advanced/events/#viser.TransformControlsEvent.target">(viser.TransformControlsEvent attribute)</a>
 </li>
         </ul></li>
@@ -11488,6 +11512,8 @@
           <li><a href="../api/handles/gui_handles/#viser.ChatStream.text">(viser.ChatStream property)</a>
 </li>
           <li><a href="../api/handles/scene_handles/#viser.LabelHandle.text">(viser.LabelHandle attribute)</a>
+</li>
+          <li><a href="../api/handles/gui_handles/#viser.TitlebarButtonHandle.text">(viser.TitlebarButtonHandle attribute)</a>
 </li>
         </ul></li>
         <li><a href="../api/advanced/icons/#viser.Icon.TEXT_CAPTION">TEXT_CAPTION (viser.Icon attribute)</a>
@@ -11588,10 +11614,10 @@
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.TIME_DURATION_15">TIME_DURATION_15 (viser.Icon attribute)</a>
 </li>
-    </ul></td>
-    <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="../api/advanced/icons/#viser.Icon.TIME_DURATION_30">TIME_DURATION_30 (viser.Icon attribute)</a>
 </li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="../api/advanced/icons/#viser.Icon.TIME_DURATION_45">TIME_DURATION_45 (viser.Icon attribute)</a>
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.TIME_DURATION_5">TIME_DURATION_5 (viser.Icon attribute)</a>
@@ -11630,6 +11656,12 @@
           <li><a href="../api/handles/client_handles/#viser.NotificationHandle.title">(viser.NotificationHandle attribute)</a>
 </li>
         </ul></li>
+        <li><a href="../api/advanced/events/#viser.TitlebarButtonEvent">TitlebarButtonEvent (class in viser)</a>
+</li>
+        <li><a href="../api/handles/gui_handles/#viser.TitlebarButtonHandle">TitlebarButtonHandle (class in viser)</a>
+</li>
+        <li><a href="../api/handles/gui_handles/#viser.TitlebarSeparatorHandle">TitlebarSeparatorHandle (class in viser)</a>
+</li>
         <li><a href="../api/advanced/icons/#viser.Icon.TOGGLE_LEFT">TOGGLE_LEFT (viser.Icon attribute)</a>
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.TOGGLE_RIGHT">TOGGLE_RIGHT (viser.Icon attribute)</a>
@@ -11659,6 +11691,8 @@
         <li><a href="../api/advanced/icons/#viser.Icon.TOOLS_OFF">TOOLS_OFF (viser.Icon attribute)</a>
 </li>
         <li><a href="../api/advanced/icons/#viser.Icon.TOOLTIP">TOOLTIP (viser.Icon attribute)</a>
+</li>
+        <li><a href="../api/handles/gui_handles/#viser.TitlebarButtonHandle.tooltip">tooltip (viser.TitlebarButtonHandle attribute)</a>
 </li>
         <li><a href="../api/advanced/uplot/#viser.uplot.Cursor.top">top (viser.uplot.Cursor attribute)</a>
 
@@ -12132,10 +12166,10 @@
           <li><a href="../api/advanced/uplot/#module-viser.uplot">module</a>
 </li>
         </ul></li>
-    </ul></td>
-    <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="../api/core/server/#viser.ViserServer">ViserServer (class in viser)</a>
 </li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="../api/auxiliary/extras/#viser.extras.ViserUrdf">ViserUrdf (class in viser.extras)</a>
 </li>
         <li><a href="../api/handles/scene_handles/#viser.AmbientLightHandle.visible">visible (viser.AmbientLightHandle property)</a>
@@ -12250,6 +12284,8 @@
           <li><a href="../api/handles/scene_handles/#viser.SplineCubicBezierHandle.visible">(viser.SplineCubicBezierHandle property)</a>
 </li>
           <li><a href="../api/handles/scene_handles/#viser.SpotLightHandle.visible">(viser.SpotLightHandle property)</a>
+</li>
+          <li><a href="../api/handles/gui_handles/#viser.TitlebarButtonHandle.visible">(viser.TitlebarButtonHandle attribute)</a>
 </li>
           <li><a href="../api/handles/scene_handles/#viser.TransformControlsHandle.visible">(viser.TransformControlsHandle property)</a>
 </li>
