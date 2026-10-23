@@ -13,6 +13,7 @@ import {
   GuiPanelMessage,
   GuiSetPanelPositionMessage,
   RegisterCommandMessage,
+  RegisterFileDropZoneMessage,
   RegisterTitlebarItemMessage,
   ThemeConfigurationMessage,
   TimelineMessage,
@@ -139,6 +140,9 @@ export interface GuiState {
   commands: { [uuid: string]: RegisterCommandMessage };
   /** Custom titlebar buttons and separators, keyed by UUID. */
   titlebarItems: { [uuid: string]: RegisterTitlebarItemMessage };
+  /** File drop zones, keyed by UUID. Insertion order is registration order;
+   * the most recently registered enabled zone receives drops. */
+  fileDropZones: { [uuid: string]: RegisterFileDropZoneMessage };
   /** Client-owned placement state, keyed by panel uuid (and CONTROL_PANEL_ID
    * for the main panel). Built up by the four write-only `GuiSetPanel*`
    * messages; the dock applies whatever fields are present. */
@@ -211,6 +215,9 @@ export interface GuiActions {
   addTitlebarItem: (item: RegisterTitlebarItemMessage) => void;
   updateTitlebarItem: (uuid: string, updates: { [key: string]: any }) => void;
   removeTitlebarItem: (uuid: string) => void;
+  addFileDropZone: (zone: RegisterFileDropZoneMessage) => void;
+  updateFileDropZone: (uuid: string, updates: { [key: string]: any }) => void;
+  removeFileDropZone: (uuid: string) => void;
   setPanelPosition: (
     uuid: string,
     position: GuiSetPanelPositionMessage["position"],
@@ -283,6 +290,7 @@ const cleanGuiState: GuiState = {
   uploadsInProgress: {},
   commands: {},
   titlebarItems: {},
+  fileDropZones: {},
   panelPlacement: {},
   panelLayoutTracking: {},
   layoutResetNonce: 0,
@@ -537,6 +545,7 @@ export function useGuiState(initialServer: string) {
           uploadsInProgress: cleanGuiState.uploadsInProgress,
           commands: cleanGuiState.commands,
           titlebarItems: cleanGuiState.titlebarItems,
+          fileDropZones: cleanGuiState.fileDropZones,
           panelPlacement: cleanGuiState.panelPlacement,
           // The (re)connect replay is now in flight. Reconnect-sensitive
           // consumers (the dock's pane registry, the main-panel width effect)
@@ -656,6 +665,35 @@ export function useGuiState(initialServer: string) {
           const next = { ...state.titlebarItems };
           delete next[uuid];
           return { titlebarItems: next };
+        });
+      },
+      addFileDropZone: (zone) => {
+        store.set((state) => {
+          // Delete first so a re-registered zone moves to the end (most
+          // recent), matching the server-side "last added wins" rule.
+          const next = { ...state.fileDropZones };
+          delete next[zone.uuid];
+          next[zone.uuid] = zone;
+          return { fileDropZones: next };
+        });
+      },
+      updateFileDropZone: (uuid, updates) => {
+        store.set((state) => {
+          const existing = state.fileDropZones[uuid];
+          if (existing === undefined) return state;
+          const merged: RegisterFileDropZoneMessage = {
+            ...existing,
+            props: { ...existing.props, ...updates },
+          };
+          return { fileDropZones: { ...state.fileDropZones, [uuid]: merged } };
+        });
+      },
+      removeFileDropZone: (uuid) => {
+        store.set((state) => {
+          if (!(uuid in state.fileDropZones)) return state;
+          const next = { ...state.fileDropZones };
+          delete next[uuid];
+          return { fileDropZones: next };
         });
       },
       // The four write-only GuiSetPanel* messages each merge their single AXIS

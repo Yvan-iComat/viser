@@ -11,6 +11,8 @@ when events like clicks or GUI updates are triggered.
 
 .. autoclass:: viser.CommandEvent()
 
+.. autoclass:: viser.FileDropEvent()
+
 .. autoclass:: viser.GalleryBlockEvent()
 
 .. autoclass:: viser.GuiEvent()

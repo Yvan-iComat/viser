@@ -8,6 +8,8 @@ GUI Handles
 
 .. autoclass:: viser.CommandHandle
 
+.. autoclass:: viser.FileDropZoneHandle
+
 .. autoclass:: viser.GalleryBlockHandle
 
 .. autoclass:: viser.GuiButtonGroupHandle

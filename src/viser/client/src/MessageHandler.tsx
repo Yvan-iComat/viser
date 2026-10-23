@@ -114,6 +114,9 @@ function useMessageHandler() {
   const addTitlebarItem = viewer.guiActions.addTitlebarItem;
   const updateTitlebarItem = viewer.guiActions.updateTitlebarItem;
   const removeTitlebarItem = viewer.guiActions.removeTitlebarItem;
+  const addFileDropZone = viewer.guiActions.addFileDropZone;
+  const updateFileDropZone = viewer.guiActions.updateFileDropZone;
+  const removeFileDropZone = viewer.guiActions.removeFileDropZone;
   const setTimeline = viewer.guiActions.setTimeline;
   const setToolbarConfig = viewer.guiActions.setToolbarConfig;
 
@@ -581,6 +584,20 @@ function useMessageHandler() {
         return;
       }
 
+      // Register, update, or remove file drop zones.
+      case "RegisterFileDropZoneMessage": {
+        addFileDropZone(message);
+        return;
+      }
+      case "FileDropZoneUpdateMessage": {
+        updateFileDropZone(message.uuid, message.updates);
+        return;
+      }
+      case "RemoveFileDropZoneMessage": {
+        removeFileDropZone(message.uuid);
+        return;
+      }
+
       // Set the bone poses. Guard against a bone message that arrives before
       // its SkinnedMeshMessage (out-of-order delivery) or after the node was
       // removed, and against an out-of-range bone index -- otherwise the
@@ -975,8 +992,14 @@ function useMessageHandler() {
         return;
       }
       case "FileTransferPartAck": {
+        // Drop-zone uploads track progress per transfer (several files can be
+        // in flight at once); upload buttons track it per component.
+        const uploadKey =
+          message.transfer_uuid in viewer.useGui.get().uploadsInProgress
+            ? message.transfer_uuid
+            : message.source_component_uuid!;
         updateUploadState({
-          componentId: message.source_component_uuid!,
+          componentId: uploadKey,
           uploadedBytes: message.transferred_bytes,
           totalBytes: message.total_bytes,
         });

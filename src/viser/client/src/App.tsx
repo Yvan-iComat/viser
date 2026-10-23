@@ -51,6 +51,7 @@ import { HorizontalToolbar } from "./HorizontalToolbar";
 import { ViserModal } from "./Modal";
 import { TimelineSlider } from "./components/Timeline";
 import { CommandPalette } from "./CommandPalette";
+import { FileDropZoneOverlay } from "./components/FileDropZoneOverlay";
 import { useSceneTreeState } from "./SceneTreeState";
 import { useEnvironmentState } from "./EnvironmentState";
 import { useDevSettingsStore } from "./DevSettingsStore";
@@ -546,6 +547,9 @@ function AppLayout({
               hints at 1000) must stay on top, or a docked panel would be
               painted over and its drag/drop targets swallowed. */}
               <GalleryOverlay />
+              {/* File drop zone: delimits the viewer area inside the dock
+              surface, so it never covers the titlebar or a sidebar panel. */}
+              <FileDropZoneOverlay />
               {canvasContent}
             </ControlPanelDockSurface>
           ) : (

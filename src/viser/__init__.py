@@ -9,6 +9,8 @@ from ._gui_handles import ChatStream as ChatStream
 from ._gui_handles import ChatSubmitEvent as ChatSubmitEvent
 from ._gui_handles import CommandEvent as CommandEvent
 from ._gui_handles import CommandHandle as CommandHandle
+from ._gui_handles import FileDropEvent as FileDropEvent
+from ._gui_handles import FileDropZoneHandle as FileDropZoneHandle
 from ._gui_handles import GalleryBlockEvent as GalleryBlockEvent
 from ._gui_handles import GalleryBlockHandle as GalleryBlockHandle
 from ._gui_handles import GuiButtonGroupHandle as GuiButtonGroupHandle

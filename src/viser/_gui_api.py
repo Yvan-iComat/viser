@@ -46,6 +46,8 @@ from ._gui_handles import (
     CONTROL_PANEL_ID,
     CommandEvent,
     CommandHandle,
+    FileDropEvent,
+    FileDropZoneHandle,
     GalleryBlockEvent,
     GuiButtonGroupHandle,
     GuiButtonHandle,
@@ -89,11 +91,14 @@ from ._gui_handles import (
     UploadedFile,
     _colors_to_int_tuple,
     _CommandHandleState,
+    _file_matches_extensions,
+    _FileDropZoneHandleState,
     _GuiButtonHandleState,
     _GuiHandle,
     _GuiHandleState,
     _GuiInputHandle,
     _make_uuid,
+    _normalize_file_extensions,
     _TitlebarItemHandleState,
 )
 from ._icons import svg_from_icon
@@ -384,6 +389,7 @@ class GuiApi:
         ] = {}
         self._gallery_handle_from_uuid: dict[str, GuiGalleryHandle] = {}
         self._chat_handle_from_uuid: dict[str, GuiChatHandle] = {}
+        self._file_drop_zone_from_uuid: dict[str, FileDropZoneHandle] = {}
         self._current_file_upload_states: dict[str, _FileUploadState] = {}
 
         # Set to True when plotly.min.js has been sent to client.
@@ -712,7 +718,17 @@ class GuiApi:
     def _handle_file_transfer_start(
         self, client_id: ClientId, message: _messages.FileTransferStartUpload
     ) -> None:
-        if message.source_component_uuid not in self._gui_input_handle_from_uuid:
+        if message.source_component_uuid in self._file_drop_zone_from_uuid:
+            # Don't trust the client's extension filter: re-check it here, and
+            # drop transfers aimed at a disabled zone.
+            zone_props = self._file_drop_zone_from_uuid[
+                message.source_component_uuid
+            ]._impl.props
+            if zone_props.disabled or not _file_matches_extensions(
+                message.filename, zone_props.accepted_extensions
+            ):
+                return
+        elif message.source_component_uuid not in self._gui_input_handle_from_uuid:
             return
         self._current_file_upload_states[message.transfer_uuid] = {
             # Owner, so a disconnect can purge this client's in-flight
@@ -774,6 +790,11 @@ class GuiApi:
         if source_component_uuid is None:
             return
 
+        drop_zone = self._file_drop_zone_from_uuid.get(source_component_uuid, None)
+        if drop_zone is not None:
+            self._finish_file_drop(client_id, drop_zone, state)
+            return
+
         handle = self._gui_input_handle_from_uuid.get(source_component_uuid, None)
         if handle is None or handle._impl.removed:
             return
@@ -812,6 +833,41 @@ class GuiApi:
                 self._thread_executor.submit(
                     cb, GuiEvent(client, client_id, handle)
                 ).add_done_callback(print_threadpool_errors)
+
+    def _finish_file_drop(
+        self,
+        client_id: ClientId,
+        drop_zone: FileDropZoneHandle,
+        state: _FileUploadState,
+    ) -> None:
+        """Deliver a completed upload to a file drop zone's callbacks."""
+        if drop_zone._impl.removed:
+            return
+        content = b"".join(state["parts"][i] for i in range(state["part_count"]))
+        if len(content) != state["total_bytes"]:
+            warnings.warn(
+                f"[viser] Dropping file {state['filename']!r}: received "
+                f"{len(content)} bytes but the client declared "
+                f"{state['total_bytes']}."
+            )
+            return
+
+        client = self._resolve_client(client_id)
+        if client is None:
+            return
+        event = FileDropEvent(
+            client,
+            client_id,
+            drop_zone,
+            UploadedFile(name=state["filename"], content=content),
+        )
+        for cb in drop_zone._impl.drop_cb:
+            if asyncio.iscoroutinefunction(cb):
+                self._event_loop.create_task(cb(event))
+            else:
+                self._thread_executor.submit(cb, event).add_done_callback(
+                    print_threadpool_errors
+                )
 
     def _handle_file_transfer_part(
         self, client_id: ClientId, message: _messages.FileTransferPart
@@ -1163,6 +1219,8 @@ class GuiApi:
             next(iter(self._command_handle_from_uuid.values())).remove()
         while self._titlebar_item_from_uuid:
             next(iter(self._titlebar_item_from_uuid.values())).remove()
+        while self._file_drop_zone_from_uuid:
+            next(iter(self._file_drop_zone_from_uuid.values())).remove()
 
         # Reset any server-authored main-panel placement (from `main_panel`
         # commands or the deprecated `control_layout`) back to the default. The
@@ -1613,6 +1671,64 @@ class GuiApi:
         self._websock_interface.queue_message(
             _messages.RegisterTitlebarItemMessage(uuid=impl.uuid, props=impl.props)
         )
+
+    def add_file_drop_zone(
+        self,
+        accepted_extensions: Sequence[str] = (),
+        *,
+        text: str = "Drag and drop files here.",
+        show_border: bool = True,
+        disabled: bool = False,
+    ) -> FileDropZoneHandle:
+        """Add a file drop zone: a rectangle covering the main viewer area
+        (below the titlebar) that accepts files dragged in from the user's
+        desktop. Each dropped file is uploaded and passed to the callbacks
+        registered with :meth:`FileDropZoneHandle.on_drop`.
+
+        The zone is delimited by a dashed rectangle with ``text`` in its
+        center; only files released inside it are accepted. The overlay never
+        blocks mouse interaction with the scene or the panels.
+
+        Scope follows the owner of this :class:`GuiApi`:
+        ``server.gui.add_file_drop_zone(...)`` enables the zone for every
+        connected client (and any that connect later), while
+        ``client.gui.add_file_drop_zone(...)`` enables it only for that
+        client. If several zones are active, the most recently added enabled
+        one receives the drops.
+
+        Args:
+            accepted_extensions: File extensions accepted by the zone, e.g.
+                ``(".step", ".stp", ".stl", ".obj")``. Matching is
+                case-insensitive and the leading dot is optional. Files with
+                other extensions are rejected (the user is notified). An empty
+                sequence accepts every file.
+            text: Text shown in the center of the drop zone.
+            show_border: Whether the dashed rectangle and its text are drawn
+                at all times. When False, they only appear while files are
+                being dragged over the window.
+            disabled: If True, the zone ignores dropped files and is hidden.
+
+        Returns:
+            A handle that can be used to attach callbacks via
+            :meth:`FileDropZoneHandle.on_drop`, update properties, or remove
+            the zone.
+        """
+        props = _messages.FileDropZoneProps(
+            text=text,
+            accepted_extensions=_normalize_file_extensions(accepted_extensions),
+            show_border=show_border,
+            disabled=disabled,
+        )
+        handle = FileDropZoneHandle(
+            _FileDropZoneHandleState(uuid=_make_uuid(), gui_api=self, props=props)
+        )
+        # Register in the local map before publishing, so an immediate drop
+        # from the client can be resolved here.
+        self._file_drop_zone_from_uuid[handle._impl.uuid] = handle
+        self._websock_interface.queue_message(
+            _messages.RegisterFileDropZoneMessage(uuid=handle._impl.uuid, props=props)
+        )
+        return handle
 
     @deprecated_positional_shim
     def add_folder(

@@ -169,7 +169,13 @@ LabelAnchor = Literal[
 
 # Entity lifecycle markers. See architecture_hardening.md for design rationale.
 EntityType: TypeAlias = Literal[
-    "gui", "scene", "command", "titlebar_item", "notification", "modal"
+    "gui",
+    "scene",
+    "command",
+    "titlebar_item",
+    "file_drop_zone",
+    "notification",
+    "modal",
 ]
 """Kinds of removable entities in the protocol."""
 
@@ -3038,6 +3044,57 @@ class RemoveTitlebarItemMessage(
 @dataclasses.dataclass
 class TitlebarButtonClickMessage(Message, include_in_scene_serialization=False):
     """Message from client->server when a custom titlebar button is clicked."""
+
+    uuid: str
+
+
+@dataclasses.dataclass
+class FileDropZoneProps:
+    """Properties for a file drop zone covering the main viewer area."""
+
+    text: str
+    """Text shown in the center of the drop zone."""
+    accepted_extensions: Tuple[str, ...]
+    """Lowercase file extensions (with leading dot) accepted by the zone. An
+    empty tuple accepts every file."""
+    show_border: bool
+    """Whether the dashed rectangle and its text are drawn at rest. When
+    False, they only appear while files are dragged over the zone."""
+    disabled: bool
+    """Whether the zone currently ignores dropped files."""
+
+
+@dataclasses.dataclass
+class RegisterFileDropZoneMessage(
+    Message,
+    entity=EntityLifecycle("file_drop_zone", "create", "uuid"),
+    include_in_scene_serialization=False,
+):
+    """Message from server->client to add a file drop zone."""
+
+    uuid: str
+    props: FileDropZoneProps
+
+
+@dataclasses.dataclass
+class FileDropZoneUpdateMessage(
+    Message,
+    entity=EntityLifecycle("file_drop_zone", "update_dict", "uuid"),
+    include_in_scene_serialization=False,
+):
+    """Message from server->client to update properties of a file drop zone."""
+
+    uuid: str
+    updates: Dict[str, Any]
+
+
+@dataclasses.dataclass
+class RemoveFileDropZoneMessage(
+    Message,
+    entity=EntityLifecycle("file_drop_zone", "remove", "uuid"),
+    include_in_scene_serialization=False,
+):
+    """Message from server->client to remove a file drop zone."""
 
     uuid: str
 

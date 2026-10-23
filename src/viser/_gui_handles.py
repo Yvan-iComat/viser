@@ -47,6 +47,8 @@ from ._messages import (
     CommandProps,
     CommandUpdateMessage,
     EdgePlacement,
+    FileDropZoneProps,
+    FileDropZoneUpdateMessage,
     FloatPlacement,
     GuiBaseProps,
     GuiButtonGroupProps,
@@ -92,6 +94,7 @@ from ._messages import (
     GuiVector2Props,
     GuiVector3Props,
     RemoveCommandMessage,
+    RemoveFileDropZoneMessage,
     RemoveTitlebarItemMessage,
     SplitPlacement,
     TimelineProps,
@@ -2879,3 +2882,119 @@ class TitlebarSeparatorHandle:
     def remove(self) -> None:
         """Remove this separator from the titlebar."""
         _remove_titlebar_item(self._impl, "TitlebarSeparatorHandle")
+
+
+def _normalize_file_extension(extension: str) -> str:
+    """Canonical form of a file extension: lowercase, with a leading dot."""
+    extension = extension.strip().lower()
+    if extension in {"", "."}:
+        raise ValueError(f"Invalid file extension: {extension!r}.")
+    return extension if extension.startswith(".") else "." + extension
+
+
+def _normalize_file_extensions(extensions: Iterable[str]) -> tuple[str, ...]:
+    """Normalize and de-duplicate extensions, preserving their order."""
+    if isinstance(extensions, str):
+        # A bare string would otherwise be split into single characters.
+        extensions = (extensions,)
+    return tuple(dict.fromkeys(_normalize_file_extension(e) for e in extensions))
+
+
+def _file_matches_extensions(filename: str, extensions: tuple[str, ...]) -> bool:
+    """Whether ``filename`` ends with one of ``extensions`` (case-insensitive).
+    An empty tuple accepts every file."""
+    if len(extensions) == 0:
+        return True
+    return filename.lower().endswith(extensions)
+
+
+@dataclasses.dataclass(frozen=True)
+class FileDropEvent:
+    """Information associated with a file dropped on a file drop zone.
+
+    Passed as input to callback functions. One event is emitted per dropped
+    file, once its upload has completed."""
+
+    client: ClientHandle | None
+    """Client that dropped the file."""
+    client_id: int | None
+    """ID of client that dropped the file."""
+    target: FileDropZoneHandle
+    """File drop zone handle that received the file."""
+    file: UploadedFile
+    """Name and contents of the dropped file."""
+
+
+@dataclasses.dataclass
+class _FileDropZoneHandleState:
+    """Internal state for a file drop zone."""
+
+    uuid: str
+    gui_api: GuiApi
+    props: FileDropZoneProps
+    drop_cb: list[Callable[[FileDropEvent], None | Coroutine]] = dataclasses.field(
+        default_factory=list
+    )
+    removed: bool = False
+
+
+class FileDropZoneHandle(
+    AssignablePropsBase[_FileDropZoneHandleState], FileDropZoneProps
+):
+    """Handle for a file drop zone: a dashed rectangle covering the main
+    viewer area that accepts files dragged in from the user's desktop.
+
+    Properties (``text``, ``accepted_extensions``, ``show_border``,
+    ``disabled``) can be assigned to update the zone live."""
+
+    def __init__(self, _impl: _FileDropZoneHandleState) -> None:
+        super().__init__(impl=_impl)
+
+    @override
+    def _queue_update(self, name: str, value: Any) -> None:
+        self._impl.gui_api._websock_interface.queue_message(
+            FileDropZoneUpdateMessage(uuid=self._impl.uuid, updates={name: value})
+        )
+
+    @override
+    def _on_prop_assigned(self, name: str) -> None:
+        # Keep extensions canonical (lowercase, leading dot) so the client's
+        # match and the server's re-check agree.
+        if name == "accepted_extensions":
+            current = self._impl.props.accepted_extensions
+            normalized = _normalize_file_extensions(current)
+            if normalized != current:
+                self._impl.props.accepted_extensions = normalized
+                self._queue_update(name, normalized)
+
+    def on_drop(
+        self, func: Callable[[FileDropEvent], NoneOrCoroutine]
+    ) -> Callable[[FileDropEvent], NoneOrCoroutine]:
+        """Attach a function to call for each file dropped on this zone. Files
+        with an extension outside ``accepted_extensions`` are rejected and
+        never reach the callback.
+
+        Note:
+        - If `func` is a regular function (defined with `def`), it will be executed in a thread pool.
+        - If `func` is an async function (defined with `async def`), it will be executed in the event loop.
+        """
+        if self._impl.removed:
+            raise RuntimeError(
+                "Cannot attach a drop callback to a removed FileDropZoneHandle."
+            )
+        self._impl.drop_cb.append(func)
+        return func
+
+    def remove(self) -> None:
+        """Remove this file drop zone."""
+        impl = self._impl
+        if impl.removed:
+            warnings.warn(
+                "Attempted to remove an already removed FileDropZoneHandle.",
+                stacklevel=2,
+            )
+            return
+        impl.removed = True
+        gui_api = impl.gui_api
+        gui_api._websock_interface.queue_message(RemoveFileDropZoneMessage(impl.uuid))
+        gui_api._file_drop_zone_from_uuid.pop(impl.uuid, None)

@@ -2435,6 +2435,37 @@ export interface TitlebarButtonClickMessage {
   type: "TitlebarButtonClickMessage";
   uuid: string;
 }
+/** Message from server->client to add a file drop zone.
+ *
+ * (automatically generated)
+ */
+export interface RegisterFileDropZoneMessage {
+  type: "RegisterFileDropZoneMessage";
+  uuid: string;
+  props: {
+    text: string;
+    accepted_extensions: string[];
+    show_border: boolean;
+    disabled: boolean;
+  };
+}
+/** Message from server->client to update properties of a file drop zone.
+ *
+ * (automatically generated)
+ */
+export interface FileDropZoneUpdateMessage {
+  type: "FileDropZoneUpdateMessage";
+  uuid: string;
+  updates: { [key: string]: any };
+}
+/** Message from server->client to remove a file drop zone.
+ *
+ * (automatically generated)
+ */
+export interface RemoveFileDropZoneMessage {
+  type: "RemoveFileDropZoneMessage";
+  uuid: string;
+}
 /** Set a key in the client's localStorage.
  *
  * (automatically generated)
@@ -2614,6 +2645,9 @@ export type Message =
   | TitlebarItemUpdateMessage
   | RemoveTitlebarItemMessage
   | TitlebarButtonClickMessage
+  | RegisterFileDropZoneMessage
+  | FileDropZoneUpdateMessage
+  | RemoveFileDropZoneMessage
   | LocalStorageSetItemMessage
   | LocalStorageRemoveItemMessage
   | LocalStorageClearMessage
