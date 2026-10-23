@@ -475,6 +475,8 @@
     <span class="n">CommandProps</span><span class="p">,</span>
     <span class="n">CommandUpdateMessage</span><span class="p">,</span>
     <span class="n">EdgePlacement</span><span class="p">,</span>
+    <span class="n">FileDropZoneProps</span><span class="p">,</span>
+    <span class="n">FileDropZoneUpdateMessage</span><span class="p">,</span>
     <span class="n">FloatPlacement</span><span class="p">,</span>
     <span class="n">GuiBaseProps</span><span class="p">,</span>
     <span class="n">GuiButtonGroupProps</span><span class="p">,</span>
@@ -520,6 +522,7 @@
     <span class="n">GuiVector2Props</span><span class="p">,</span>
     <span class="n">GuiVector3Props</span><span class="p">,</span>
     <span class="n">RemoveCommandMessage</span><span class="p">,</span>
+    <span class="n">RemoveFileDropZoneMessage</span><span class="p">,</span>
     <span class="n">RemoveTitlebarItemMessage</span><span class="p">,</span>
     <span class="n">SplitPlacement</span><span class="p">,</span>
     <span class="n">TimelineProps</span><span class="p">,</span>
@@ -3530,6 +3533,134 @@
     <span class="k">def</span><span class="w"> </span><span class="nf">remove</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">"""Remove this separator from the titlebar."""</span>
         <span class="n">_remove_titlebar_item</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_impl</span><span class="p">,</span> <span class="s2">"TitlebarSeparatorHandle"</span><span class="p">)</span></div>
+</div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_normalize_file_extension</span><span class="p">(</span><span class="n">extension</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Canonical form of a file extension: lowercase, with a leading dot."""</span>
+    <span class="n">extension</span> <span class="o">=</span> <span class="n">extension</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">extension</span> <span class="ow">in</span> <span class="p">{</span><span class="s2">""</span><span class="p">,</span> <span class="s2">"."</span><span class="p">}:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Invalid file extension: </span><span class="si">{</span><span class="n">extension</span><span class="si">!r}</span><span class="s2">."</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">extension</span> <span class="k">if</span> <span class="n">extension</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">"."</span><span class="p">)</span> <span class="k">else</span> <span class="s2">"."</span> <span class="o">+</span> <span class="n">extension</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_normalize_file_extensions</span><span class="p">(</span><span class="n">extensions</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="o">...</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""Normalize and de-duplicate extensions, preserving their order."""</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">extensions</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="c1"># A bare string would otherwise be split into single characters.</span>
+        <span class="n">extensions</span> <span class="o">=</span> <span class="p">(</span><span class="n">extensions</span><span class="p">,)</span>
+    <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="nb">dict</span><span class="o">.</span><span class="n">fromkeys</span><span class="p">(</span><span class="n">_normalize_file_extension</span><span class="p">(</span><span class="n">e</span><span class="p">)</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">extensions</span><span class="p">))</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_file_matches_extensions</span><span class="p">(</span><span class="n">filename</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">extensions</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="o">...</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Whether ``filename`` ends with one of ``extensions`` (case-insensitive).</span>
+<span class="sd">    An empty tuple accepts every file."""</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">extensions</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">True</span>
+    <span class="k">return</span> <span class="n">filename</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="n">extensions</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="FileDropEvent">
+<a class="viewcode-back" href="../../../api/advanced/events/#viser.FileDropEvent">[docs]</a>
+<span class="nd">@dataclasses</span><span class="o">.</span><span class="n">dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">FileDropEvent</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Information associated with a file dropped on a file drop zone.</span>
+
+<span class="sd">    Passed as input to callback functions. One event is emitted per dropped</span>
+<span class="sd">    file, once its upload has completed."""</span>
+
+    <span class="n">client</span><span class="p">:</span> <span class="n">ClientHandle</span> <span class="o">|</span> <span class="kc">None</span>
+<span class="w">    </span><span class="sd">"""Client that dropped the file."""</span>
+    <span class="n">client_id</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span>
+<span class="w">    </span><span class="sd">"""ID of client that dropped the file."""</span>
+    <span class="n">target</span><span class="p">:</span> <span class="n">FileDropZoneHandle</span>
+<span class="w">    </span><span class="sd">"""File drop zone handle that received the file."""</span>
+    <span class="n">file</span><span class="p">:</span> <span class="n">UploadedFile</span>
+<span class="w">    </span><span class="sd">"""Name and contents of the dropped file."""</span></div>
+
+
+
+<span class="nd">@dataclasses</span><span class="o">.</span><span class="n">dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">_FileDropZoneHandleState</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Internal state for a file drop zone."""</span>
+
+    <span class="n">uuid</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">gui_api</span><span class="p">:</span> <span class="n">GuiApi</span>
+    <span class="n">props</span><span class="p">:</span> <span class="n">FileDropZoneProps</span>
+    <span class="n">drop_cb</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Callable</span><span class="p">[[</span><span class="n">FileDropEvent</span><span class="p">],</span> <span class="kc">None</span> <span class="o">|</span> <span class="n">Coroutine</span><span class="p">]]</span> <span class="o">=</span> <span class="n">dataclasses</span><span class="o">.</span><span class="n">field</span><span class="p">(</span>
+        <span class="n">default_factory</span><span class="o">=</span><span class="nb">list</span>
+    <span class="p">)</span>
+    <span class="n">removed</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+
+
+<div class="viewcode-block" id="FileDropZoneHandle">
+<a class="viewcode-back" href="../../../api/handles/gui_handles/#viser.FileDropZoneHandle">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">FileDropZoneHandle</span><span class="p">(</span>
+    <span class="n">AssignablePropsBase</span><span class="p">[</span><span class="n">_FileDropZoneHandleState</span><span class="p">],</span> <span class="n">FileDropZoneProps</span>
+<span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Handle for a file drop zone: a dashed rectangle covering the main</span>
+<span class="sd">    viewer area that accepts files dragged in from the user's desktop.</span>
+
+<span class="sd">    Properties (``text``, ``accepted_extensions``, ``show_border``,</span>
+<span class="sd">    ``disabled``) can be assigned to update the zone live."""</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">_impl</span><span class="p">:</span> <span class="n">_FileDropZoneHandleState</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">impl</span><span class="o">=</span><span class="n">_impl</span><span class="p">)</span>
+
+    <span class="nd">@override</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_queue_update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_impl</span><span class="o">.</span><span class="n">gui_api</span><span class="o">.</span><span class="n">_websock_interface</span><span class="o">.</span><span class="n">queue_message</span><span class="p">(</span>
+            <span class="n">FileDropZoneUpdateMessage</span><span class="p">(</span><span class="n">uuid</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_impl</span><span class="o">.</span><span class="n">uuid</span><span class="p">,</span> <span class="n">updates</span><span class="o">=</span><span class="p">{</span><span class="n">name</span><span class="p">:</span> <span class="n">value</span><span class="p">})</span>
+        <span class="p">)</span>
+
+    <span class="nd">@override</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_on_prop_assigned</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="c1"># Keep extensions canonical (lowercase, leading dot) so the client's</span>
+        <span class="c1"># match and the server's re-check agree.</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="o">==</span> <span class="s2">"accepted_extensions"</span><span class="p">:</span>
+            <span class="n">current</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_impl</span><span class="o">.</span><span class="n">props</span><span class="o">.</span><span class="n">accepted_extensions</span>
+            <span class="n">normalized</span> <span class="o">=</span> <span class="n">_normalize_file_extensions</span><span class="p">(</span><span class="n">current</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">normalized</span> <span class="o">!=</span> <span class="n">current</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_impl</span><span class="o">.</span><span class="n">props</span><span class="o">.</span><span class="n">accepted_extensions</span> <span class="o">=</span> <span class="n">normalized</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_queue_update</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">normalized</span><span class="p">)</span>
+
+<div class="viewcode-block" id="FileDropZoneHandle.on_drop">
+<a class="viewcode-back" href="../../../api/handles/gui_handles/#viser.FileDropZoneHandle.on_drop">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">on_drop</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">func</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">FileDropEvent</span><span class="p">],</span> <span class="n">NoneOrCoroutine</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">FileDropEvent</span><span class="p">],</span> <span class="n">NoneOrCoroutine</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""Attach a function to call for each file dropped on this zone. Files</span>
+<span class="sd">        with an extension outside ``accepted_extensions`` are rejected and</span>
+<span class="sd">        never reach the callback.</span>
+
+<span class="sd">        Note:</span>
+<span class="sd">        - If `func` is a regular function (defined with `def`), it will be executed in a thread pool.</span>
+<span class="sd">        - If `func` is an async function (defined with `async def`), it will be executed in the event loop.</span>
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_impl</span><span class="o">.</span><span class="n">removed</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+                <span class="s2">"Cannot attach a drop callback to a removed FileDropZoneHandle."</span>
+            <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_impl</span><span class="o">.</span><span class="n">drop_cb</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">func</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">func</span></div>
+
+
+<div class="viewcode-block" id="FileDropZoneHandle.remove">
+<a class="viewcode-back" href="../../../api/handles/gui_handles/#viser.FileDropZoneHandle.remove">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">remove</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Remove this file drop zone."""</span>
+        <span class="n">impl</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_impl</span>
+        <span class="k">if</span> <span class="n">impl</span><span class="o">.</span><span class="n">removed</span><span class="p">:</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+                <span class="s2">"Attempted to remove an already removed FileDropZoneHandle."</span><span class="p">,</span>
+                <span class="n">stacklevel</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">return</span>
+        <span class="n">impl</span><span class="o">.</span><span class="n">removed</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="n">gui_api</span> <span class="o">=</span> <span class="n">impl</span><span class="o">.</span><span class="n">gui_api</span>
+        <span class="n">gui_api</span><span class="o">.</span><span class="n">_websock_interface</span><span class="o">.</span><span class="n">queue_message</span><span class="p">(</span><span class="n">RemoveFileDropZoneMessage</span><span class="p">(</span><span class="n">impl</span><span class="o">.</span><span class="n">uuid</span><span class="p">))</span>
+        <span class="n">gui_api</span><span class="o">.</span><span class="n">_file_drop_zone_from_uuid</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">impl</span><span class="o">.</span><span class="n">uuid</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span></div>
 </div>
 
 </pre></div>

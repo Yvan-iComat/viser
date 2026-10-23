@@ -514,6 +514,38 @@ values.</p>
 </dd></dl>
 
 <dl class="py class">
+<dt class="sig sig-object py" id="viser.FileDropEvent">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">viser.</span></span><span class="sig-name descname"><span class="pre">FileDropEvent</span></span><a class="reference internal" href="../../../_modules/viser/_gui_handles/#FileDropEvent"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#viser.FileDropEvent" title="Link to this definition">¶</a></dt>
+<dd><p>Information associated with a file dropped on a file drop zone.</p>
+<p>Passed as input to callback functions. One event is emitted per dropped
+file, once its upload has completed.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="viser.FileDropEvent.client">
+<span class="sig-name descname"><span class="pre">client</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="../../handles/client_handles/#viser.ClientHandle" title="viser.ClientHandle"><span class="pre">ClientHandle</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><span class="pre">None</span></a></em><a class="headerlink" href="#viser.FileDropEvent.client" title="Link to this definition">¶</a></dt>
+<dd><p>Client that dropped the file.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="viser.FileDropEvent.client_id">
+<span class="sig-name descname"><span class="pre">client_id</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><span class="pre">int</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><span class="pre">None</span></a></em><a class="headerlink" href="#viser.FileDropEvent.client_id" title="Link to this definition">¶</a></dt>
+<dd><p>ID of client that dropped the file.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="viser.FileDropEvent.target">
+<span class="sig-name descname"><span class="pre">target</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="../../handles/gui_handles/#viser.FileDropZoneHandle" title="viser.FileDropZoneHandle"><span class="pre">FileDropZoneHandle</span></a></em><a class="headerlink" href="#viser.FileDropEvent.target" title="Link to this definition">¶</a></dt>
+<dd><p>File drop zone handle that received the file.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="viser.FileDropEvent.file">
+<span class="sig-name descname"><span class="pre">file</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="../../handles/gui_handles/#viser.UploadedFile" title="viser.UploadedFile"><span class="pre">UploadedFile</span></a></em><a class="headerlink" href="#viser.FileDropEvent.file" title="Link to this definition">¶</a></dt>
+<dd><p>Name and contents of the dropped file.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
 <dt class="sig sig-object py" id="viser.GalleryBlockEvent">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">viser.</span></span><span class="sig-name descname"><span class="pre">GalleryBlockEvent</span></span><a class="reference internal" href="../../../_modules/viser/_gui_handles/#GalleryBlockEvent"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#viser.GalleryBlockEvent" title="Link to this definition">¶</a></dt>
 <dd><p>Information associated with a gallery block click.</p>
@@ -1032,6 +1064,13 @@ the surrounding update).</p>
 <li><a class="reference internal" href="#viser.CommandEvent.client"><code class="docutils literal notranslate"><span class="pre">CommandEvent.client</span></code></a></li>
 <li><a class="reference internal" href="#viser.CommandEvent.client_id"><code class="docutils literal notranslate"><span class="pre">CommandEvent.client_id</span></code></a></li>
 <li><a class="reference internal" href="#viser.CommandEvent.target"><code class="docutils literal notranslate"><span class="pre">CommandEvent.target</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#viser.FileDropEvent"><code class="docutils literal notranslate"><span class="pre">FileDropEvent</span></code></a><ul>
+<li><a class="reference internal" href="#viser.FileDropEvent.client"><code class="docutils literal notranslate"><span class="pre">FileDropEvent.client</span></code></a></li>
+<li><a class="reference internal" href="#viser.FileDropEvent.client_id"><code class="docutils literal notranslate"><span class="pre">FileDropEvent.client_id</span></code></a></li>
+<li><a class="reference internal" href="#viser.FileDropEvent.target"><code class="docutils literal notranslate"><span class="pre">FileDropEvent.target</span></code></a></li>
+<li><a class="reference internal" href="#viser.FileDropEvent.file"><code class="docutils literal notranslate"><span class="pre">FileDropEvent.file</span></code></a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#viser.GalleryBlockEvent"><code class="docutils literal notranslate"><span class="pre">GalleryBlockEvent</span></code></a><ul>

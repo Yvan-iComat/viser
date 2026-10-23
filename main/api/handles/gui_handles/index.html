@@ -469,6 +469,41 @@ conversation when the <code class="docutils literal notranslate"><span class="pr
 <p>Commands are shown in a command palette (Ctrl/Cmd+K, also Ctrl/Cmd+Shift+P
 on non-Firefox browsers) and can optionally be triggered via hotkeys.</p>
 <p>(Experimental) The command palette API may change in future releases.</p>
+<dl class="py property">
+<dt class="sig sig-object py" id="viser.CommandHandle.icon">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">icon</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">IconName</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><span class="pre">None</span></a></em><a class="headerlink" href="#viser.CommandHandle.icon" title="Link to this definition">¶</a></dt>
+<dd><p>Icon displayed in the command palette.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="viser.CommandHandle.on_trigger">
+<span class="sig-name descname"><span class="pre">on_trigger</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">func</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.15)"><span class="pre">Callable</span></a><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="../../advanced/events/#viser.CommandEvent" title="viser._gui_handles.CommandEvent"><span class="pre">CommandEvent</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">NoneOrCoroutine</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.15)"><span class="pre">Callable</span></a><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="../../advanced/events/#viser.CommandEvent" title="viser._gui_handles.CommandEvent"><span class="pre">CommandEvent</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">NoneOrCoroutine</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../../../_modules/viser/_gui_handles/#CommandHandle.on_trigger"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#viser.CommandHandle.on_trigger" title="Link to this definition">¶</a></dt>
+<dd><p>Attach a function to call when this command is triggered.</p>
+<p>Note:
+- If <cite>func</cite> is a regular function (defined with <cite>def</cite>), it will be executed in a thread pool.
+- If <cite>func</cite> is an async function (defined with <cite>async def</cite>), it will be executed in the event loop.</p>
+<p>Using async functions can be useful for reducing race conditions.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>func</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.15)"><em>Callable</em></a><em>[</em><em>[</em><a class="reference internal" href="../../advanced/events/#viser.CommandEvent" title="viser._gui_handles.CommandEvent"><em>CommandEvent</em></a><em>]</em><em>, </em><em>NoneOrCoroutine</em><em>]</em>)</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.15)"><em>Callable</em></a>[[<a class="reference internal" href="../../advanced/events/#viser.CommandEvent" title="viser._gui_handles.CommandEvent"><em>CommandEvent</em></a>], <em>NoneOrCoroutine</em>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="viser.CommandHandle.remove">
+<span class="sig-name descname"><span class="pre">remove</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../../../_modules/viser/_gui_handles/#CommandHandle.remove"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#viser.CommandHandle.remove" title="Link to this definition">¶</a></dt>
+<dd><p>Remove this command from the command palette.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
 <dl class="py attribute">
 <dt class="sig sig-object py" id="viser.CommandHandle.label">
 <span class="sig-name descname"><span class="pre">label</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></em><a class="headerlink" href="#viser.CommandHandle.label" title="Link to this definition">¶</a></dt>
@@ -500,34 +535,64 @@ on non-Firefox browsers) and can optionally be triggered via hotkeys.</p>
 <dd><p>Whether the command is disabled (visible but not triggerable).</p>
 </dd></dl>
 
-<dl class="py property">
-<dt class="sig sig-object py" id="viser.CommandHandle.icon">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">icon</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">IconName</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><span class="pre">None</span></a></em><a class="headerlink" href="#viser.CommandHandle.icon" title="Link to this definition">¶</a></dt>
-<dd><p>Icon displayed in the command palette.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="viser.FileDropZoneHandle">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">viser.</span></span><span class="sig-name descname"><span class="pre">FileDropZoneHandle</span></span><a class="reference internal" href="../../../_modules/viser/_gui_handles/#FileDropZoneHandle"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#viser.FileDropZoneHandle" title="Link to this definition">¶</a></dt>
+<dd><p>Handle for a file drop zone: a dashed rectangle covering the main
+viewer area that accepts files dragged in from the user’s desktop.</p>
+<p>Properties (<code class="docutils literal notranslate"><span class="pre">text</span></code>, <code class="docutils literal notranslate"><span class="pre">accepted_extensions</span></code>, <code class="docutils literal notranslate"><span class="pre">show_border</span></code>,
+<code class="docutils literal notranslate"><span class="pre">disabled</span></code>) can be assigned to update the zone live.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="viser.FileDropZoneHandle.text">
+<span class="sig-name descname"><span class="pre">text</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></em><a class="headerlink" href="#viser.FileDropZoneHandle.text" title="Link to this definition">¶</a></dt>
+<dd><p>Text shown in the center of the drop zone.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="viser.FileDropZoneHandle.accepted_extensions">
+<span class="sig-name descname"><span class="pre">accepted_extensions</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#viser.FileDropZoneHandle.accepted_extensions" title="Link to this definition">¶</a></dt>
+<dd><p>Lowercase file extensions (with leading dot) accepted by the zone. An
+empty tuple accepts every file.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="viser.FileDropZoneHandle.show_border">
+<span class="sig-name descname"><span class="pre">show_border</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><span class="pre">bool</span></a></em><a class="headerlink" href="#viser.FileDropZoneHandle.show_border" title="Link to this definition">¶</a></dt>
+<dd><p>Whether the dashed rectangle and its text are drawn at rest. When
+False, they only appear while files are dragged over the zone.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="viser.FileDropZoneHandle.disabled">
+<span class="sig-name descname"><span class="pre">disabled</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><span class="pre">bool</span></a></em><a class="headerlink" href="#viser.FileDropZoneHandle.disabled" title="Link to this definition">¶</a></dt>
+<dd><p>Whether the zone currently ignores dropped files.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="viser.CommandHandle.on_trigger">
-<span class="sig-name descname"><span class="pre">on_trigger</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">func</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.15)"><span class="pre">Callable</span></a><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="../../advanced/events/#viser.CommandEvent" title="viser._gui_handles.CommandEvent"><span class="pre">CommandEvent</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">NoneOrCoroutine</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.15)"><span class="pre">Callable</span></a><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="../../advanced/events/#viser.CommandEvent" title="viser._gui_handles.CommandEvent"><span class="pre">CommandEvent</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">NoneOrCoroutine</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../../../_modules/viser/_gui_handles/#CommandHandle.on_trigger"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#viser.CommandHandle.on_trigger" title="Link to this definition">¶</a></dt>
-<dd><p>Attach a function to call when this command is triggered.</p>
+<dt class="sig sig-object py" id="viser.FileDropZoneHandle.on_drop">
+<span class="sig-name descname"><span class="pre">on_drop</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">func</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.15)"><span class="pre">Callable</span></a><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="../../advanced/events/#viser.FileDropEvent" title="viser._gui_handles.FileDropEvent"><span class="pre">FileDropEvent</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">NoneOrCoroutine</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.15)"><span class="pre">Callable</span></a><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="../../advanced/events/#viser.FileDropEvent" title="viser._gui_handles.FileDropEvent"><span class="pre">FileDropEvent</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">NoneOrCoroutine</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../../../_modules/viser/_gui_handles/#FileDropZoneHandle.on_drop"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#viser.FileDropZoneHandle.on_drop" title="Link to this definition">¶</a></dt>
+<dd><p>Attach a function to call for each file dropped on this zone. Files
+with an extension outside <code class="docutils literal notranslate"><span class="pre">accepted_extensions</span></code> are rejected and
+never reach the callback.</p>
 <p>Note:
 - If <cite>func</cite> is a regular function (defined with <cite>def</cite>), it will be executed in a thread pool.
 - If <cite>func</cite> is an async function (defined with <cite>async def</cite>), it will be executed in the event loop.</p>
-<p>Using async functions can be useful for reducing race conditions.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>func</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.15)"><em>Callable</em></a><em>[</em><em>[</em><a class="reference internal" href="../../advanced/events/#viser.CommandEvent" title="viser._gui_handles.CommandEvent"><em>CommandEvent</em></a><em>]</em><em>, </em><em>NoneOrCoroutine</em><em>]</em>)</p>
+<dd class="field-odd"><p><strong>func</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.15)"><em>Callable</em></a><em>[</em><em>[</em><a class="reference internal" href="../../advanced/events/#viser.FileDropEvent" title="viser._gui_handles.FileDropEvent"><em>FileDropEvent</em></a><em>]</em><em>, </em><em>NoneOrCoroutine</em><em>]</em>)</p>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.15)"><em>Callable</em></a>[[<a class="reference internal" href="../../advanced/events/#viser.CommandEvent" title="viser._gui_handles.CommandEvent"><em>CommandEvent</em></a>], <em>NoneOrCoroutine</em>]</p>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.15)"><em>Callable</em></a>[[<a class="reference internal" href="../../advanced/events/#viser.FileDropEvent" title="viser._gui_handles.FileDropEvent"><em>FileDropEvent</em></a>], <em>NoneOrCoroutine</em>]</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="viser.CommandHandle.remove">
-<span class="sig-name descname"><span class="pre">remove</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../../../_modules/viser/_gui_handles/#CommandHandle.remove"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#viser.CommandHandle.remove" title="Link to this definition">¶</a></dt>
-<dd><p>Remove this command from the command palette.</p>
+<dt class="sig sig-object py" id="viser.FileDropZoneHandle.remove">
+<span class="sig-name descname"><span class="pre">remove</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../../../_modules/viser/_gui_handles/#FileDropZoneHandle.remove"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#viser.FileDropZoneHandle.remove" title="Link to this definition">¶</a></dt>
+<dd><p>Remove this file drop zone.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>None</p>
@@ -3887,14 +3952,23 @@ custom titlebar buttons.</p>
 </ul>
 </li>
 <li><a class="reference internal" href="#viser.CommandHandle"><code class="docutils literal notranslate"><span class="pre">CommandHandle</span></code></a><ul>
+<li><a class="reference internal" href="#viser.CommandHandle.icon"><code class="docutils literal notranslate"><span class="pre">CommandHandle.icon</span></code></a></li>
+<li><a class="reference internal" href="#viser.CommandHandle.on_trigger"><code class="docutils literal notranslate"><span class="pre">CommandHandle.on_trigger()</span></code></a></li>
+<li><a class="reference internal" href="#viser.CommandHandle.remove"><code class="docutils literal notranslate"><span class="pre">CommandHandle.remove()</span></code></a></li>
 <li><a class="reference internal" href="#viser.CommandHandle.label"><code class="docutils literal notranslate"><span class="pre">CommandHandle.label</span></code></a></li>
 <li><a class="reference internal" href="#viser.CommandHandle.description"><code class="docutils literal notranslate"><span class="pre">CommandHandle.description</span></code></a></li>
 <li><a class="reference internal" href="#viser.CommandHandle.hotkey"><code class="docutils literal notranslate"><span class="pre">CommandHandle.hotkey</span></code></a></li>
 <li><a class="reference internal" href="#viser.CommandHandle.modifier"><code class="docutils literal notranslate"><span class="pre">CommandHandle.modifier</span></code></a></li>
 <li><a class="reference internal" href="#viser.CommandHandle.disabled"><code class="docutils literal notranslate"><span class="pre">CommandHandle.disabled</span></code></a></li>
-<li><a class="reference internal" href="#viser.CommandHandle.icon"><code class="docutils literal notranslate"><span class="pre">CommandHandle.icon</span></code></a></li>
-<li><a class="reference internal" href="#viser.CommandHandle.on_trigger"><code class="docutils literal notranslate"><span class="pre">CommandHandle.on_trigger()</span></code></a></li>
-<li><a class="reference internal" href="#viser.CommandHandle.remove"><code class="docutils literal notranslate"><span class="pre">CommandHandle.remove()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#viser.FileDropZoneHandle"><code class="docutils literal notranslate"><span class="pre">FileDropZoneHandle</span></code></a><ul>
+<li><a class="reference internal" href="#viser.FileDropZoneHandle.text"><code class="docutils literal notranslate"><span class="pre">FileDropZoneHandle.text</span></code></a></li>
+<li><a class="reference internal" href="#viser.FileDropZoneHandle.accepted_extensions"><code class="docutils literal notranslate"><span class="pre">FileDropZoneHandle.accepted_extensions</span></code></a></li>
+<li><a class="reference internal" href="#viser.FileDropZoneHandle.show_border"><code class="docutils literal notranslate"><span class="pre">FileDropZoneHandle.show_border</span></code></a></li>
+<li><a class="reference internal" href="#viser.FileDropZoneHandle.disabled"><code class="docutils literal notranslate"><span class="pre">FileDropZoneHandle.disabled</span></code></a></li>
+<li><a class="reference internal" href="#viser.FileDropZoneHandle.on_drop"><code class="docutils literal notranslate"><span class="pre">FileDropZoneHandle.on_drop()</span></code></a></li>
+<li><a class="reference internal" href="#viser.FileDropZoneHandle.remove"><code class="docutils literal notranslate"><span class="pre">FileDropZoneHandle.remove()</span></code></a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#viser.GalleryBlockHandle"><code class="docutils literal notranslate"><span class="pre">GalleryBlockHandle</span></code></a><ul>

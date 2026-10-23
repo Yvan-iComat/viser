@@ -474,6 +474,8 @@
     <span class="n">CONTROL_PANEL_ID</span><span class="p">,</span>
     <span class="n">CommandEvent</span><span class="p">,</span>
     <span class="n">CommandHandle</span><span class="p">,</span>
+    <span class="n">FileDropEvent</span><span class="p">,</span>
+    <span class="n">FileDropZoneHandle</span><span class="p">,</span>
     <span class="n">GalleryBlockEvent</span><span class="p">,</span>
     <span class="n">GuiButtonGroupHandle</span><span class="p">,</span>
     <span class="n">GuiButtonHandle</span><span class="p">,</span>
@@ -517,11 +519,14 @@
     <span class="n">UploadedFile</span><span class="p">,</span>
     <span class="n">_colors_to_int_tuple</span><span class="p">,</span>
     <span class="n">_CommandHandleState</span><span class="p">,</span>
+    <span class="n">_file_matches_extensions</span><span class="p">,</span>
+    <span class="n">_FileDropZoneHandleState</span><span class="p">,</span>
     <span class="n">_GuiButtonHandleState</span><span class="p">,</span>
     <span class="n">_GuiHandle</span><span class="p">,</span>
     <span class="n">_GuiHandleState</span><span class="p">,</span>
     <span class="n">_GuiInputHandle</span><span class="p">,</span>
     <span class="n">_make_uuid</span><span class="p">,</span>
+    <span class="n">_normalize_file_extensions</span><span class="p">,</span>
     <span class="n">_TitlebarItemHandleState</span><span class="p">,</span>
 <span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">._icons</span><span class="w"> </span><span class="kn">import</span> <span class="n">svg_from_icon</span>
@@ -814,6 +819,7 @@
         <span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_gallery_handle_from_uuid</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">GuiGalleryHandle</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_chat_handle_from_uuid</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">GuiChatHandle</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_file_drop_zone_from_uuid</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">FileDropZoneHandle</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_current_file_upload_states</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">_FileUploadState</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
 
         <span class="c1"># Set to True when plotly.min.js has been sent to client.</span>
@@ -1142,7 +1148,17 @@
     <span class="k">def</span><span class="w"> </span><span class="nf">_handle_file_transfer_start</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">client_id</span><span class="p">:</span> <span class="n">ClientId</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="n">_messages</span><span class="o">.</span><span class="n">FileTransferStartUpload</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="k">if</span> <span class="n">message</span><span class="o">.</span><span class="n">source_component_uuid</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_gui_input_handle_from_uuid</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">message</span><span class="o">.</span><span class="n">source_component_uuid</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_file_drop_zone_from_uuid</span><span class="p">:</span>
+            <span class="c1"># Don't trust the client's extension filter: re-check it here, and</span>
+            <span class="c1"># drop transfers aimed at a disabled zone.</span>
+            <span class="n">zone_props</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_file_drop_zone_from_uuid</span><span class="p">[</span>
+                <span class="n">message</span><span class="o">.</span><span class="n">source_component_uuid</span>
+            <span class="p">]</span><span class="o">.</span><span class="n">_impl</span><span class="o">.</span><span class="n">props</span>
+            <span class="k">if</span> <span class="n">zone_props</span><span class="o">.</span><span class="n">disabled</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">_file_matches_extensions</span><span class="p">(</span>
+                <span class="n">message</span><span class="o">.</span><span class="n">filename</span><span class="p">,</span> <span class="n">zone_props</span><span class="o">.</span><span class="n">accepted_extensions</span>
+            <span class="p">):</span>
+                <span class="k">return</span>
+        <span class="k">elif</span> <span class="n">message</span><span class="o">.</span><span class="n">source_component_uuid</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_gui_input_handle_from_uuid</span><span class="p">:</span>
             <span class="k">return</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_current_file_upload_states</span><span class="p">[</span><span class="n">message</span><span class="o">.</span><span class="n">transfer_uuid</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
             <span class="c1"># Owner, so a disconnect can purge this client's in-flight</span>
@@ -1204,6 +1220,11 @@
         <span class="k">if</span> <span class="n">source_component_uuid</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">return</span>
 
+        <span class="n">drop_zone</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_file_drop_zone_from_uuid</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">source_component_uuid</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">drop_zone</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_finish_file_drop</span><span class="p">(</span><span class="n">client_id</span><span class="p">,</span> <span class="n">drop_zone</span><span class="p">,</span> <span class="n">state</span><span class="p">)</span>
+            <span class="k">return</span>
+
         <span class="n">handle</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_gui_input_handle_from_uuid</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">source_component_uuid</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">handle</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">handle</span><span class="o">.</span><span class="n">_impl</span><span class="o">.</span><span class="n">removed</span><span class="p">:</span>
             <span class="k">return</span>
@@ -1242,6 +1263,41 @@
                 <span class="bp">self</span><span class="o">.</span><span class="n">_thread_executor</span><span class="o">.</span><span class="n">submit</span><span class="p">(</span>
                     <span class="n">cb</span><span class="p">,</span> <span class="n">GuiEvent</span><span class="p">(</span><span class="n">client</span><span class="p">,</span> <span class="n">client_id</span><span class="p">,</span> <span class="n">handle</span><span class="p">)</span>
                 <span class="p">)</span><span class="o">.</span><span class="n">add_done_callback</span><span class="p">(</span><span class="n">print_threadpool_errors</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_finish_file_drop</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">client_id</span><span class="p">:</span> <span class="n">ClientId</span><span class="p">,</span>
+        <span class="n">drop_zone</span><span class="p">:</span> <span class="n">FileDropZoneHandle</span><span class="p">,</span>
+        <span class="n">state</span><span class="p">:</span> <span class="n">_FileUploadState</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Deliver a completed upload to a file drop zone's callbacks."""</span>
+        <span class="k">if</span> <span class="n">drop_zone</span><span class="o">.</span><span class="n">_impl</span><span class="o">.</span><span class="n">removed</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="n">content</span> <span class="o">=</span> <span class="sa">b</span><span class="s2">""</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">state</span><span class="p">[</span><span class="s2">"parts"</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">state</span><span class="p">[</span><span class="s2">"part_count"</span><span class="p">]))</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">content</span><span class="p">)</span> <span class="o">!=</span> <span class="n">state</span><span class="p">[</span><span class="s2">"total_bytes"</span><span class="p">]:</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"[viser] Dropping file </span><span class="si">{</span><span class="n">state</span><span class="p">[</span><span class="s1">'filename'</span><span class="p">]</span><span class="si">!r}</span><span class="s2">: received "</span>
+                <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">content</span><span class="p">)</span><span class="si">}</span><span class="s2"> bytes but the client declared "</span>
+                <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">state</span><span class="p">[</span><span class="s1">'total_bytes'</span><span class="p">]</span><span class="si">}</span><span class="s2">."</span>
+            <span class="p">)</span>
+            <span class="k">return</span>
+
+        <span class="n">client</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_resolve_client</span><span class="p">(</span><span class="n">client_id</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">client</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="n">event</span> <span class="o">=</span> <span class="n">FileDropEvent</span><span class="p">(</span>
+            <span class="n">client</span><span class="p">,</span>
+            <span class="n">client_id</span><span class="p">,</span>
+            <span class="n">drop_zone</span><span class="p">,</span>
+            <span class="n">UploadedFile</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">state</span><span class="p">[</span><span class="s2">"filename"</span><span class="p">],</span> <span class="n">content</span><span class="o">=</span><span class="n">content</span><span class="p">),</span>
+        <span class="p">)</span>
+        <span class="k">for</span> <span class="n">cb</span> <span class="ow">in</span> <span class="n">drop_zone</span><span class="o">.</span><span class="n">_impl</span><span class="o">.</span><span class="n">drop_cb</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">iscoroutinefunction</span><span class="p">(</span><span class="n">cb</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_event_loop</span><span class="o">.</span><span class="n">create_task</span><span class="p">(</span><span class="n">cb</span><span class="p">(</span><span class="n">event</span><span class="p">))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_thread_executor</span><span class="o">.</span><span class="n">submit</span><span class="p">(</span><span class="n">cb</span><span class="p">,</span> <span class="n">event</span><span class="p">)</span><span class="o">.</span><span class="n">add_done_callback</span><span class="p">(</span>
+                    <span class="n">print_threadpool_errors</span>
+                <span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_handle_file_transfer_part</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">client_id</span><span class="p">:</span> <span class="n">ClientId</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="n">_messages</span><span class="o">.</span><span class="n">FileTransferPart</span>
@@ -1595,6 +1651,8 @@
             <span class="nb">next</span><span class="p">(</span><span class="nb">iter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_command_handle_from_uuid</span><span class="o">.</span><span class="n">values</span><span class="p">()))</span><span class="o">.</span><span class="n">remove</span><span class="p">()</span>
         <span class="k">while</span> <span class="bp">self</span><span class="o">.</span><span class="n">_titlebar_item_from_uuid</span><span class="p">:</span>
             <span class="nb">next</span><span class="p">(</span><span class="nb">iter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_titlebar_item_from_uuid</span><span class="o">.</span><span class="n">values</span><span class="p">()))</span><span class="o">.</span><span class="n">remove</span><span class="p">()</span>
+        <span class="k">while</span> <span class="bp">self</span><span class="o">.</span><span class="n">_file_drop_zone_from_uuid</span><span class="p">:</span>
+            <span class="nb">next</span><span class="p">(</span><span class="nb">iter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_file_drop_zone_from_uuid</span><span class="o">.</span><span class="n">values</span><span class="p">()))</span><span class="o">.</span><span class="n">remove</span><span class="p">()</span>
 
         <span class="c1"># Reset any server-authored main-panel placement (from `main_panel`</span>
         <span class="c1"># commands or the deprecated `control_layout`) back to the default. The</span>
@@ -2067,6 +2125,67 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_websock_interface</span><span class="o">.</span><span class="n">queue_message</span><span class="p">(</span>
             <span class="n">_messages</span><span class="o">.</span><span class="n">RegisterTitlebarItemMessage</span><span class="p">(</span><span class="n">uuid</span><span class="o">=</span><span class="n">impl</span><span class="o">.</span><span class="n">uuid</span><span class="p">,</span> <span class="n">props</span><span class="o">=</span><span class="n">impl</span><span class="o">.</span><span class="n">props</span><span class="p">)</span>
         <span class="p">)</span>
+
+<div class="viewcode-block" id="GuiApi.add_file_drop_zone">
+<a class="viewcode-back" href="../../../api/core/gui_api/#viser.GuiApi.add_file_drop_zone">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">add_file_drop_zone</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">accepted_extensions</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">(),</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">text</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"Drag and drop files here."</span><span class="p">,</span>
+        <span class="n">show_border</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">disabled</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">FileDropZoneHandle</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Add a file drop zone: a rectangle covering the main viewer area</span>
+<span class="sd">        (below the titlebar) that accepts files dragged in from the user's</span>
+<span class="sd">        desktop. Each dropped file is uploaded and passed to the callbacks</span>
+<span class="sd">        registered with :meth:`FileDropZoneHandle.on_drop`.</span>
+
+<span class="sd">        The zone is delimited by a dashed rectangle with ``text`` in its</span>
+<span class="sd">        center; only files released inside it are accepted. The overlay never</span>
+<span class="sd">        blocks mouse interaction with the scene or the panels.</span>
+
+<span class="sd">        Scope follows the owner of this :class:`GuiApi`:</span>
+<span class="sd">        ``server.gui.add_file_drop_zone(...)`` enables the zone for every</span>
+<span class="sd">        connected client (and any that connect later), while</span>
+<span class="sd">        ``client.gui.add_file_drop_zone(...)`` enables it only for that</span>
+<span class="sd">        client. If several zones are active, the most recently added enabled</span>
+<span class="sd">        one receives the drops.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            accepted_extensions: File extensions accepted by the zone, e.g.</span>
+<span class="sd">                ``(".step", ".stp", ".stl", ".obj")``. Matching is</span>
+<span class="sd">                case-insensitive and the leading dot is optional. Files with</span>
+<span class="sd">                other extensions are rejected (the user is notified). An empty</span>
+<span class="sd">                sequence accepts every file.</span>
+<span class="sd">            text: Text shown in the center of the drop zone.</span>
+<span class="sd">            show_border: Whether the dashed rectangle and its text are drawn</span>
+<span class="sd">                at all times. When False, they only appear while files are</span>
+<span class="sd">                being dragged over the window.</span>
+<span class="sd">            disabled: If True, the zone ignores dropped files and is hidden.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A handle that can be used to attach callbacks via</span>
+<span class="sd">            :meth:`FileDropZoneHandle.on_drop`, update properties, or remove</span>
+<span class="sd">            the zone.</span>
+<span class="sd">        """</span>
+        <span class="n">props</span> <span class="o">=</span> <span class="n">_messages</span><span class="o">.</span><span class="n">FileDropZoneProps</span><span class="p">(</span>
+            <span class="n">text</span><span class="o">=</span><span class="n">text</span><span class="p">,</span>
+            <span class="n">accepted_extensions</span><span class="o">=</span><span class="n">_normalize_file_extensions</span><span class="p">(</span><span class="n">accepted_extensions</span><span class="p">),</span>
+            <span class="n">show_border</span><span class="o">=</span><span class="n">show_border</span><span class="p">,</span>
+            <span class="n">disabled</span><span class="o">=</span><span class="n">disabled</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">handle</span> <span class="o">=</span> <span class="n">FileDropZoneHandle</span><span class="p">(</span>
+            <span class="n">_FileDropZoneHandleState</span><span class="p">(</span><span class="n">uuid</span><span class="o">=</span><span class="n">_make_uuid</span><span class="p">(),</span> <span class="n">gui_api</span><span class="o">=</span><span class="bp">self</span><span class="p">,</span> <span class="n">props</span><span class="o">=</span><span class="n">props</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="c1"># Register in the local map before publishing, so an immediate drop</span>
+        <span class="c1"># from the client can be resolved here.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_file_drop_zone_from_uuid</span><span class="p">[</span><span class="n">handle</span><span class="o">.</span><span class="n">_impl</span><span class="o">.</span><span class="n">uuid</span><span class="p">]</span> <span class="o">=</span> <span class="n">handle</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_websock_interface</span><span class="o">.</span><span class="n">queue_message</span><span class="p">(</span>
+            <span class="n">_messages</span><span class="o">.</span><span class="n">RegisterFileDropZoneMessage</span><span class="p">(</span><span class="n">uuid</span><span class="o">=</span><span class="n">handle</span><span class="o">.</span><span class="n">_impl</span><span class="o">.</span><span class="n">uuid</span><span class="p">,</span> <span class="n">props</span><span class="o">=</span><span class="n">props</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">handle</span></div>
+
 
 <div class="viewcode-block" id="GuiApi.add_folder">
 <a class="viewcode-back" href="../../../api/core/gui_api/#viser.GuiApi.add_folder">[docs]</a>
