@@ -192,9 +192,7 @@ class McpAssistant:
                 # connection, in exception groups: report the first leaf.
                 while len(getattr(e, "exceptions", ())) > 0:
                     e = e.exceptions[0]  # type: ignore[attr-defined]
-                message = (
-                    f"Assistant failed ({self.endpoint}): {type(e).__name__}: {e}"
-                )
+                message = f"Assistant failed ({self.endpoint}): {type(e).__name__}: {e}"
             event.chat.add_message("system", message)
 
     async def _tool_loop(
@@ -226,9 +224,7 @@ class McpAssistant:
         )
         is_error = bool(result.is_error) or _reports_failure(text)
         status = "failed" if is_error else "ok"
-        reply.write(
-            f"\n\n> `{call.name}({json.dumps(call.arguments)})` — {status}\n\n"
-        )
+        reply.write(f"\n\n> `{call.name}({json.dumps(call.arguments)})` — {status}\n\n")
         return ToolResult(call, text, is_error)
 
     def connect(self, chat: viser.GuiChatHandle) -> None:
@@ -288,9 +284,7 @@ class GeminiBackend:
                         function_response=types.FunctionResponse(
                             id=r.call.call_id,
                             name=r.call.name,
-                            response={
-                                "error" if r.is_error else "result": r.text
-                            },
+                            response={"error" if r.is_error else "result": r.text},
                         )
                     )
                     for r in results

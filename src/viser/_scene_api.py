@@ -31,6 +31,7 @@ from . import _messages
 from . import transforms as tf
 from ._assignable_props_api import colors_to_uint8
 from ._image_encoding import cv2_imencode_with_fallback
+from ._mesh_normals import split_vertices_at_creases
 from ._scene_handles import (
     AmbientLightHandle,
     ArrowsHandle,
@@ -177,6 +178,57 @@ def _encode_vertex_colors(
         f"{out.shape} for {np.asarray(vertices).shape[0]} vertices."
     )
     return out
+
+
+def _split_trimesh_at_creases(
+    mesh: trimesh.Trimesh,
+    crease_angle: float | None,
+    sharp_edges: np.ndarray | None,
+) -> trimesh.Trimesh:
+    """Copy of `mesh` with vertices split along creases, carrying over its
+    visuals and the resulting vertex normals."""
+    import trimesh
+    from trimesh.visual import ColorVisuals, TextureVisuals
+
+    visual = mesh.visual
+    uv = getattr(visual, "uv", None) if visual is not None else None
+    # Keep UV seams only when a texture actually samples them; otherwise
+    # coincident vertices in a smoothing group are merged.
+    material = getattr(visual, "material", None)
+    has_texture = uv is not None and any(
+        getattr(material, attr, None) is not None
+        for attr in ("image", "baseColorTexture", "normalTexture")
+    )
+    split = split_vertices_at_creases(
+        mesh.vertices,
+        mesh.faces,
+        crease_angle,
+        sharp_edges,
+        preserve_vertex_identity=has_texture,
+    )
+
+    new_visual: TextureVisuals | ColorVisuals | None
+    if isinstance(visual, TextureVisuals):
+        new_visual = TextureVisuals(
+            uv=None if uv is None else np.asarray(uv)[split.source_index],
+            material=visual.material,
+        )
+    elif isinstance(visual, ColorVisuals) and visual.kind == "vertex":
+        new_visual = ColorVisuals(
+            vertex_colors=visual.vertex_colors[split.source_index]
+        )
+    elif isinstance(visual, ColorVisuals) and visual.kind == "face":
+        # Face order is preserved by the split.
+        new_visual = ColorVisuals(face_colors=visual.face_colors)
+    else:
+        new_visual = None
+    return trimesh.Trimesh(
+        vertices=split.vertices,
+        faces=split.faces,
+        vertex_normals=split.normals,
+        visual=new_visual,
+        process=False,
+    )
 
 
 def _encode_image_binary(
@@ -2310,8 +2362,10 @@ class SceneApi:
         wireframe: bool = False,
         opacity: float | None = None,
         material: Literal["standard", "toon3", "toon5"] = "standard",
-        flat_shading: bool = False,
-        smooth_shading: bool = False,
+        flat_shading: bool | None = None,
+        smooth_shading: bool | None = None,
+        crease_angle: float | None = None,
+        sharp_edges: np.ndarray | None = None,
         side: Literal["front", "back", "double"] = "front",
         scale: float | tuple[float, float, float] = 1.0,
         cast_shadow: bool = True,
@@ -2342,10 +2396,18 @@ class SceneApi:
             material: Material type of the mesh ('standard', 'toon3', 'toon5').
                 This argument is ignored when wireframe=True.
             flat_shading: Whether to do flat shading. This argument is ignored
-                when wireframe=True. Deprecated: use smooth_shading instead.
+                when wireframe=True, or when smooth_shading is set. Deprecated:
+                use smooth_shading instead.
             smooth_shading: Whether to use smooth shading (averaged vertex normals).
                 If False, uses flat shading (one normal per face). Takes precedence
-                over flat_shading parameter.
+                over flat_shading. When neither is set, the mesh is flat shaded.
+            crease_angle: With smooth_shading, edges whose adjacent faces meet
+                at more than this angle (radians) stay sharp: normals are only
+                averaged across smoother edges. None averages across all edges.
+            sharp_edges: With smooth_shading, optional (E, 2) array of vertex
+                index pairs whose edges always stay sharp. A sharp edge only
+                breaks the shading where sharp edges separate the faces around
+                a vertex, e.g. a closed loop or a line ending at other creases.
             side: Side of the surface to render ('front', 'back', 'double').
             scale: Scale of the mesh. A single float for uniform scaling or a tuple
                 of (x, y, z) for per-axis scaling.
@@ -2361,11 +2423,32 @@ class SceneApi:
         Returns:
             Handle for manipulating scene node.
         """
-        _warn_wireframe_conflicts(wireframe, material, flat_shading)
-        # smooth_shading takes precedence over flat_shading (inverted logic)
-        use_flat_shading = (
-            not smooth_shading if smooth_shading is not None else flat_shading
-        )
+        _warn_wireframe_conflicts(wireframe, material, flat_shading is True)
+        # smooth_shading takes precedence over flat_shading (inverted logic);
+        # with neither set, default to flat.
+        if smooth_shading is not None:
+            if flat_shading is not None and flat_shading == smooth_shading:
+                warnings.warn(
+                    f"Conflicting {flat_shading=} and {smooth_shading=}; "
+                    "smooth_shading takes precedence.",
+                    stacklevel=2,
+                )
+            use_flat_shading = not smooth_shading
+        elif flat_shading is not None:
+            use_flat_shading = flat_shading
+        else:
+            use_flat_shading = True
+        if not use_flat_shading and (
+            crease_angle is not None or sharp_edges is not None
+        ):
+            # The client recomputes normals from the index buffer, so
+            # splitting vertices along creases is all it needs.
+            split = split_vertices_at_creases(
+                vertices, faces, crease_angle, sharp_edges
+            )
+            if vertex_colors is not None:
+                vertex_colors = np.asarray(vertex_colors)[split.source_index]
+            vertices, faces = split.vertices, split.faces
         message = _messages.MeshMessage(
             name=name,
             props=_messages.MeshProps(
@@ -2398,6 +2481,8 @@ class SceneApi:
         cast_shadow: bool = True,
         receive_shadow: bool | float = True,
         smooth_shading: bool = False,
+        crease_angle: float | None = None,
+        sharp_edges: np.ndarray | None = None,
     ) -> GlbHandle:
         """Add a trimesh mesh to the scene. Internally calls `self.add_glb()`.
 
@@ -2418,15 +2503,24 @@ class SceneApi:
             smooth_shading: Whether to use smooth shading (averaged vertex normals).
                 If True, normals are excluded from export and recalculated on client.
                 If False, flat shading is used (one normal per face).
+            crease_angle: With smooth_shading, edges whose adjacent faces meet
+                at more than this angle (radians) stay sharp: normals are only
+                averaged across smoother edges. None averages across all edges.
+            sharp_edges: With smooth_shading, optional (E, 2) array of
+                `mesh.vertices` index pairs whose edges always stay sharp.
 
         Returns:
             Handle for manipulating scene node.
         """
 
+        include_normals = not smooth_shading
+        if smooth_shading and (crease_angle is not None or sharp_edges is not None):
+            mesh = _split_trimesh_at_creases(mesh, crease_angle, sharp_edges)
+            # Normals keep the client's vertex merge from re-welding the split.
+            include_normals = True
+
         with io.BytesIO() as data_buffer:
-            mesh.export(
-                data_buffer, file_type="glb", include_normals=not smooth_shading
-            )
+            mesh.export(data_buffer, file_type="glb", include_normals=include_normals)
             glb_data = data_buffer.getvalue()
             return self.add_glb(
                 name,

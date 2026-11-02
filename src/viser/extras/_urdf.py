@@ -1,21 +1,29 @@
 from __future__ import annotations
 
+import dataclasses
 import warnings
 from functools import partial
 from pathlib import Path
-from typing import TYPE_CHECKING, List, Tuple
+from typing import TYPE_CHECKING, Callable, List, Mapping, Tuple, Union
 
 import numpy as np
 import trimesh
 from trimesh.scene import Scene
+from trimesh.visual import ColorVisuals
 from typing_extensions import assert_never
 
 import viser
 
 from .. import transforms as tf
+from .._mesh_normals import split_vertices_at_creases
+from ._mesh_material import MeshMaterial, apply_mesh_material
 
 if TYPE_CHECKING:
     import yourdfpy
+
+MaterialRule = Callable[[str, str, trimesh.Trimesh], Union[MeshMaterial, None]]
+"""Called as ``rule(link_name, geometry_name, mesh)``; returns the material
+for that visual mesh, or None to keep the mesh's own."""
 
 
 class ViserUrdf:
@@ -75,6 +83,23 @@ class ViserUrdf:
         load_collision_meshes: If true, shows the URDF's collision meshes. If a
             yourdfpy URDF object is used as input, this expects the URDF to have a
             collision scene graph configured.
+        smooth_shading: Shade meshes with smooth vertex normals instead of one
+            normal per face.
+        crease_angle: With smooth_shading, edges whose faces meet at more than
+            this angle (radians) stay sharp. None smooths across all edges.
+            Also the threshold for `show_feature_edges`.
+        sharp_edges: Optional extra sharp edges, keyed by geometry name in the
+            URDF's trimesh scene (e.g. ``"link_1.dae_2"``) or by link name.
+            Each value is an (E, 2) array of vertex index pairs into that
+            geometry as loaded.
+        show_feature_edges: Overlay the sharp edges as black line segments.
+        materials: Explicit PBR materials for the visual meshes, needed for
+            realistic rendering of formats without material data (STL). Either
+            a mapping or a :data:`MaterialRule` callable. Mapping keys are
+            matched against ``"*"`` (every mesh), the URDF ``<material>`` name,
+            the link name and the geometry name; all matching entries are
+            layered in that order, so more specific keys override individual
+            fields of broader ones. Ignored when `mesh_color_override` is set.
     """
 
     def __init__(
@@ -91,6 +116,11 @@ class ViserUrdf:
         | None = None,
         load_meshes: bool = True,
         load_collision_meshes: bool = False,
+        smooth_shading: bool = False,
+        crease_angle: float | None = np.deg2rad(30.0),
+        sharp_edges: Mapping[str, np.ndarray] | None = None,
+        show_feature_edges: bool = True,
+        materials: Mapping[str, MeshMaterial] | MaterialRule | None = None,
     ) -> None:
         assert root_node_name.startswith("/")
         assert len(root_node_name) == 1 or not root_node_name.endswith("/")
@@ -128,6 +158,11 @@ class ViserUrdf:
         self._scale = scale
         self._root_node_name = root_node_name
         self._load_meshes = load_meshes
+        self._smooth_shading = smooth_shading
+        self._crease_angle = crease_angle
+        self._sharp_edges = dict(sharp_edges) if sharp_edges is not None else {}
+        self._show_feature_edges = show_feature_edges
+        self._materials = materials
         self._collision_root_frame: viser.FrameHandle | None = None
         self._visual_root_frame: viser.FrameHandle | None = None
         self._joint_frames: List[viser.SceneNodeHandle] = []
@@ -321,7 +356,8 @@ class ViserUrdf:
 
         # Add the URDF's meshes/geometry to viser.
         index_mesh = 0
-        smooth_shading = False
+        smooth_shading = self._smooth_shading
+        crease_angle = self._crease_angle
 
         for link_name, mesh in scene.geometry.items():
             assert isinstance(mesh, trimesh.Trimesh)
@@ -341,18 +377,46 @@ class ViserUrdf:
             mesh.apply_scale(self._scale)
             mesh.apply_transform(T_parent_child)
 
-            # Merge duplicate vertices before exporting for smooth shading
-            mesh.merge_vertices()
+            # Geometry nodes hang off their link's frame.
+            parent_link = scene.graph.transforms.parents[link_name]
+
+            # User-listed sharp edges index the mesh as loaded, so the crease
+            # split (which welds coincident vertices itself) must see it
+            # unmerged.
+            link_sharp_edges = self._sharp_edges.get(
+                link_name, self._sharp_edges.get(parent_link)
+            )
+            if not smooth_shading or (
+                crease_angle is None and link_sharp_edges is None
+            ):
+                # Merge duplicate vertices before exporting for smooth shading
+                mesh.merge_vertices()
 
             # apply a color from a list (cycle through colors if more than 10 meshes)
-            if isinstance(mesh.visual, trimesh.visual.color.ColorVisuals):
-                mesh.visual.vertex_colors = colors[index_mesh % len(colors)]
+            # Only to meshes with no color at all, so URDF <color> tags survive.
+            visual = mesh.visual
+            if isinstance(visual, ColorVisuals) and visual.kind is None:
+                visual.vertex_colors = colors[index_mesh % len(colors)]
             index_mesh += 1
+
+            if mesh_color_override is None:
+                # Always set a glTF material: without one (STL), three.js falls
+                # back to a white, fully metallic default.
+                mesh = apply_mesh_material(
+                    mesh,
+                    None
+                    if collision_geometry
+                    else self._resolve_material(parent_link, link_name, mesh),
+                )
 
             if mesh_color_override is None:
                 self._meshes.append(
                     self._target.scene.add_mesh_trimesh(
-                        name, mesh, smooth_shading=smooth_shading
+                        name,
+                        mesh,
+                        smooth_shading=smooth_shading,
+                        crease_angle=crease_angle,
+                        sharp_edges=link_sharp_edges,
                     )
                 )
             elif len(mesh_color_override) == 3:
@@ -363,6 +427,8 @@ class ViserUrdf:
                         mesh.faces,
                         color=mesh_color_override,
                         smooth_shading=smooth_shading,
+                        crease_angle=crease_angle,
+                        sharp_edges=link_sharp_edges,
                     )
                 )
             elif len(mesh_color_override) == 4:
@@ -373,14 +439,24 @@ class ViserUrdf:
                         mesh.faces,
                         color=mesh_color_override[:3],
                         opacity=mesh_color_override[3],
-                        smooth_shading=False,
+                        smooth_shading=smooth_shading,
+                        crease_angle=crease_angle,
+                        sharp_edges=link_sharp_edges,
                     )
                 )
             else:
                 assert_never(mesh_color_override)
 
             # Yvan test debug: extract feature edges, and create a polyline mesh to overlay
-            feature_edges, edge_coords = extract_feature_edges(mesh)
+            if not self._show_feature_edges:
+                continue
+            feature_edges, edge_coords = extract_feature_edges(
+                mesh,
+                np.degrees(crease_angle) if crease_angle is not None else 30.0,
+                link_sharp_edges,
+            )
+            if len(edge_coords) == 0:
+                continue
 
             # Use edge_coords for line segments, with a default color and line width
             self._target.scene.add_line_segments(
@@ -392,6 +468,45 @@ class ViserUrdf:
             )
 
         return root_frame
+
+    def _urdf_material_name(self, link_name: str, geometry_name: str) -> str | None:
+        """Name of the URDF <material> of the visual a geometry came from."""
+        link = self._urdf.link_map.get(link_name)
+        if link is None:
+            return None
+        visuals = [v for v in link.visuals if v.name == geometry_name]
+        if not visuals and len(link.visuals) == 1:
+            visuals = list(link.visuals)
+        if len(visuals) != 1 or visuals[0].material is None:
+            return None
+        return visuals[0].material.name
+
+    def _resolve_material(
+        self, link_name: str, geometry_name: str, mesh: trimesh.Trimesh
+    ) -> MeshMaterial | None:
+        materials = self._materials
+        if materials is None:
+            return None
+        if callable(materials):
+            return materials(link_name, geometry_name, mesh)
+        keys = ("*", self._urdf_material_name(link_name, geometry_name), link_name)
+        resolved: MeshMaterial | None = None
+        for key in (*keys, geometry_name):
+            if key is None or key not in materials:
+                continue
+            layer = materials[key]
+            if resolved is None:
+                resolved = layer
+            else:
+                resolved = MeshMaterial(
+                    **{
+                        f.name: getattr(layer, f.name)
+                        if getattr(layer, f.name) is not None
+                        else getattr(resolved, f.name)
+                        for f in dataclasses.fields(MeshMaterial)
+                    }
+                )
+        return resolved
 
 
 def _viser_name_from_frame(
@@ -428,52 +543,19 @@ def _viser_name_from_frame(
     return "/".join(frames[::-1])
 
 
-def calculate_dihedral_angles(mesh):
+def extract_feature_edges(
+    mesh: trimesh.Trimesh,
+    angle_tolerance_deg: float = 30.0,
+    sharp_edges: np.ndarray | None = None,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Extract feature edges: interior edges whose faces meet at more than
+    `angle_tolerance_deg`, plus `sharp_edges` and non-manifold edges.
+
+    Returns (E, 2) vertex index pairs and their (E, 2, 3) coordinates.
     """
-    Manually calculate dihedral angles between adjacent faces
-    """
-    face_adjacency = mesh.face_adjacency
-
-    if len(face_adjacency) == 0:
-        return np.array([])
-
-    # Get face normals
-    face_normals = mesh.face_normals
-
-    # Calculate angles between adjacent face normals
-    face_pairs = face_adjacency
-    normal_pairs = face_normals[face_pairs]
-
-    # Dot product between normal vectors
-    dot_products = np.sum(normal_pairs[:, 0] * normal_pairs[:, 1], axis=1)
-
-    # Clamp to avoid numerical errors
-    dot_products = np.clip(dot_products, -1.0, 1.0)
-
-    # Calculate dihedral angles
-    dihedral_angles = np.arccos(np.abs(dot_products))
-
-    return dihedral_angles
-
-
-def extract_feature_edges(mesh, angle_tolerance_deg=30):
-    """
-    Extract feature edges using manual angle calculation
-    """
-    # Calculate dihedral angles
-    dihedral_angles = calculate_dihedral_angles(mesh)
-
-    if len(dihedral_angles) == 0:
-        return np.array([]), np.array([])
-
-    # Convert tolerance
-    angle_threshold = np.radians(angle_tolerance_deg)
-
-    # Find sharp edges
-    feature_mask = dihedral_angles > angle_threshold
-
-    # Get edge coordinates
-    feature_edges = mesh.face_adjacency_edges[feature_mask]
-    edge_coords = mesh.vertices[feature_edges]
-
-    return feature_edges, edge_coords
+    if len(mesh.faces) == 0:
+        return np.zeros((0, 2), dtype=np.int64), np.zeros((0, 2, 3))
+    feature_edges = split_vertices_at_creases(
+        mesh.vertices, mesh.faces, np.radians(angle_tolerance_deg), sharp_edges
+    ).feature_edges
+    return feature_edges, np.asarray(mesh.vertices)[feature_edges]
