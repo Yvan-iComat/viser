@@ -955,6 +955,88 @@ them unchanged.</p></li>
 </dd></dl>
 
 <dl class="py class">
+<dt class="sig sig-object py" id="viser.extras.MeshMaterial">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">viser.extras.</span></span><span class="sig-name descname"><span class="pre">MeshMaterial</span></span><a class="reference internal" href="../../../_modules/viser/extras/_mesh_material/#MeshMaterial"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#viser.extras.MeshMaterial" title="Link to this definition">¶</a></dt>
+<dd><p>PBR material properties for a mesh. Fields left as None keep the value
+from the mesh’s own material (or the defaults listed below when it has
+none, e.g. STL files).</p>
+<p>Colors are sRGB tuples, like other viser color arguments (and color
+pickers, RAL/hex codes): integers are read as [0, 255] and floats as
+[0, 1]. They are converted to the linear values glTF stores.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="viser.extras.MeshMaterial.color">
+<span class="sig-name descname"><span class="pre">color</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Tuple" title="(in Python v3.15)"><span class="pre">Tuple</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><span class="pre">int</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><span class="pre">int</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><span class="pre">int</span></a><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Tuple" title="(in Python v3.15)"><span class="pre">Tuple</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><span class="pre">float</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><span class="pre">float</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><span class="pre">float</span></a><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#viser.extras.MeshMaterial.color" title="Link to this definition">¶</a></dt>
+<dd><p>the mesh’s own color (URDF <code class="docutils literal notranslate"><span class="pre">&lt;color&gt;</span></code> for STL).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Base color. Default</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="viser.extras.MeshMaterial.roughness">
+<span class="sig-name descname"><span class="pre">roughness</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><span class="pre">float</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#viser.extras.MeshMaterial.roughness" title="Link to this definition">¶</a></dt>
+<dd><p>0 = mirror-like, 1 = fully matte. Default 1.0.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="viser.extras.MeshMaterial.metalness">
+<span class="sig-name descname"><span class="pre">metalness</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><span class="pre">float</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#viser.extras.MeshMaterial.metalness" title="Link to this definition">¶</a></dt>
+<dd><p>0 = dielectric (paint, plastic, rubber), 1 = bare metal. Default 0.0.
+Metals take their color from reflections, so they need an environment map
+(<a class="reference internal" href="../../core/scene_api/#viser.SceneApi.configure_environment_map" title="viser.SceneApi.configure_environment_map"><code class="xref py py-meth docutils literal notranslate"><span class="pre">viser.SceneApi.configure_environment_map()</span></code></a>) to look right.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="viser.extras.MeshMaterial.opacity">
+<span class="sig-name descname"><span class="pre">opacity</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><span class="pre">float</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#viser.extras.MeshMaterial.opacity" title="Link to this definition">¶</a></dt>
+<dd><p>the mesh’s own alpha.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>1 = opaque. Default</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="viser.extras.MeshMaterial.emissive">
+<span class="sig-name descname"><span class="pre">emissive</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Tuple" title="(in Python v3.15)"><span class="pre">Tuple</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><span class="pre">int</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><span class="pre">int</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><span class="pre">int</span></a><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Tuple" title="(in Python v3.15)"><span class="pre">Tuple</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><span class="pre">float</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><span class="pre">float</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><span class="pre">float</span></a><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#viser.extras.MeshMaterial.emissive" title="Link to this definition">¶</a></dt>
+<dd><p>Self-illumination color, e.g. for status lights. Default black.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="viser.extras.MeshMaterial.double_sided">
+<span class="sig-name descname"><span class="pre">double_sided</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><span class="pre">bool</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#viser.extras.MeshMaterial.double_sided" title="Link to this definition">¶</a></dt>
+<dd><p>Render back faces too, for open (non-watertight) shells.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="viser.extras.apply_mesh_material">
+<span class="sig-prename descclassname"><span class="pre">viser.extras.</span></span><span class="sig-name descname"><span class="pre">apply_mesh_material</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mesh</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Trimesh</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">material</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#viser.extras.MeshMaterial" title="viser.extras._mesh_material.MeshMaterial"><span class="pre">MeshMaterial</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Trimesh</span></span></span><a class="reference internal" href="../../../_modules/viser/extras/_mesh_material/#apply_mesh_material"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#viser.extras.apply_mesh_material" title="Link to this definition">¶</a></dt>
+<dd><p>Return a copy of <cite>mesh</cite> whose visual is a glTF PBR material.</p>
+<p>The existing material (or uniform color) is used as the base and the
+non-None fields of <cite>material</cite> are layered on top. Textures and UVs of
+textured meshes are kept. Meshes with varying vertex/face colors are
+returned unchanged unless <cite>material.color</cite> replaces them.</p>
+<p>With <cite>material=None</cite>, color-only meshes (e.g. from STL) still get a
+dielectric material instead of the glTF default bare-metal one.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>mesh</strong> (<em>Trimesh</em>)</p></li>
+<li><p><strong>material</strong> (<a class="reference internal" href="#viser.extras.MeshMaterial" title="viser.extras._mesh_material.MeshMaterial"><em>MeshMaterial</em></a><em> | </em><em>None</em>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><em>Trimesh</em></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
 <dt class="sig sig-object py" id="viser.extras.Record3dFrame">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">viser.extras.</span></span><span class="sig-name descname"><span class="pre">Record3dFrame</span></span><a class="reference internal" href="../../../_modules/viser/extras/_record3d/#Record3dFrame"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#viser.extras.Record3dFrame" title="Link to this definition">¶</a></dt>
 <dd><p>A single frame from a Record3D capture.</p>
@@ -1106,6 +1188,23 @@ scene graph configured.</p></li>
 <li><p><strong>load_collision_meshes</strong> – If true, shows the URDF’s collision meshes. If a
 yourdfpy URDF object is used as input, this expects the URDF to have a
 collision scene graph configured.</p></li>
+<li><p><strong>smooth_shading</strong> – Shade meshes with smooth vertex normals instead of one
+normal per face.</p></li>
+<li><p><strong>crease_angle</strong> – With smooth_shading, edges whose faces meet at more than
+this angle (radians) stay sharp. None smooths across all edges.
+Also the threshold for <cite>show_feature_edges</cite>.</p></li>
+<li><p><strong>sharp_edges</strong> – Optional extra sharp edges, keyed by geometry name in the
+URDF’s trimesh scene (e.g. <code class="docutils literal notranslate"><span class="pre">&quot;link_1.dae_2&quot;</span></code>) or by link name.
+Each value is an (E, 2) array of vertex index pairs into that
+geometry as loaded.</p></li>
+<li><p><strong>show_feature_edges</strong> – Overlay the sharp edges as black line segments.</p></li>
+<li><p><strong>materials</strong> – Explicit PBR materials for the visual meshes, needed for
+realistic rendering of formats without material data (STL). Either
+a mapping or a <code class="xref py py-data docutils literal notranslate"><span class="pre">MaterialRule</span></code> callable. Mapping keys are
+matched against <code class="docutils literal notranslate"><span class="pre">&quot;*&quot;</span></code> (every mesh), the URDF <code class="docutils literal notranslate"><span class="pre">&lt;material&gt;</span></code> name,
+the link name and the geometry name; all matching entries are
+layered in that order, so more specific keys override individual
+fields of broader ones. Ignored when <cite>mesh_color_override</cite> is set.</p></li>
 </ul>
 </dd>
 </dl>
@@ -1278,6 +1377,16 @@ name to position.</p>
 <li><a class="reference internal" href="#viser.extras.ModelTurn"><code class="docutils literal notranslate"><span class="pre">ModelTurn</span></code></a></li>
 <li><a class="reference internal" href="#viser.extras.ToolCall"><code class="docutils literal notranslate"><span class="pre">ToolCall</span></code></a></li>
 <li><a class="reference internal" href="#viser.extras.ToolResult"><code class="docutils literal notranslate"><span class="pre">ToolResult</span></code></a></li>
+<li><a class="reference internal" href="#viser.extras.MeshMaterial"><code class="docutils literal notranslate"><span class="pre">MeshMaterial</span></code></a><ul>
+<li><a class="reference internal" href="#viser.extras.MeshMaterial.color"><code class="docutils literal notranslate"><span class="pre">MeshMaterial.color</span></code></a></li>
+<li><a class="reference internal" href="#viser.extras.MeshMaterial.roughness"><code class="docutils literal notranslate"><span class="pre">MeshMaterial.roughness</span></code></a></li>
+<li><a class="reference internal" href="#viser.extras.MeshMaterial.metalness"><code class="docutils literal notranslate"><span class="pre">MeshMaterial.metalness</span></code></a></li>
+<li><a class="reference internal" href="#viser.extras.MeshMaterial.opacity"><code class="docutils literal notranslate"><span class="pre">MeshMaterial.opacity</span></code></a></li>
+<li><a class="reference internal" href="#viser.extras.MeshMaterial.emissive"><code class="docutils literal notranslate"><span class="pre">MeshMaterial.emissive</span></code></a></li>
+<li><a class="reference internal" href="#viser.extras.MeshMaterial.double_sided"><code class="docutils literal notranslate"><span class="pre">MeshMaterial.double_sided</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#viser.extras.apply_mesh_material"><code class="docutils literal notranslate"><span class="pre">apply_mesh_material()</span></code></a></li>
 <li><a class="reference internal" href="#viser.extras.Record3dFrame"><code class="docutils literal notranslate"><span class="pre">Record3dFrame</span></code></a><ul>
 <li><a class="reference internal" href="#viser.extras.Record3dFrame.K"><code class="docutils literal notranslate"><span class="pre">Record3dFrame.K</span></code></a></li>
 <li><a class="reference internal" href="#viser.extras.Record3dFrame.rgb"><code class="docutils literal notranslate"><span class="pre">Record3dFrame.rgb</span></code></a></li>

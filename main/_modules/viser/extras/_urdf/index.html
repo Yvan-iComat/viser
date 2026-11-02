@@ -428,22 +428,30 @@
           <h1>Source code for viser.extras._urdf</h1><div class="highlight"><pre>
 <span></span><span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
 
+<span class="kn">import</span><span class="w"> </span><span class="nn">dataclasses</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">functools</span><span class="w"> </span><span class="kn">import</span> <span class="n">partial</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">TYPE_CHECKING</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Tuple</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">TYPE_CHECKING</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Union</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">trimesh</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">trimesh.scene</span><span class="w"> </span><span class="kn">import</span> <span class="n">Scene</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">trimesh.visual</span><span class="w"> </span><span class="kn">import</span> <span class="n">ColorVisuals</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing_extensions</span><span class="w"> </span><span class="kn">import</span> <span class="n">assert_never</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">viser</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">..</span><span class="w"> </span><span class="kn">import</span> <span class="n">transforms</span> <span class="k">as</span> <span class="n">tf</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.._mesh_normals</span><span class="w"> </span><span class="kn">import</span> <span class="n">split_vertices_at_creases</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">._mesh_material</span><span class="w"> </span><span class="kn">import</span> <span class="n">MeshMaterial</span><span class="p">,</span> <span class="n">apply_mesh_material</span>
 
 <span class="k">if</span> <span class="n">TYPE_CHECKING</span><span class="p">:</span>
     <span class="kn">import</span><span class="w"> </span><span class="nn">yourdfpy</span>
+
+<span class="n">MaterialRule</span> <span class="o">=</span> <span class="n">Callable</span><span class="p">[[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="n">trimesh</span><span class="o">.</span><span class="n">Trimesh</span><span class="p">],</span> <span class="n">Union</span><span class="p">[</span><span class="n">MeshMaterial</span><span class="p">,</span> <span class="kc">None</span><span class="p">]]</span>
+<span class="sd">"""Called as ``rule(link_name, geometry_name, mesh)``; returns the material</span>
+<span class="sd">for that visual mesh, or None to keep the mesh's own."""</span>
 
 
 <div class="viewcode-block" id="ViserUrdf">
@@ -505,6 +513,23 @@
 <span class="sd">        load_collision_meshes: If true, shows the URDF's collision meshes. If a</span>
 <span class="sd">            yourdfpy URDF object is used as input, this expects the URDF to have a</span>
 <span class="sd">            collision scene graph configured.</span>
+<span class="sd">        smooth_shading: Shade meshes with smooth vertex normals instead of one</span>
+<span class="sd">            normal per face.</span>
+<span class="sd">        crease_angle: With smooth_shading, edges whose faces meet at more than</span>
+<span class="sd">            this angle (radians) stay sharp. None smooths across all edges.</span>
+<span class="sd">            Also the threshold for `show_feature_edges`.</span>
+<span class="sd">        sharp_edges: Optional extra sharp edges, keyed by geometry name in the</span>
+<span class="sd">            URDF's trimesh scene (e.g. ``"link_1.dae_2"``) or by link name.</span>
+<span class="sd">            Each value is an (E, 2) array of vertex index pairs into that</span>
+<span class="sd">            geometry as loaded.</span>
+<span class="sd">        show_feature_edges: Overlay the sharp edges as black line segments.</span>
+<span class="sd">        materials: Explicit PBR materials for the visual meshes, needed for</span>
+<span class="sd">            realistic rendering of formats without material data (STL). Either</span>
+<span class="sd">            a mapping or a :data:`MaterialRule` callable. Mapping keys are</span>
+<span class="sd">            matched against ``"*"`` (every mesh), the URDF ``&lt;material&gt;`` name,</span>
+<span class="sd">            the link name and the geometry name; all matching entries are</span>
+<span class="sd">            layered in that order, so more specific keys override individual</span>
+<span class="sd">            fields of broader ones. Ignored when `mesh_color_override` is set.</span>
 <span class="sd">    """</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
@@ -521,6 +546,11 @@
         <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">load_meshes</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
         <span class="n">load_collision_meshes</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">smooth_shading</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">crease_angle</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">deg2rad</span><span class="p">(</span><span class="mf">30.0</span><span class="p">),</span>
+        <span class="n">sharp_edges</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">show_feature_edges</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">materials</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">MeshMaterial</span><span class="p">]</span> <span class="o">|</span> <span class="n">MaterialRule</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="k">assert</span> <span class="n">root_node_name</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">"/"</span><span class="p">)</span>
         <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">root_node_name</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">root_node_name</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">"/"</span><span class="p">)</span>
@@ -558,6 +588,11 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_scale</span> <span class="o">=</span> <span class="n">scale</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_root_node_name</span> <span class="o">=</span> <span class="n">root_node_name</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_load_meshes</span> <span class="o">=</span> <span class="n">load_meshes</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_smooth_shading</span> <span class="o">=</span> <span class="n">smooth_shading</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_crease_angle</span> <span class="o">=</span> <span class="n">crease_angle</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_sharp_edges</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">sharp_edges</span><span class="p">)</span> <span class="k">if</span> <span class="n">sharp_edges</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_show_feature_edges</span> <span class="o">=</span> <span class="n">show_feature_edges</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_materials</span> <span class="o">=</span> <span class="n">materials</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_collision_root_frame</span><span class="p">:</span> <span class="n">viser</span><span class="o">.</span><span class="n">FrameHandle</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_visual_root_frame</span><span class="p">:</span> <span class="n">viser</span><span class="o">.</span><span class="n">FrameHandle</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_joint_frames</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">viser</span><span class="o">.</span><span class="n">SceneNodeHandle</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
@@ -763,7 +798,8 @@
 
         <span class="c1"># Add the URDF's meshes/geometry to viser.</span>
         <span class="n">index_mesh</span> <span class="o">=</span> <span class="mi">0</span>
-        <span class="n">smooth_shading</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="n">smooth_shading</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_smooth_shading</span>
+        <span class="n">crease_angle</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_crease_angle</span>
 
         <span class="k">for</span> <span class="n">link_name</span><span class="p">,</span> <span class="n">mesh</span> <span class="ow">in</span> <span class="n">scene</span><span class="o">.</span><span class="n">geometry</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
             <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">mesh</span><span class="p">,</span> <span class="n">trimesh</span><span class="o">.</span><span class="n">Trimesh</span><span class="p">)</span>
@@ -783,18 +819,46 @@
             <span class="n">mesh</span><span class="o">.</span><span class="n">apply_scale</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_scale</span><span class="p">)</span>
             <span class="n">mesh</span><span class="o">.</span><span class="n">apply_transform</span><span class="p">(</span><span class="n">T_parent_child</span><span class="p">)</span>
 
-            <span class="c1"># Merge duplicate vertices before exporting for smooth shading</span>
-            <span class="n">mesh</span><span class="o">.</span><span class="n">merge_vertices</span><span class="p">()</span>
+            <span class="c1"># Geometry nodes hang off their link's frame.</span>
+            <span class="n">parent_link</span> <span class="o">=</span> <span class="n">scene</span><span class="o">.</span><span class="n">graph</span><span class="o">.</span><span class="n">transforms</span><span class="o">.</span><span class="n">parents</span><span class="p">[</span><span class="n">link_name</span><span class="p">]</span>
+
+            <span class="c1"># User-listed sharp edges index the mesh as loaded, so the crease</span>
+            <span class="c1"># split (which welds coincident vertices itself) must see it</span>
+            <span class="c1"># unmerged.</span>
+            <span class="n">link_sharp_edges</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sharp_edges</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+                <span class="n">link_name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sharp_edges</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">parent_link</span><span class="p">)</span>
+            <span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">smooth_shading</span> <span class="ow">or</span> <span class="p">(</span>
+                <span class="n">crease_angle</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">link_sharp_edges</span> <span class="ow">is</span> <span class="kc">None</span>
+            <span class="p">):</span>
+                <span class="c1"># Merge duplicate vertices before exporting for smooth shading</span>
+                <span class="n">mesh</span><span class="o">.</span><span class="n">merge_vertices</span><span class="p">()</span>
 
             <span class="c1"># apply a color from a list (cycle through colors if more than 10 meshes)</span>
-            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">mesh</span><span class="o">.</span><span class="n">visual</span><span class="p">,</span> <span class="n">trimesh</span><span class="o">.</span><span class="n">visual</span><span class="o">.</span><span class="n">color</span><span class="o">.</span><span class="n">ColorVisuals</span><span class="p">):</span>
-                <span class="n">mesh</span><span class="o">.</span><span class="n">visual</span><span class="o">.</span><span class="n">vertex_colors</span> <span class="o">=</span> <span class="n">colors</span><span class="p">[</span><span class="n">index_mesh</span> <span class="o">%</span> <span class="nb">len</span><span class="p">(</span><span class="n">colors</span><span class="p">)]</span>
+            <span class="c1"># Only to meshes with no color at all, so URDF &lt;color&gt; tags survive.</span>
+            <span class="n">visual</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">visual</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">visual</span><span class="p">,</span> <span class="n">ColorVisuals</span><span class="p">)</span> <span class="ow">and</span> <span class="n">visual</span><span class="o">.</span><span class="n">kind</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">visual</span><span class="o">.</span><span class="n">vertex_colors</span> <span class="o">=</span> <span class="n">colors</span><span class="p">[</span><span class="n">index_mesh</span> <span class="o">%</span> <span class="nb">len</span><span class="p">(</span><span class="n">colors</span><span class="p">)]</span>
             <span class="n">index_mesh</span> <span class="o">+=</span> <span class="mi">1</span>
+
+            <span class="k">if</span> <span class="n">mesh_color_override</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="c1"># Always set a glTF material: without one (STL), three.js falls</span>
+                <span class="c1"># back to a white, fully metallic default.</span>
+                <span class="n">mesh</span> <span class="o">=</span> <span class="n">apply_mesh_material</span><span class="p">(</span>
+                    <span class="n">mesh</span><span class="p">,</span>
+                    <span class="kc">None</span>
+                    <span class="k">if</span> <span class="n">collision_geometry</span>
+                    <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">_resolve_material</span><span class="p">(</span><span class="n">parent_link</span><span class="p">,</span> <span class="n">link_name</span><span class="p">,</span> <span class="n">mesh</span><span class="p">),</span>
+                <span class="p">)</span>
 
             <span class="k">if</span> <span class="n">mesh_color_override</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_meshes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">_target</span><span class="o">.</span><span class="n">scene</span><span class="o">.</span><span class="n">add_mesh_trimesh</span><span class="p">(</span>
-                        <span class="n">name</span><span class="p">,</span> <span class="n">mesh</span><span class="p">,</span> <span class="n">smooth_shading</span><span class="o">=</span><span class="n">smooth_shading</span>
+                        <span class="n">name</span><span class="p">,</span>
+                        <span class="n">mesh</span><span class="p">,</span>
+                        <span class="n">smooth_shading</span><span class="o">=</span><span class="n">smooth_shading</span><span class="p">,</span>
+                        <span class="n">crease_angle</span><span class="o">=</span><span class="n">crease_angle</span><span class="p">,</span>
+                        <span class="n">sharp_edges</span><span class="o">=</span><span class="n">link_sharp_edges</span><span class="p">,</span>
                     <span class="p">)</span>
                 <span class="p">)</span>
             <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">mesh_color_override</span><span class="p">)</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
@@ -805,6 +869,8 @@
                         <span class="n">mesh</span><span class="o">.</span><span class="n">faces</span><span class="p">,</span>
                         <span class="n">color</span><span class="o">=</span><span class="n">mesh_color_override</span><span class="p">,</span>
                         <span class="n">smooth_shading</span><span class="o">=</span><span class="n">smooth_shading</span><span class="p">,</span>
+                        <span class="n">crease_angle</span><span class="o">=</span><span class="n">crease_angle</span><span class="p">,</span>
+                        <span class="n">sharp_edges</span><span class="o">=</span><span class="n">link_sharp_edges</span><span class="p">,</span>
                     <span class="p">)</span>
                 <span class="p">)</span>
             <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">mesh_color_override</span><span class="p">)</span> <span class="o">==</span> <span class="mi">4</span><span class="p">:</span>
@@ -815,14 +881,24 @@
                         <span class="n">mesh</span><span class="o">.</span><span class="n">faces</span><span class="p">,</span>
                         <span class="n">color</span><span class="o">=</span><span class="n">mesh_color_override</span><span class="p">[:</span><span class="mi">3</span><span class="p">],</span>
                         <span class="n">opacity</span><span class="o">=</span><span class="n">mesh_color_override</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span>
-                        <span class="n">smooth_shading</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                        <span class="n">smooth_shading</span><span class="o">=</span><span class="n">smooth_shading</span><span class="p">,</span>
+                        <span class="n">crease_angle</span><span class="o">=</span><span class="n">crease_angle</span><span class="p">,</span>
+                        <span class="n">sharp_edges</span><span class="o">=</span><span class="n">link_sharp_edges</span><span class="p">,</span>
                     <span class="p">)</span>
                 <span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">assert_never</span><span class="p">(</span><span class="n">mesh_color_override</span><span class="p">)</span>
 
             <span class="c1"># Yvan test debug: extract feature edges, and create a polyline mesh to overlay</span>
-            <span class="n">feature_edges</span><span class="p">,</span> <span class="n">edge_coords</span> <span class="o">=</span> <span class="n">extract_feature_edges</span><span class="p">(</span><span class="n">mesh</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_show_feature_edges</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="n">feature_edges</span><span class="p">,</span> <span class="n">edge_coords</span> <span class="o">=</span> <span class="n">extract_feature_edges</span><span class="p">(</span>
+                <span class="n">mesh</span><span class="p">,</span>
+                <span class="n">np</span><span class="o">.</span><span class="n">degrees</span><span class="p">(</span><span class="n">crease_angle</span><span class="p">)</span> <span class="k">if</span> <span class="n">crease_angle</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="mf">30.0</span><span class="p">,</span>
+                <span class="n">link_sharp_edges</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">edge_coords</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">continue</span>
 
             <span class="c1"># Use edge_coords for line segments, with a default color and line width</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_target</span><span class="o">.</span><span class="n">scene</span><span class="o">.</span><span class="n">add_line_segments</span><span class="p">(</span>
@@ -833,7 +909,46 @@
                 <span class="n">thickness_units</span><span class="o">=</span><span class="s2">"screen"</span><span class="p">,</span>
             <span class="p">)</span>
 
-        <span class="k">return</span> <span class="n">root_frame</span></div>
+        <span class="k">return</span> <span class="n">root_frame</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_urdf_material_name</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">link_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">geometry_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Name of the URDF &lt;material&gt; of the visual a geometry came from."""</span>
+        <span class="n">link</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_urdf</span><span class="o">.</span><span class="n">link_map</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">link_name</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">link</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="n">visuals</span> <span class="o">=</span> <span class="p">[</span><span class="n">v</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">link</span><span class="o">.</span><span class="n">visuals</span> <span class="k">if</span> <span class="n">v</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="n">geometry_name</span><span class="p">]</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">visuals</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">link</span><span class="o">.</span><span class="n">visuals</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">visuals</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">link</span><span class="o">.</span><span class="n">visuals</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">visuals</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">1</span> <span class="ow">or</span> <span class="n">visuals</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">material</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="k">return</span> <span class="n">visuals</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">material</span><span class="o">.</span><span class="n">name</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_resolve_material</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">link_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">geometry_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">mesh</span><span class="p">:</span> <span class="n">trimesh</span><span class="o">.</span><span class="n">Trimesh</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MeshMaterial</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">materials</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_materials</span>
+        <span class="k">if</span> <span class="n">materials</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="nb">callable</span><span class="p">(</span><span class="n">materials</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">materials</span><span class="p">(</span><span class="n">link_name</span><span class="p">,</span> <span class="n">geometry_name</span><span class="p">,</span> <span class="n">mesh</span><span class="p">)</span>
+        <span class="n">keys</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"*"</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_urdf_material_name</span><span class="p">(</span><span class="n">link_name</span><span class="p">,</span> <span class="n">geometry_name</span><span class="p">),</span> <span class="n">link_name</span><span class="p">)</span>
+        <span class="n">resolved</span><span class="p">:</span> <span class="n">MeshMaterial</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">(</span><span class="o">*</span><span class="n">keys</span><span class="p">,</span> <span class="n">geometry_name</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">key</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">materials</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="n">layer</span> <span class="o">=</span> <span class="n">materials</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">resolved</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">resolved</span> <span class="o">=</span> <span class="n">layer</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">resolved</span> <span class="o">=</span> <span class="n">MeshMaterial</span><span class="p">(</span>
+                    <span class="o">**</span><span class="p">{</span>
+                        <span class="n">f</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">layer</span><span class="p">,</span> <span class="n">f</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+                        <span class="k">if</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">layer</span><span class="p">,</span> <span class="n">f</span><span class="o">.</span><span class="n">name</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+                        <span class="k">else</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">resolved</span><span class="p">,</span> <span class="n">f</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+                        <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">dataclasses</span><span class="o">.</span><span class="n">fields</span><span class="p">(</span><span class="n">MeshMaterial</span><span class="p">)</span>
+                    <span class="p">}</span>
+                <span class="p">)</span>
+        <span class="k">return</span> <span class="n">resolved</span></div>
 
 
 
@@ -871,55 +986,22 @@
     <span class="k">return</span> <span class="s2">"/"</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">frames</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">calculate_dihedral_angles</span><span class="p">(</span><span class="n">mesh</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">"""</span>
-<span class="sd">    Manually calculate dihedral angles between adjacent faces</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">extract_feature_edges</span><span class="p">(</span>
+    <span class="n">mesh</span><span class="p">:</span> <span class="n">trimesh</span><span class="o">.</span><span class="n">Trimesh</span><span class="p">,</span>
+    <span class="n">angle_tolerance_deg</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">30.0</span><span class="p">,</span>
+    <span class="n">sharp_edges</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""Extract feature edges: interior edges whose faces meet at more than</span>
+<span class="sd">    `angle_tolerance_deg`, plus `sharp_edges` and non-manifold edges.</span>
+
+<span class="sd">    Returns (E, 2) vertex index pairs and their (E, 2, 3) coordinates.</span>
 <span class="sd">    """</span>
-    <span class="n">face_adjacency</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">face_adjacency</span>
-
-    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">face_adjacency</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])</span>
-
-    <span class="c1"># Get face normals</span>
-    <span class="n">face_normals</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">face_normals</span>
-
-    <span class="c1"># Calculate angles between adjacent face normals</span>
-    <span class="n">face_pairs</span> <span class="o">=</span> <span class="n">face_adjacency</span>
-    <span class="n">normal_pairs</span> <span class="o">=</span> <span class="n">face_normals</span><span class="p">[</span><span class="n">face_pairs</span><span class="p">]</span>
-
-    <span class="c1"># Dot product between normal vectors</span>
-    <span class="n">dot_products</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">normal_pairs</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="n">normal_pairs</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
-
-    <span class="c1"># Clamp to avoid numerical errors</span>
-    <span class="n">dot_products</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="n">dot_products</span><span class="p">,</span> <span class="o">-</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)</span>
-
-    <span class="c1"># Calculate dihedral angles</span>
-    <span class="n">dihedral_angles</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arccos</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">dot_products</span><span class="p">))</span>
-
-    <span class="k">return</span> <span class="n">dihedral_angles</span>
-
-
-<span class="k">def</span><span class="w"> </span><span class="nf">extract_feature_edges</span><span class="p">(</span><span class="n">mesh</span><span class="p">,</span> <span class="n">angle_tolerance_deg</span><span class="o">=</span><span class="mi">30</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">"""</span>
-<span class="sd">    Extract feature edges using manual angle calculation</span>
-<span class="sd">    """</span>
-    <span class="c1"># Calculate dihedral angles</span>
-    <span class="n">dihedral_angles</span> <span class="o">=</span> <span class="n">calculate_dihedral_angles</span><span class="p">(</span><span class="n">mesh</span><span class="p">)</span>
-
-    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">dihedral_angles</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([]),</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])</span>
-
-    <span class="c1"># Convert tolerance</span>
-    <span class="n">angle_threshold</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="n">angle_tolerance_deg</span><span class="p">)</span>
-
-    <span class="c1"># Find sharp edges</span>
-    <span class="n">feature_mask</span> <span class="o">=</span> <span class="n">dihedral_angles</span> <span class="o">&gt;</span> <span class="n">angle_threshold</span>
-
-    <span class="c1"># Get edge coordinates</span>
-    <span class="n">feature_edges</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">face_adjacency_edges</span><span class="p">[</span><span class="n">feature_mask</span><span class="p">]</span>
-    <span class="n">edge_coords</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">vertices</span><span class="p">[</span><span class="n">feature_edges</span><span class="p">]</span>
-
-    <span class="k">return</span> <span class="n">feature_edges</span><span class="p">,</span> <span class="n">edge_coords</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">mesh</span><span class="o">.</span><span class="n">faces</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">))</span>
+    <span class="n">feature_edges</span> <span class="o">=</span> <span class="n">split_vertices_at_creases</span><span class="p">(</span>
+        <span class="n">mesh</span><span class="o">.</span><span class="n">vertices</span><span class="p">,</span> <span class="n">mesh</span><span class="o">.</span><span class="n">faces</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="n">angle_tolerance_deg</span><span class="p">),</span> <span class="n">sharp_edges</span>
+    <span class="p">)</span><span class="o">.</span><span class="n">feature_edges</span>
+    <span class="k">return</span> <span class="n">feature_edges</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">mesh</span><span class="o">.</span><span class="n">vertices</span><span class="p">)[</span><span class="n">feature_edges</span><span class="p">]</span>
 </pre></div>
         </article>
       </div>
