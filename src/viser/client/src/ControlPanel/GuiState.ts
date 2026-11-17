@@ -124,6 +124,10 @@ export interface GuiState {
    * this index exists because galleries render as a full-window overlay rather
    * than inline in their container, so the overlay needs to enumerate them. */
   galleryUuids: string[];
+  /** UUIDs of scene trees (`server.gui.add_scene_tree()`), in creation order.
+   * Same reason as `galleryUuids`: a "window" scene tree floats over the
+   * viewport, so its overlay needs to enumerate them. */
+  sceneTreeUuids: string[];
   guiOrderFromUuid: { [id: string]: number };
   /** Set of form UUIDs that currently have unsaved changes. Updated by
    * GuiFormDirtyMessage (adds) and GuiFormSubmitMessage (removes). */
@@ -285,6 +289,7 @@ const cleanGuiState: GuiState = {
   toolbarConfig: null,
   panels: {},
   galleryUuids: [],
+  sceneTreeUuids: [],
   guiOrderFromUuid: {},
   dirtyFormUuids: {},
   uploadsInProgress: {},
@@ -397,6 +402,10 @@ export function useGuiState(initialServer: string) {
           ...(guiConfig.type === "GuiGalleryMessage" &&
           !state.galleryUuids.includes(guiConfig.uuid)
             ? { galleryUuids: [...state.galleryUuids, guiConfig.uuid] }
+            : {}),
+          ...(guiConfig.type === "GuiSceneTreeMessage" &&
+          !state.sceneTreeUuids.includes(guiConfig.uuid)
+            ? { sceneTreeUuids: [...state.sceneTreeUuids, guiConfig.uuid] }
             : {}),
         });
         configStore.set({ [guiConfig.uuid]: guiConfig });
@@ -525,6 +534,11 @@ export function useGuiState(initialServer: string) {
                 galleryUuids: state.galleryUuids.filter((u) => u !== id),
               }
             : {}),
+          ...(guiConfig.type === "GuiSceneTreeMessage"
+            ? {
+                sceneTreeUuids: state.sceneTreeUuids.filter((u) => u !== id),
+              }
+            : {}),
         });
         configStore.set({ [id]: undefined });
       },
@@ -540,6 +554,7 @@ export function useGuiState(initialServer: string) {
           toolbarConfig: cleanGuiState.toolbarConfig,
           panels: cleanGuiState.panels,
           galleryUuids: cleanGuiState.galleryUuids,
+          sceneTreeUuids: cleanGuiState.sceneTreeUuids,
           guiOrderFromUuid: cleanGuiState.guiOrderFromUuid,
           dirtyFormUuids: cleanGuiState.dirtyFormUuids,
           uploadsInProgress: cleanGuiState.uploadsInProgress,

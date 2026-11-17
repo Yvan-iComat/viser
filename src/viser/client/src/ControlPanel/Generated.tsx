@@ -31,6 +31,7 @@ import HtmlComponent from "../components/Html";
 import ColorbarComponent from "../components/Colorbar";
 import TableDataComponent from "../components/TableData";
 import GalleryComponent from "../components/Gallery";
+import SceneTreePanelComponent from "../components/SceneTreePanel";
 import ChatComponent from "../components/Chat";
 import DividerComponent from "../components/Divider";
 
@@ -230,6 +231,11 @@ function GeneratedInput(props: {
       // container (panel tab, folder, or the control panel).
       return conf.props.placement === "inline" ? (
         <GalleryComponent {...conf} />
+      ) : null;
+    case "GuiSceneTreeMessage":
+      // Like galleries: a "window" tree floats in SceneTreeOverlay (App.tsx).
+      return conf.props.placement === "inline" ? (
+        <SceneTreePanelComponent {...conf} />
       ) : null;
     case "GuiChatMessage":
       return <ChatComponent {...conf} />;

@@ -27,6 +27,8 @@ when events like clicks or GUI updates are triggered.
 
 .. autoclass:: viser.SceneRectSelectEvent()
 
+.. autoclass:: viser.SceneTreeItemEvent()
+
 .. autoclass:: viser.TitlebarButtonEvent()
 
 .. autoclass:: viser.TransformControlsEvent()

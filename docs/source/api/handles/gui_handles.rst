@@ -52,6 +52,8 @@ GUI Handles
 
 .. autoclass:: viser.GuiRgbaHandle
 
+.. autoclass:: viser.GuiSceneTreeHandle
+
 .. autoclass:: viser.GuiSliderHandle
 
 .. autoclass:: viser.GuiTabGroupHandle
@@ -73,6 +75,10 @@ GUI Handles
 .. autoclass:: viser.PanelHandle
 
 .. autodata:: viser.PlaceableHandle
+
+.. autoclass:: viser.SceneTreeItemHandle
+
+.. autoclass:: viser.SceneTreeMenuItemHandle
 
 .. autoclass:: viser.TitlebarButtonHandle
 

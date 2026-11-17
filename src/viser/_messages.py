@@ -2486,6 +2486,89 @@ class GuiGalleryRenderReplyMessage(Message, include_in_scene_serialization=False
 
 
 @dataclasses.dataclass
+class GuiSceneTreeItem:
+    """A custom (non-scene-node) entry in a scene tree panel."""
+
+    item_id: str
+    """Unique identifier for this item, used to route browser actions."""
+    name: str
+    """Display name."""
+    parent_id: Optional[str]
+    """Identifier of the parent item, or None for a top-level item."""
+    _icon_html: Optional[str]
+    """(Private) SVG icon shown before the name, or None for no icon."""
+    visible: bool
+    """Visibility state, toggled by the eye icon."""
+    expanded: bool
+    """Whether the item's children are shown."""
+    editable: bool
+    """Whether the item can be renamed from the browser."""
+    removable: bool
+    """Whether the item can be deleted from the browser."""
+
+
+@dataclasses.dataclass
+class GuiSceneTreeMenuEntry:
+    """An entry in the right-click menu of scene tree items. An entry that has
+    child entries opens a submenu instead of firing a click."""
+
+    menu_id: str
+    """Unique identifier for this entry, used to route clicks."""
+    label: str
+    """Text shown in the menu."""
+    _icon_html: Optional[str]
+    """(Private) SVG icon shown before the label, or None for no icon."""
+    parent_menu_id: Optional[str]
+    """Identifier of the submenu this entry belongs to, or None for the top
+    level of the menu."""
+    item_id: Optional[str]
+    """Item whose menu shows this entry, or None to show it on every item."""
+
+
+@dataclasses.dataclass
+class GuiSceneTreeProps(GuiBaseProps):
+    items: Tuple[GuiSceneTreeItem, ...]
+    """Custom items, in display order. Parents may appear after children."""
+    menu: Tuple[GuiSceneTreeMenuEntry, ...]
+    """Custom right-click menu entries, in display order."""
+    show_scene_nodes: bool
+    """Whether to list the viser scene graph below the custom items."""
+    selected_id: Optional[str]
+    """Identifier of the selected custom item, or None."""
+    placement: Literal["window", "inline"]
+    """'window' renders a floating, draggable panel over the viewport; 'inline'
+    renders in its container like any other GUI component."""
+    position: Literal["top-left", "top-right", "bottom-left", "bottom-right"]
+    """Initial corner of a 'window' panel. The user can drag it afterwards."""
+    width: int
+    """Width of a 'window' panel, in pixels."""
+    max_height: int
+    """Maximum height of the tree body in pixels; it scrolls beyond that."""
+    background_opacity: float
+    """Opacity of the panel background, from 0 (transparent) to 1 (opaque)."""
+    collapsed: bool
+    """Whether a 'window' panel starts collapsed to its title bar."""
+
+
+@dataclasses.dataclass
+class GuiSceneTreeMessage(_CreateGuiComponentMessage):
+    container_uuid: str
+    props: GuiSceneTreeProps
+
+
+@dataclasses.dataclass
+class GuiSceneTreeActionMessage(Message, include_in_scene_serialization=False):
+    """Message sent from client->server for interactions with a custom item."""
+
+    uuid: str
+    item_id: str
+    action: Literal["click", "visibility", "rename", "remove", "menu"]
+    value: str
+    """New name for 'rename'; 'true'/'false' for 'visibility'; the clicked
+    entry's ``menu_id`` for 'menu'; empty otherwise."""
+
+
+@dataclasses.dataclass
 class GuiChatAttachment:
     """Display-side view of a file attached to a chat message."""
 

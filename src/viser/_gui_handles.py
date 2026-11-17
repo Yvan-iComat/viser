@@ -80,6 +80,9 @@ from ._messages import (
     GuiRemoveMessage,
     GuiRgbaProps,
     GuiRgbProps,
+    GuiSceneTreeItem,
+    GuiSceneTreeMenuEntry,
+    GuiSceneTreeProps,
     GuiSetPanelCollapsedMessage,
     GuiSetPanelHeightMessage,
     GuiSetPanelPositionMessage,
@@ -103,7 +106,11 @@ from ._messages import (
     TitlebarItemUpdateMessage,
 )
 from ._scene_api import _encode_image_binary
-from ._threadpool_exceptions import print_awaited_callback_error, print_task_error
+from ._threadpool_exceptions import (
+    print_awaited_callback_error,
+    print_task_error,
+    print_threadpool_errors,
+)
 from .infra import ClientId
 
 if TYPE_CHECKING:
@@ -1318,6 +1325,766 @@ class GuiGalleryHandle(_GuiHandle[None], GuiGalleryProps):
         """
         self._gallery_click_cb.append(func)
         return func
+
+
+SceneTreeAction: TypeAlias = Literal[
+    "click", "visibility", "rename", "remove", "menu", "add", "edit"
+]
+
+
+@dataclasses.dataclass(frozen=True)
+class SceneTreeItemEvent:
+    """Information associated with a scene tree item action.
+
+    Passed as input to scene tree item callbacks."""
+
+    client: ClientHandle | None
+    """Client that triggered this event, or None for changes made from Python."""
+    client_id: int | None
+    """ID of client that triggered this event, or None for Python changes."""
+    tree: GuiSceneTreeHandle
+    """Scene tree containing the item."""
+    target: SceneTreeItemHandle
+    """Item the action applies to. For removals the handle is already removed
+    but still reports the item's last known state."""
+    action: SceneTreeAction
+    """What happened. Browser interactions report 'click', 'visibility',
+    'rename', 'remove' or 'menu'; :meth:`GuiSceneTreeHandle.on_change`
+    receives 'add', 'edit' or 'remove'."""
+    menu_item: SceneTreeMenuItemHandle | None = None
+    """For 'menu' actions, the context menu entry that was clicked."""
+
+    @property
+    def item_id(self) -> str:
+        """Identifier of the item the action applies to."""
+        return self.target.item_id
+
+
+SceneTreeItemCallback: TypeAlias = Callable[[SceneTreeItemEvent], Any]
+
+
+class _SceneTreeItemCallbacks:
+    """Browser-interaction callbacks, shared by items and the whole tree."""
+
+    def __init__(self) -> None:
+        self._callbacks: dict[str, list[SceneTreeItemCallback]] = {
+            "click": [],
+            "visibility": [],
+            "rename": [],
+            "remove": [],
+            "menu": [],
+        }
+
+    def on_click(
+        self, func: Callable[[SceneTreeItemEvent], NoneOrCoroutine]
+    ) -> Callable[[SceneTreeItemEvent], NoneOrCoroutine]:
+        """Attach a callback for when an item is clicked (selected) in the
+        browser.
+
+        Note:
+            - If `func` is a regular function (defined with `def`), it will be executed in a thread pool.
+            - If `func` is an async function (defined with `async def`), it will be executed in the event loop.
+        """
+        self._callbacks["click"].append(func)
+        return func
+
+    def on_visibility_change(
+        self, func: Callable[[SceneTreeItemEvent], NoneOrCoroutine]
+    ) -> Callable[[SceneTreeItemEvent], NoneOrCoroutine]:
+        """Attach a callback for when an item's eye icon is toggled in the
+        browser. The new state is available as ``event.target.visible``."""
+        self._callbacks["visibility"].append(func)
+        return func
+
+    def on_rename(
+        self, func: Callable[[SceneTreeItemEvent], NoneOrCoroutine]
+    ) -> Callable[[SceneTreeItemEvent], NoneOrCoroutine]:
+        """Attach a callback for when an item is renamed in the browser. The new
+        name is available as ``event.target.name``."""
+        self._callbacks["rename"].append(func)
+        return func
+
+    def on_remove(
+        self, func: Callable[[SceneTreeItemEvent], NoneOrCoroutine]
+    ) -> Callable[[SceneTreeItemEvent], NoneOrCoroutine]:
+        """Attach a callback for when an item is deleted in the browser. The
+        item and its descendants are already removed when this fires."""
+        self._callbacks["remove"].append(func)
+        return func
+
+    def on_menu_click(
+        self, func: Callable[[SceneTreeItemEvent], NoneOrCoroutine]
+    ) -> Callable[[SceneTreeItemEvent], NoneOrCoroutine]:
+        """Attach a callback for when any custom context menu entry is clicked
+        on an item. The entry is available as ``event.menu_item`` and the
+        right-clicked item as ``event.target``."""
+        self._callbacks["menu"].append(func)
+        return func
+
+
+class SceneTreeMenuItemHandle:
+    """Handle for an entry in the right-click menu of scene tree items.
+
+    An entry that has child entries (added with :meth:`add_menu_item`) opens a
+    submenu; an entry without children fires :meth:`on_click` callbacks. Like
+    items, entries live in the tree's ``menu`` prop; this handle is a facade.
+    """
+
+    def __init__(self, tree: GuiSceneTreeHandle, entry: GuiSceneTreeMenuEntry) -> None:
+        self._tree = tree
+        self._menu_id = entry.menu_id
+        self._last = entry
+        self._icon: IconName | None = None
+        self._click_cb: list[SceneTreeItemCallback] = []
+
+    def _current(self) -> GuiSceneTreeMenuEntry:
+        entry = self._tree._find_menu_entry(self._menu_id)
+        if entry is not None:
+            self._last = entry
+        return self._last
+
+    @property
+    def menu_id(self) -> str:
+        """Unique identifier of this entry."""
+        return self._menu_id
+
+    @property
+    def removed(self) -> bool:
+        """Whether this entry has been removed from the menu."""
+        return self._tree._find_menu_entry(self._menu_id) is None
+
+    @property
+    def label(self) -> str:
+        """Text shown in the menu. Synchronized when assigned."""
+        return self._current().label
+
+    @label.setter
+    def label(self, label: str) -> None:
+        self._tree._mutate_menu_entry(self._menu_id, label=label)
+
+    @property
+    def icon(self) -> IconName | None:
+        """Icon shown before the label, or None. Synchronized when assigned."""
+        return self._icon
+
+    @icon.setter
+    def icon(self, icon: IconName | None) -> None:
+        self._icon = icon
+        self._tree._mutate_menu_entry(
+            self._menu_id, _icon_html=None if icon is None else svg_from_icon(icon)
+        )
+
+    @property
+    def item(self) -> SceneTreeItemHandle | None:
+        """Item whose menu shows this entry, or None if it is shown on every
+        item."""
+        item_id = self._current().item_id
+        return None if item_id is None else self._tree.get_item(item_id)
+
+    @property
+    def children(self) -> tuple[SceneTreeMenuItemHandle, ...]:
+        """Entries of this entry's submenu, in display order."""
+        return tuple(
+            self._tree._menu_handles[entry.menu_id]
+            for entry in self._tree.menu
+            if entry.parent_menu_id == self._menu_id
+            and entry.menu_id in self._tree._menu_handles
+        )
+
+    def add_menu_item(
+        self,
+        label: str,
+        *,
+        icon: IconName | None = None,
+        menu_id: str | None = None,
+    ) -> SceneTreeMenuItemHandle:
+        """Add an entry to this entry's submenu. This entry then opens the
+        submenu instead of firing its own click callbacks."""
+        if self.removed:
+            raise RuntimeError("Cannot add to a removed menu entry.")
+        return self._tree._add_menu_entry(
+            label,
+            icon=icon,
+            menu_id=menu_id,
+            parent_menu_id=self._menu_id,
+            item_id=self._current().item_id,
+        )
+
+    def remove(self) -> None:
+        """Remove this entry and its submenu."""
+        self._tree.remove_menu_item(self)
+
+    def on_click(
+        self, func: Callable[[SceneTreeItemEvent], NoneOrCoroutine]
+    ) -> Callable[[SceneTreeItemEvent], NoneOrCoroutine]:
+        """Attach a callback for when this entry is clicked. The right-clicked
+        item is available as ``event.target``.
+
+        Note:
+            - If `func` is a regular function (defined with `def`), it will be executed in a thread pool.
+            - If `func` is an async function (defined with `async def`), it will be executed in the event loop.
+
+        Example:
+            >>> add = tree.add_menu_item("Add", icon=viser.Icon.PLUS)
+            >>> box = add.add_menu_item("Box")
+            >>>
+            >>> @box.on_click
+            >>> def _(event):
+            >>>     event.target.add_item("New box")
+        """
+        self._click_cb.append(func)
+        return func
+
+
+class SceneTreeItemHandle(_SceneTreeItemCallbacks):
+    """Handle for a custom item in a scene tree panel.
+
+    Like gallery blocks, items are not standalone GUI components: the tree owns
+    all item state in its ``items`` prop, and this handle reads and rewrites the
+    entry matching its ``item_id``. Mutating a removed item is a no-op.
+    """
+
+    def __init__(self, tree: GuiSceneTreeHandle, item: GuiSceneTreeItem) -> None:
+        super().__init__()
+        self._tree = tree
+        self._item_id = item.item_id
+        # Last known state, so a removed handle still reports what it was.
+        self._last = item
+        self._icon: IconName | None = None
+
+    def _current(self) -> GuiSceneTreeItem:
+        item = self._tree._find_item(self._item_id)
+        if item is not None:
+            self._last = item
+        return self._last
+
+    @property
+    def item_id(self) -> str:
+        """Unique identifier of this item."""
+        return self._item_id
+
+    @property
+    def removed(self) -> bool:
+        """Whether this item has been removed from its tree."""
+        return self._tree._find_item(self._item_id) is None
+
+    @property
+    def name(self) -> str:
+        """Display name. Synchronized when assigned."""
+        return self._current().name
+
+    @name.setter
+    def name(self, name: str) -> None:
+        self._tree._mutate_item(self._item_id, name=name)
+
+    @property
+    def icon(self) -> IconName | None:
+        """Icon shown before the name, or None. Synchronized when assigned."""
+        return self._icon
+
+    @icon.setter
+    def icon(self, icon: IconName | None) -> None:
+        self._icon = icon
+        self._tree._mutate_item(
+            self._item_id, _icon_html=None if icon is None else svg_from_icon(icon)
+        )
+
+    @property
+    def visible(self) -> bool:
+        """Visibility state shown by the eye icon. Synchronized when assigned.
+
+        This is item state only: link it to scene nodes or GUI elements in an
+        :meth:`on_visibility_change` callback."""
+        return self._current().visible
+
+    @visible.setter
+    def visible(self, visible: bool) -> None:
+        self._tree._mutate_item(self._item_id, visible=visible)
+
+    @property
+    def expanded(self) -> bool:
+        """Whether this item's children are shown. Synchronized when assigned."""
+        return self._current().expanded
+
+    @expanded.setter
+    def expanded(self, expanded: bool) -> None:
+        self._tree._mutate_item(self._item_id, expanded=expanded)
+
+    @property
+    def editable(self) -> bool:
+        """Whether the item can be renamed from the browser."""
+        return self._current().editable
+
+    @editable.setter
+    def editable(self, editable: bool) -> None:
+        self._tree._mutate_item(self._item_id, editable=editable)
+
+    @property
+    def removable(self) -> bool:
+        """Whether the item can be deleted from the browser."""
+        return self._current().removable
+
+    @removable.setter
+    def removable(self, removable: bool) -> None:
+        self._tree._mutate_item(self._item_id, removable=removable)
+
+    @property
+    def parent(self) -> SceneTreeItemHandle | None:
+        """Parent item, or None for a top-level item."""
+        parent_id = self._current().parent_id
+        return None if parent_id is None else self._tree.get_item(parent_id)
+
+    @property
+    def children(self) -> tuple[SceneTreeItemHandle, ...]:
+        """Direct children of this item, in display order."""
+        return self._tree._child_handles(self._item_id)
+
+    def add_item(
+        self,
+        name: str,
+        *,
+        icon: IconName | None = None,
+        item_id: str | None = None,
+        visible: bool = True,
+        expanded: bool = True,
+        editable: bool = False,
+        removable: bool = False,
+    ) -> SceneTreeItemHandle:
+        """Add a child item. Shorthand for
+        :meth:`GuiSceneTreeHandle.add_item` with ``parent=self``."""
+        return self._tree.add_item(
+            name,
+            icon=icon,
+            item_id=item_id,
+            parent=self,
+            visible=visible,
+            expanded=expanded,
+            editable=editable,
+            removable=removable,
+        )
+
+    def add_menu_item(
+        self,
+        label: str,
+        *,
+        icon: IconName | None = None,
+        menu_id: str | None = None,
+    ) -> SceneTreeMenuItemHandle:
+        """Add an entry to this item's right-click menu (shown on this item
+        only). Add entries to the returned handle to turn it into a submenu.
+
+        Example:
+            >>> add = parts.add_menu_item("Add", icon=viser.Icon.PLUS)
+            >>> box = add.add_menu_item("Box")
+            >>> box.on_click(lambda event: event.target.add_item("Box"))
+        """
+        if self.removed:
+            raise RuntimeError("Cannot add a menu entry to a removed item.")
+        return self._tree._add_menu_entry(
+            label,
+            icon=icon,
+            menu_id=menu_id,
+            parent_menu_id=None,
+            item_id=self._item_id,
+        )
+
+    def remove(self) -> None:
+        """Remove this item and all of its descendants from the tree."""
+        self._tree.remove_item(self)
+
+
+class GuiSceneTreeHandle(_SceneTreeItemCallbacks, _GuiHandle[None], GuiSceneTreeProps):
+    """Handle for a scene tree panel.
+
+    The panel lists custom items (added with :meth:`add_item`) above the viser
+    scene graph. Interaction callbacks registered here (:meth:`on_click`,
+    :meth:`on_visibility_change`, :meth:`on_rename`, :meth:`on_remove`) fire
+    for every item, after the item's own callbacks.
+    """
+
+    def __init__(self, _impl: _GuiHandleState) -> None:
+        # `_impl` first: attribute writes go through the props __setattr__,
+        # which needs it.
+        _GuiHandle.__init__(self, impl=_impl)
+        _SceneTreeItemCallbacks.__init__(self)
+        self._item_handles: dict[str, SceneTreeItemHandle] = {}
+        self._menu_handles: dict[str, SceneTreeMenuItemHandle] = {}
+        self._change_cb: list[SceneTreeItemCallback] = []
+
+    def _find_item(self, item_id: str) -> GuiSceneTreeItem | None:
+        for item in self.items:
+            if item.item_id == item_id:
+                return item
+        return None
+
+    def _child_handles(self, parent_id: str | None) -> tuple[SceneTreeItemHandle, ...]:
+        return tuple(
+            self._item_handles[item.item_id]
+            for item in self.items
+            if item.parent_id == parent_id and item.item_id in self._item_handles
+        )
+
+    def _mutate_item(
+        self,
+        item_id: str,
+        client: ClientHandle | None = None,
+        client_id: int | None = None,
+        **changes: Any,
+    ) -> bool:
+        """Rewrite one item, resyncing the whole ``items`` prop.
+
+        Returns whether anything changed. Unknown ids are ignored so callbacks
+        racing a removal are safe."""
+        current = self._find_item(item_id)
+        if current is None:
+            return False
+        updated = dataclasses.replace(current, **changes)
+        if updated == current:
+            return False
+        self.items = tuple(
+            updated if item.item_id == item_id else item for item in self.items
+        )
+        self._emit_change("edit", self._item_handles[item_id], client, client_id)
+        return True
+
+    def _emit_change(
+        self,
+        action: Literal["add", "edit", "remove"],
+        target: SceneTreeItemHandle,
+        client: ClientHandle | None,
+        client_id: int | None,
+    ) -> None:
+        if len(self._change_cb) == 0:
+            return
+        event = SceneTreeItemEvent(
+            client=client, client_id=client_id, tree=self, target=target, action=action
+        )
+        gui_api = self._impl.gui_api
+        for cb in self._change_cb:
+            if client is None:
+                # Python-side edits run sync callbacks inline, like assigning
+                # an input's `value`.
+                cb_out = cb(event)
+                if isinstance(cb_out, Coroutine):
+                    asyncio.run_coroutine_threadsafe(
+                        cb_out, gui_api._event_loop
+                    ).add_done_callback(print_task_error)
+            elif asyncio.iscoroutinefunction(cb):
+                gui_api._event_loop.create_task(cb(event)).add_done_callback(
+                    print_task_error
+                )
+            else:
+                gui_api._thread_executor.submit(cb, event).add_done_callback(
+                    print_threadpool_errors
+                )
+
+    def add_item(
+        self,
+        name: str,
+        *,
+        icon: IconName | None = None,
+        item_id: str | None = None,
+        parent: SceneTreeItemHandle | str | None = None,
+        visible: bool = True,
+        expanded: bool = True,
+        editable: bool = False,
+        removable: bool = False,
+    ) -> SceneTreeItemHandle:
+        """Add a custom item to the tree.
+
+        Args:
+            name: Display name.
+            icon: Optional icon shown before the name.
+            item_id: Unique identifier. Generated if omitted.
+            parent: Parent item (handle or ``item_id``), or None for top level.
+            visible: Initial state of the eye icon.
+            expanded: Whether the item's children are initially shown.
+            editable: Allow renaming from the browser (double-click the name, or
+                right-click > Rename).
+            removable: Allow deleting from the browser (trash icon, or
+                right-click > Delete).
+
+        Returns:
+            A handle for editing, removing, and attaching callbacks to the item.
+        """
+        item_id = item_id if item_id is not None else _make_uuid()
+        if self._find_item(item_id) is not None:
+            raise ValueError(
+                f"Scene tree already contains an item with id {item_id!r}."
+            )
+        parent_id = (
+            parent.item_id if isinstance(parent, SceneTreeItemHandle) else parent
+        )
+        if parent_id is not None and self._find_item(parent_id) is None:
+            raise ValueError(f"Unknown parent item {parent_id!r}.")
+
+        item = GuiSceneTreeItem(
+            item_id=item_id,
+            name=name,
+            parent_id=parent_id,
+            _icon_html=None if icon is None else svg_from_icon(icon),
+            visible=visible,
+            expanded=expanded,
+            editable=editable,
+            removable=removable,
+        )
+        handle = SceneTreeItemHandle(self, item)
+        handle._icon = icon
+        self._item_handles[item_id] = handle
+        self.items = self.items + (item,)
+        self._emit_change("add", handle, None, None)
+        return handle
+
+    def get_item(self, item_id: str) -> SceneTreeItemHandle | None:
+        """Look up an item by its identifier. Returns None if there is none."""
+        if self._find_item(item_id) is None:
+            return None
+        return self._item_handles.get(item_id)
+
+    @property
+    def root_items(self) -> tuple[SceneTreeItemHandle, ...]:
+        """Top-level items, in display order."""
+        return self._child_handles(None)
+
+    @property
+    def selected(self) -> SceneTreeItemHandle | None:
+        """Currently selected item, or None. Set by clicks in the browser."""
+        return None if self.selected_id is None else self.get_item(self.selected_id)
+
+    def select(self, item: SceneTreeItemHandle | str | None) -> None:
+        """Select an item (highlighted in the browser), or clear the selection."""
+        item_id = item.item_id if isinstance(item, SceneTreeItemHandle) else item
+        if item_id is not None and self._find_item(item_id) is None:
+            raise ValueError(f"Unknown item {item_id!r}.")
+        self.selected_id = item_id
+
+    def remove_item(
+        self,
+        item: SceneTreeItemHandle | str,
+        *,
+        _client: ClientHandle | None = None,
+        _client_id: int | None = None,
+    ) -> None:
+        """Remove an item and all of its descendants.
+
+        Args:
+            item: The item handle, or its ``item_id``. Unknown ids are ignored.
+        """
+        item_id = item.item_id if isinstance(item, SceneTreeItemHandle) else item
+        target = self._item_handles.get(item_id)
+        if target is None or self._find_item(item_id) is None:
+            return
+        target._current()  # Cache the final state for the removed handle.
+
+        # Collect the subtree: an item's descendants go with it.
+        doomed = {item_id}
+        grew = True
+        while grew:
+            grew = False
+            for entry in self.items:
+                if entry.parent_id in doomed and entry.item_id not in doomed:
+                    doomed.add(entry.item_id)
+                    grew = True
+
+        for doomed_id in doomed:
+            handle = self._item_handles.pop(doomed_id, None)
+            if handle is not None:
+                handle._current()
+        if self.selected_id in doomed:
+            self.selected_id = None
+        # Menu entries scoped to a removed item go with it.
+        for entry in self.menu:
+            if entry.item_id in doomed and entry.parent_menu_id is None:
+                self.remove_menu_item(entry.menu_id)
+        self.items = tuple(entry for entry in self.items if entry.item_id not in doomed)
+        self._emit_change("remove", target, _client, _client_id)
+
+    def clear_items(self) -> None:
+        """Remove all custom items."""
+        for handle in self.root_items:
+            self.remove_item(handle)
+
+    def _find_menu_entry(self, menu_id: str) -> GuiSceneTreeMenuEntry | None:
+        for entry in self.menu:
+            if entry.menu_id == menu_id:
+                return entry
+        return None
+
+    def _mutate_menu_entry(self, menu_id: str, **changes: Any) -> None:
+        current = self._find_menu_entry(menu_id)
+        if current is None:
+            return
+        updated = dataclasses.replace(current, **changes)
+        if updated != current:
+            self.menu = tuple(
+                updated if entry.menu_id == menu_id else entry for entry in self.menu
+            )
+
+    def _add_menu_entry(
+        self,
+        label: str,
+        *,
+        icon: IconName | None,
+        menu_id: str | None,
+        parent_menu_id: str | None,
+        item_id: str | None,
+    ) -> SceneTreeMenuItemHandle:
+        menu_id = menu_id if menu_id is not None else _make_uuid()
+        if self._find_menu_entry(menu_id) is not None:
+            raise ValueError(f"Scene tree menu already has an entry {menu_id!r}.")
+        entry = GuiSceneTreeMenuEntry(
+            menu_id=menu_id,
+            label=label,
+            _icon_html=None if icon is None else svg_from_icon(icon),
+            parent_menu_id=parent_menu_id,
+            item_id=item_id,
+        )
+        handle = SceneTreeMenuItemHandle(self, entry)
+        handle._icon = icon
+        self._menu_handles[menu_id] = handle
+        self.menu = self.menu + (entry,)
+        return handle
+
+    def add_menu_item(
+        self,
+        label: str,
+        *,
+        icon: IconName | None = None,
+        menu_id: str | None = None,
+    ) -> SceneTreeMenuItemHandle:
+        """Add an entry to the right-click menu of every item. Use
+        :meth:`SceneTreeItemHandle.add_menu_item` for an entry on one item only.
+
+        Custom entries are listed above the built-in Rename / Delete entries.
+        Add entries to the returned handle to turn it into a submenu.
+
+        Args:
+            label: Text shown in the menu.
+            icon: Optional icon shown before the label.
+            menu_id: Unique identifier. Generated if omitted.
+
+        Returns:
+            A handle for editing, removing, nesting, and attaching click
+            callbacks to the entry.
+        """
+        return self._add_menu_entry(
+            label, icon=icon, menu_id=menu_id, parent_menu_id=None, item_id=None
+        )
+
+    def get_menu_item(self, menu_id: str) -> SceneTreeMenuItemHandle | None:
+        """Look up a menu entry by its identifier. Returns None if there is
+        none."""
+        if self._find_menu_entry(menu_id) is None:
+            return None
+        return self._menu_handles.get(menu_id)
+
+    def remove_menu_item(self, entry: SceneTreeMenuItemHandle | str) -> None:
+        """Remove a menu entry and its submenu.
+
+        Args:
+            entry: The entry handle, or its ``menu_id``. Unknown ids are
+                ignored.
+        """
+        menu_id = entry.menu_id if isinstance(entry, SceneTreeMenuItemHandle) else entry
+        if self._find_menu_entry(menu_id) is None:
+            return
+        doomed = {menu_id}
+        grew = True
+        while grew:
+            grew = False
+            for other in self.menu:
+                if other.parent_menu_id in doomed and other.menu_id not in doomed:
+                    doomed.add(other.menu_id)
+                    grew = True
+        for doomed_id in doomed:
+            handle = self._menu_handles.pop(doomed_id, None)
+            if handle is not None:
+                handle._current()
+        self.menu = tuple(other for other in self.menu if other.menu_id not in doomed)
+
+    def on_change(
+        self, func: Callable[[SceneTreeItemEvent], NoneOrCoroutine]
+    ) -> Callable[[SceneTreeItemEvent], NoneOrCoroutine]:
+        """Attach a callback for any item being added, edited, or removed --
+        from Python or from the browser.
+
+        ``event.action`` is 'add', 'edit' or 'remove'; ``event.client`` is None
+        for changes made from Python. Removing an item fires once, for the item
+        itself (its descendants are removed with it).
+
+        Note:
+            - Changes made from Python run regular functions inline, before the
+              mutating call returns.
+            - Changes made from the browser run regular functions in a thread
+              pool, and async functions in the event loop.
+        """
+        self._change_cb.append(func)
+        return func
+
+    def _dispatch_browser_action(
+        self,
+        client: ClientHandle,
+        client_id: int,
+        item_id: str,
+        action: Literal["click", "visibility", "rename", "remove", "menu"],
+        value: str,
+    ) -> list[tuple[SceneTreeItemCallback, SceneTreeItemEvent]]:
+        """Apply a browser action and return the callbacks to run.
+
+        Server-authoritative: the change is applied here and rebroadcast to
+        every client; the sending client renders it optimistically."""
+        handle = self._item_handles.get(item_id)
+        current = self._find_item(item_id)
+        if handle is None or current is None:
+            return []
+
+        menu_handle: SceneTreeMenuItemHandle | None = None
+        if action == "click":
+            self.selected_id = item_id
+        elif action == "visibility":
+            self._mutate_item(item_id, client, client_id, visible=value == "true")
+        elif action == "rename":
+            name = value.strip()
+            if not current.editable or name == "":
+                # Re-assert the authoritative name: the sender already shows
+                # its optimistic edit.
+                self._queue_update("items", self.items)
+                return []
+            if not self._mutate_item(item_id, client, client_id, name=name):
+                return []
+        elif action == "remove":
+            if not current.removable:
+                return []
+            self.remove_item(handle, _client=client, _client_id=client_id)
+        elif action == "menu":
+            entry = self._find_menu_entry(value)
+            menu_handle = self._menu_handles.get(value)
+            # Ignore stale clicks and entries not offered on this item.
+            if (
+                entry is None
+                or menu_handle is None
+                or entry.item_id not in (None, item_id)
+            ):
+                return []
+
+        event = SceneTreeItemEvent(
+            client=client,
+            client_id=client_id,
+            tree=self,
+            target=handle,
+            action=action,
+            menu_item=menu_handle,
+        )
+        # Most specific first: menu entry, then item, then tree callbacks.
+        entry_cbs = () if menu_handle is None else tuple(menu_handle._click_cb)
+        return [
+            (cb, event)
+            for cb in (
+                *entry_cbs,
+                *handle._callbacks[action],
+                *self._callbacks[action],
+            )
+        ]
 
 
 @dataclasses.dataclass(frozen=True)

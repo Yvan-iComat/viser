@@ -72,6 +72,7 @@ from ._gui_handles import (
     GuiProgressBarHandle,
     GuiRgbaHandle,
     GuiRgbHandle,
+    GuiSceneTreeHandle,
     GuiSliderHandle,
     GuiTabGroupHandle,
     GuiTabHandle,
@@ -388,6 +389,7 @@ class GuiApi:
             str, TitlebarButtonHandle | TitlebarSeparatorHandle
         ] = {}
         self._gallery_handle_from_uuid: dict[str, GuiGalleryHandle] = {}
+        self._scene_tree_handle_from_uuid: dict[str, GuiSceneTreeHandle] = {}
         self._chat_handle_from_uuid: dict[str, GuiChatHandle] = {}
         self._file_drop_zone_from_uuid: dict[str, FileDropZoneHandle] = {}
         self._current_file_upload_states: dict[str, _FileUploadState] = {}
@@ -429,6 +431,9 @@ class GuiApi:
         )
         self._websock_interface.register_handler(
             _messages.GuiGalleryRenderReplyMessage, self._handle_gallery_render_reply
+        )
+        self._websock_interface.register_handler(
+            _messages.GuiSceneTreeActionMessage, self._handle_scene_tree_action
         )
         self._websock_interface.register_handler(
             _messages.GuiChatSubmitMessage, self._handle_chat_submit
@@ -642,6 +647,27 @@ class GuiApi:
         if gallery is None or gallery._impl.removed:
             return
         gallery._handle_render_reply(message.render_uuid, message._data)
+
+    async def _handle_scene_tree_action(
+        self, client_id: ClientId, message: _messages.GuiSceneTreeActionMessage
+    ) -> None:
+        """Callback for interactions with custom scene tree items."""
+        tree = self._scene_tree_handle_from_uuid.get(message.uuid, None)
+        if tree is None or tree._impl.removed:
+            return
+        client = self._resolve_client(client_id)
+        if client is None:
+            return
+
+        for cb, event in tree._dispatch_browser_action(
+            client, client_id, message.item_id, message.action, message.value
+        ):
+            if asyncio.iscoroutinefunction(cb):
+                await cb(event)
+            else:
+                self._thread_executor.submit(cb, event).add_done_callback(
+                    print_threadpool_errors
+                )
 
     async def _handle_chat_submit(
         self, client_id: ClientId, message: _messages.GuiChatSubmitMessage
@@ -2993,6 +3019,131 @@ class GuiApi:
             )
         )
         self._gallery_handle_from_uuid[message.uuid] = handle
+        return handle
+
+    def add_scene_tree(
+        self,
+        label: str = "Scene",
+        *,
+        parent: Literal["window"]
+        | GuiContainerProtocol
+        | PanelHandle
+        | None = "window",
+        position: Literal[
+            "top-left", "top-right", "bottom-left", "bottom-right"
+        ] = "top-left",
+        width: int = 280,
+        max_height: int = 480,
+        background_opacity: float = 0.0,
+        show_scene_nodes: bool = True,
+        collapsed: bool = False,
+        hint: str | None = None,
+        visible: bool = True,
+        order: float | None = None,
+    ) -> GuiSceneTreeHandle:
+        """Add a scene tree: the viser scene graph plus custom items, with
+        visibility toggles and collapsible rows.
+
+        By default the tree is a floating panel over the viewport with a
+        transparent background; drag its title bar to move it and click the
+        chevron to collapse it. Custom items are added with
+        :meth:`GuiSceneTreeHandle.add_item` and listed above the scene graph.
+
+        Args:
+            label: Title shown in the panel's title bar (inline: above the tree;
+                pass "" to hide it).
+            parent: Where to place the tree. ``"window"`` (default) renders a
+                floating panel over the viewport. Pass a container -- a tab, a
+                folder, or the control panel -- to render it inline there
+                instead. Inside a ``with`` block on a container, pass
+                ``parent=None`` to use that context.
+            position: Initial corner of the floating panel.
+            width: Width of the floating panel, in pixels.
+            max_height: Maximum height of the tree body in pixels; it scrolls
+                beyond that.
+            background_opacity: Panel background opacity, from 0 (fully
+                transparent) to 1 (opaque).
+            show_scene_nodes: Whether to list the viser scene graph below the
+                custom items.
+            collapsed: Whether the floating panel starts collapsed to its title
+                bar.
+            hint: Optional hint to display on hover.
+            visible: Whether the tree is visible initially.
+            order: Optional ordering, smallest values will be displayed first.
+
+        Returns:
+            A handle used to add, edit, and remove custom items.
+
+        Example::
+
+            tree = server.gui.add_scene_tree("Project")
+            parts = tree.add_item("Parts", icon=viser.Icon.BOX, item_id="parts")
+            parts.add_item("Bracket", editable=True, removable=True)
+
+            @tree.on_visibility_change
+            def _(event):
+                print(event.target.name, "visible:", event.target.visible)
+        """
+        if width <= 0 or max_height <= 0:
+            raise ValueError("`width` and `max_height` must be positive.")
+        if not 0.0 <= background_opacity <= 1.0:
+            raise ValueError("`background_opacity` must be between 0 and 1.")
+
+        # A panel is a container for tabs, not for content: resolving one here
+        # would silently drop the tree, so point the user at the tab.
+        if isinstance(parent, PanelHandle):
+            raise TypeError(
+                "A panel holds tabs, not content directly. Add the scene tree to "
+                "one of its tabs:\n"
+                "    panel = server.gui.add_panel()\n"
+                '    tree = server.gui.add_scene_tree(parent=panel.add_tab("Scene"))'
+            )
+
+        if parent == "window":
+            placement: Literal["window", "inline"] = "window"
+            # Window trees render outside the inline GUI tree, so the container
+            # is only a lifecycle parent; the root keeps it alive.
+            container_uuid = self._get_container_uuid()
+        elif parent is None:
+            placement = "inline"
+            container_uuid = self._get_container_uuid()
+        else:
+            placement = "inline"
+            container_uuid = self._container_uuid_from_handle(parent)
+
+        message = _messages.GuiSceneTreeMessage(
+            uuid=_make_uuid(),
+            container_uuid=container_uuid,
+            props=_messages.GuiSceneTreeProps(
+                order=_apply_default_order(order),
+                label=label,
+                hint=hint,
+                visible=visible,
+                disabled=False,
+                items=(),
+                menu=(),
+                show_scene_nodes=show_scene_nodes,
+                selected_id=None,
+                placement=placement,
+                position=position,
+                width=width,
+                max_height=max_height,
+                background_opacity=float(background_opacity),
+                collapsed=collapsed,
+            ),
+        )
+        self._websock_interface.queue_message(message)
+
+        handle = GuiSceneTreeHandle(
+            _GuiHandleState(
+                message.uuid,
+                self,
+                None,
+                props=message.props,
+                parent_container_id=message.container_uuid,
+            )
+        )
+        self._scene_tree_handle_from_uuid[message.uuid] = handle
         return handle
 
     def add_chat(

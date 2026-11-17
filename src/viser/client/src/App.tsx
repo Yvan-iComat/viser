@@ -64,6 +64,7 @@ import { PlaybackFromFile, PlaybackFromEmbedData } from "./FilePlayback";
 import { SplatRenderContext } from "./Splatting/GaussianSplats";
 import { BrowserWarning } from "./BrowserWarning";
 import { GalleryOverlay } from "./components/GalleryOverlay";
+import { SceneTreeOverlay } from "./components/SceneTreeOverlay";
 import { MacWindowWrapper } from "./MacWindowWrapper";
 import { CascadedDirectionalLight } from "./CascadedDirectionalLight";
 import { VISER_VERSION, GITHUB_CONTRIBUTORS, Contributor } from "./VersionInfo";
@@ -547,6 +548,9 @@ function AppLayout({
               hints at 1000) must stay on top, or a docked panel would be
               painted over and its drag/drop targets swallowed. */}
               <GalleryOverlay />
+              {/* Floating scene tree panels: same layering rules as the
+              galleries above. */}
+              <SceneTreeOverlay />
               {/* File drop zone: delimits the viewer area inside the dock
               surface, so it never covers the titlebar or a sidebar panel. */}
               <FileDropZoneOverlay />
@@ -555,6 +559,7 @@ function AppLayout({
           ) : (
             <>
               <GalleryOverlay />
+              <SceneTreeOverlay />
               {canvasContent}
             </>
           )}

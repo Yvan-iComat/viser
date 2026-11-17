@@ -34,6 +34,7 @@ from ._gui_handles import GuiNumberHandle as GuiNumberHandle
 from ._gui_handles import GuiPlotlyHandle as GuiPlotlyHandle
 from ._gui_handles import GuiRgbaHandle as GuiRgbaHandle
 from ._gui_handles import GuiRgbHandle as GuiRgbHandle
+from ._gui_handles import GuiSceneTreeHandle as GuiSceneTreeHandle
 from ._gui_handles import GuiSliderHandle as GuiSliderHandle
 from ._gui_handles import GuiTabGroupHandle as GuiTabGroupHandle
 from ._gui_handles import GuiTabHandle as GuiTabHandle
@@ -45,6 +46,9 @@ from ._gui_handles import GuiVector3Handle as GuiVector3Handle
 from ._gui_handles import MainPanelHandle as MainPanelHandle
 from ._gui_handles import PanelHandle as PanelHandle
 from ._gui_handles import PlaceableHandle as PlaceableHandle
+from ._gui_handles import SceneTreeItemEvent as SceneTreeItemEvent
+from ._gui_handles import SceneTreeItemHandle as SceneTreeItemHandle
+from ._gui_handles import SceneTreeMenuItemHandle as SceneTreeMenuItemHandle
 from ._gui_handles import TitlebarButtonEvent as TitlebarButtonEvent
 from ._gui_handles import TitlebarButtonHandle as TitlebarButtonHandle
 from ._gui_handles import TitlebarSeparatorHandle as TitlebarSeparatorHandle

@@ -1327,6 +1327,47 @@ export interface GuiGalleryMessage {
     placement: "window" | "inline";
   };
 }
+/** GuiSceneTreeMessage(uuid: 'str', container_uuid: 'str', props: 'GuiSceneTreeProps')
+ *
+ * (automatically generated)
+ */
+export interface GuiSceneTreeMessage {
+  type: "GuiSceneTreeMessage";
+  uuid: string;
+  container_uuid: string;
+  props: {
+    order: number;
+    label: string;
+    hint: string | null;
+    visible: boolean;
+    disabled: boolean;
+    items: {
+      item_id: string;
+      name: string;
+      parent_id: string | null;
+      _icon_html: string | null;
+      visible: boolean;
+      expanded: boolean;
+      editable: boolean;
+      removable: boolean;
+    }[];
+    menu: {
+      menu_id: string;
+      label: string;
+      _icon_html: string | null;
+      parent_menu_id: string | null;
+      item_id: string | null;
+    }[];
+    show_scene_nodes: boolean;
+    selected_id: string | null;
+    placement: "window" | "inline";
+    position: "top-left" | "top-right" | "bottom-left" | "bottom-right";
+    width: number;
+    max_height: number;
+    background_opacity: number;
+    collapsed: boolean;
+  };
+}
 /** GuiChatMessage(uuid: 'str', container_uuid: 'str', props: 'GuiChatProps')
  *
  * (automatically generated)
@@ -2070,6 +2111,17 @@ export interface GuiGalleryRenderReplyMessage {
   render_uuid: string;
   _data: Uint8Array<ArrayBuffer> | null;
 }
+/** Message sent from client->server for interactions with a custom item.
+ *
+ * (automatically generated)
+ */
+export interface GuiSceneTreeActionMessage {
+  type: "GuiSceneTreeActionMessage";
+  uuid: string;
+  item_id: string;
+  action: "click" | "visibility" | "rename" | "remove" | "menu";
+  value: string;
+}
 /** Message sent from client->server when the user submits a chat message.
  *
  * (automatically generated)
@@ -2571,6 +2623,7 @@ export type Message =
   | GuiButtonGroupMessage
   | GuiTableDataMessage
   | GuiGalleryMessage
+  | GuiSceneTreeMessage
   | GuiChatMessage
   | GuiRemoveMessage
   | RunJavascriptMessage
@@ -2621,6 +2674,7 @@ export type Message =
   | GuiGalleryClickMessage
   | GuiGalleryRenderRequestMessage
   | GuiGalleryRenderReplyMessage
+  | GuiSceneTreeActionMessage
   | GuiChatSubmitMessage
   | GuiChatActionMessage
   | GuiUpdateMessage
@@ -2712,6 +2766,7 @@ export type GuiComponentMessage =
   | GuiButtonGroupMessage
   | GuiTableDataMessage
   | GuiGalleryMessage
+  | GuiSceneTreeMessage
   | GuiChatMessage;
 const typeSetSceneNodeMessage = new Set([
   "CameraFrustumMessage",
@@ -2776,6 +2831,7 @@ const typeSetGuiComponentMessage = new Set([
   "GuiButtonGroupMessage",
   "GuiTableDataMessage",
   "GuiGalleryMessage",
+  "GuiSceneTreeMessage",
   "GuiChatMessage",
 ]);
 export function isGuiComponentMessage(
