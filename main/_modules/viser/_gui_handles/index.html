@@ -1507,10 +1507,27 @@
     <span class="k">def</span><span class="w"> </span><span class="nf">subtitle</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">subtitle</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_gallery</span><span class="o">.</span><span class="n">_mutate_block</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_block_id</span><span class="p">,</span> <span class="n">subtitle</span><span class="o">=</span><span class="n">subtitle</span><span class="p">)</span>
 
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">kind</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">"preview"</span><span class="p">,</span> <span class="s2">"new"</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""'preview' for snapshot blocks, 'new' for blocks from</span>
+<span class="sd">        :meth:`GuiGalleryHandle.add_new_block`."""</span>
+        <span class="n">block</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_gallery</span><span class="o">.</span><span class="n">_find_block</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_block_id</span><span class="p">)</span>
+        <span class="k">return</span> <span class="s2">"preview"</span> <span class="k">if</span> <span class="n">block</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">block</span><span class="o">.</span><span class="n">kind</span>
+
+<div class="viewcode-block" id="GalleryBlockHandle.set_icon">
+<a class="viewcode-back" href="../../../api/handles/gui_handles/#viser.GalleryBlockHandle.set_icon">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">set_icon</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">icon</span><span class="p">:</span> <span class="n">IconName</span> <span class="o">|</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Replace the icon of a 'new' block. Ignored by 'preview' blocks."""</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_gallery</span><span class="o">.</span><span class="n">_mutate_block</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_block_id</span><span class="p">,</span> <span class="n">_icon_html</span><span class="o">=</span><span class="kc">None</span> <span class="k">if</span> <span class="n">icon</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">svg_from_icon</span><span class="p">(</span><span class="n">icon</span><span class="p">)</span>
+        <span class="p">)</span></div>
+
+
 <div class="viewcode-block" id="GalleryBlockHandle.set_image">
 <a class="viewcode-back" href="../../../api/handles/gui_handles/#viser.GalleryBlockHandle.set_image">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">set_image</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">image</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">"""Replace this block's snapshot with a numpy image.</span>
+<span class="w">        </span><span class="sd">"""Replace this block's snapshot with a numpy image. Ignored by 'new'</span>
+<span class="sd">        blocks, which have no snapshot area.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            image: (H, W, 3) or (H, W, 4) uint8 array.</span>
@@ -1666,6 +1683,8 @@
                 <span class="n">subtitle</span><span class="o">=</span><span class="n">subtitle</span><span class="p">,</span>
                 <span class="n">_data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span>
                 <span class="n">_format</span><span class="o">=</span><span class="n">image_format</span><span class="p">,</span>
+                <span class="n">kind</span><span class="o">=</span><span class="s2">"preview"</span><span class="p">,</span>
+                <span class="n">_icon_html</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
             <span class="p">),</span>
         <span class="p">)</span>
         <span class="n">handle</span> <span class="o">=</span> <span class="n">GalleryBlockHandle</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">block_id</span><span class="p">)</span>
@@ -1674,6 +1693,53 @@
         <span class="k">if</span> <span class="n">stl_data</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_request_stl_snapshot</span><span class="p">(</span><span class="n">block_id</span><span class="p">,</span> <span class="n">stl_data</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">)</span>
 
+        <span class="k">return</span> <span class="n">handle</span></div>
+
+
+<div class="viewcode-block" id="GuiGalleryHandle.add_new_block">
+<a class="viewcode-back" href="../../../api/handles/gui_handles/#viser.GuiGalleryHandle.add_new_block">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">add_new_block</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">title</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"New project"</span><span class="p">,</span>
+        <span class="n">subtitle</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">icon</span><span class="p">:</span> <span class="n">IconName</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="s2">"plus"</span><span class="p">,</span>
+        <span class="n">first</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">block_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">GalleryBlockHandle</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Add a "create new" block: a dashed frame with centered text.</span>
+
+<span class="sd">        Meant as the entry point for creating a new item (project, model,</span>
+<span class="sd">        ...). It fills one grid cell, sized like its neighbors, and fires the</span>
+<span class="sd">        same click callbacks as any other block.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            title: Text shown in the middle of the block.</span>
+<span class="sd">            subtitle: Optional hint shown below the title.</span>
+<span class="sd">            icon: Icon shown above the title, or None for text only.</span>
+<span class="sd">            first: Insert as the first block (the usual spot for a "new" tile)</span>
+<span class="sd">                rather than appending it.</span>
+<span class="sd">            block_id: Optional stable identifier. Generated if omitted.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A handle for manipulating the new block.</span>
+<span class="sd">        """</span>
+        <span class="n">block_id</span> <span class="o">=</span> <span class="n">block_id</span> <span class="k">if</span> <span class="n">block_id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">_make_uuid</span><span class="p">()</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_find_block</span><span class="p">(</span><span class="n">block_id</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Gallery already contains a block with id </span><span class="si">{</span><span class="n">block_id</span><span class="si">!r}</span><span class="s2">."</span><span class="p">)</span>
+
+        <span class="n">block</span> <span class="o">=</span> <span class="n">GuiGalleryBlock</span><span class="p">(</span>
+            <span class="n">block_id</span><span class="o">=</span><span class="n">block_id</span><span class="p">,</span>
+            <span class="n">title</span><span class="o">=</span><span class="n">title</span><span class="p">,</span>
+            <span class="n">subtitle</span><span class="o">=</span><span class="n">subtitle</span><span class="p">,</span>
+            <span class="n">_data</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">_format</span><span class="o">=</span><span class="s2">"png"</span><span class="p">,</span>
+            <span class="n">kind</span><span class="o">=</span><span class="s2">"new"</span><span class="p">,</span>
+            <span class="n">_icon_html</span><span class="o">=</span><span class="kc">None</span> <span class="k">if</span> <span class="n">icon</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">svg_from_icon</span><span class="p">(</span><span class="n">icon</span><span class="p">),</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">blocks</span> <span class="o">=</span> <span class="p">(</span><span class="n">block</span><span class="p">,</span> <span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">blocks</span><span class="p">)</span> <span class="k">if</span> <span class="n">first</span> <span class="k">else</span> <span class="p">(</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">blocks</span><span class="p">,</span> <span class="n">block</span><span class="p">)</span>
+        <span class="n">handle</span> <span class="o">=</span> <span class="n">GalleryBlockHandle</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">block_id</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_block_handles</span><span class="p">[</span><span class="n">block_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">handle</span>
         <span class="k">return</span> <span class="n">handle</span></div>
 
 

@@ -633,10 +633,32 @@ the entry matching its <code class="docutils literal notranslate"><span class="p
 <dd><p>Optional subtitle shown below the title. Synchronized when assigned.</p>
 </dd></dl>
 
+<dl class="py property">
+<dt class="sig sig-object py" id="viser.GalleryBlockHandle.kind">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">kind</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Literal" title="(in Python v3.15)"><span class="pre">Literal</span></a><span class="p"><span class="pre">[</span></span><span class="s"><span class="pre">'preview'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'new'</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#viser.GalleryBlockHandle.kind" title="Link to this definition">¶</a></dt>
+<dd><p>‘preview’ for snapshot blocks, ‘new’ for blocks from
+<a class="reference internal" href="#viser.GuiGalleryHandle.add_new_block" title="viser.GuiGalleryHandle.add_new_block"><code class="xref py py-meth docutils literal notranslate"><span class="pre">GuiGalleryHandle.add_new_block()</span></code></a>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="viser.GalleryBlockHandle.set_icon">
+<span class="sig-name descname"><span class="pre">set_icon</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">icon</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">IconName</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><span class="pre">None</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../../../_modules/viser/_gui_handles/#GalleryBlockHandle.set_icon"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#viser.GalleryBlockHandle.set_icon" title="Link to this definition">¶</a></dt>
+<dd><p>Replace the icon of a ‘new’ block. Ignored by ‘preview’ blocks.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>icon</strong> (<em>IconName</em><em> | </em><em>None</em>)</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
 <dl class="py method">
 <dt class="sig sig-object py" id="viser.GalleryBlockHandle.set_image">
 <span class="sig-name descname"><span class="pre">set_image</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">image</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../../../_modules/viser/_gui_handles/#GalleryBlockHandle.set_image"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#viser.GalleryBlockHandle.set_image" title="Link to this definition">¶</a></dt>
-<dd><p>Replace this block’s snapshot with a numpy image.</p>
+<dd><p>Replace this block’s snapshot with a numpy image. Ignored by ‘new’
+blocks, which have no snapshot area.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>image</strong> (<em>ndarray</em>) – (H, W, 3) or (H, W, 4) uint8 array.</p>
@@ -1761,6 +1783,33 @@ from it in the browser; requires a connected client.</p></li>
 <li><p><strong>block_id</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em> | </em><em>None</em>) – Optional stable identifier. Generated if omitted.</p></li>
 <li><p><strong>timeout</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em> | </em><em>None</em>) – Seconds to wait for an STL snapshot before giving up. The
 block is still added; its image stays blank on timeout.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A handle for manipulating the new block.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#viser.GalleryBlockHandle" title="viser._gui_handles.GalleryBlockHandle"><em>GalleryBlockHandle</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="viser.GuiGalleryHandle.add_new_block">
+<span class="sig-name descname"><span class="pre">add_new_block</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">title</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'New</span> <span class="pre">project'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">subtitle</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">icon</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">IconName</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'plus'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">first</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">block_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#viser.GalleryBlockHandle" title="viser._gui_handles.GalleryBlockHandle"><span class="pre">GalleryBlockHandle</span></a></span></span><a class="reference internal" href="../../../_modules/viser/_gui_handles/#GuiGalleryHandle.add_new_block"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#viser.GuiGalleryHandle.add_new_block" title="Link to this definition">¶</a></dt>
+<dd><p>Add a “create new” block: a dashed frame with centered text.</p>
+<p>Meant as the entry point for creating a new item (project, model,
+…). It fills one grid cell, sized like its neighbors, and fires the
+same click callbacks as any other block.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>title</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – Text shown in the middle of the block.</p></li>
+<li><p><strong>subtitle</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em> | </em><em>None</em>) – Optional hint shown below the title.</p></li>
+<li><p><strong>icon</strong> (<em>IconName</em><em> | </em><em>None</em>) – Icon shown above the title, or None for text only.</p></li>
+<li><p><strong>first</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><em>bool</em></a>) – Insert as the first block (the usual spot for a “new” tile)
+rather than appending it.</p></li>
+<li><p><strong>block_id</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em> | </em><em>None</em>) – Optional stable identifier. Generated if omitted.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
@@ -3976,6 +4025,8 @@ custom titlebar buttons.</p>
 <li><a class="reference internal" href="#viser.GalleryBlockHandle.removed"><code class="docutils literal notranslate"><span class="pre">GalleryBlockHandle.removed</span></code></a></li>
 <li><a class="reference internal" href="#viser.GalleryBlockHandle.title"><code class="docutils literal notranslate"><span class="pre">GalleryBlockHandle.title</span></code></a></li>
 <li><a class="reference internal" href="#viser.GalleryBlockHandle.subtitle"><code class="docutils literal notranslate"><span class="pre">GalleryBlockHandle.subtitle</span></code></a></li>
+<li><a class="reference internal" href="#viser.GalleryBlockHandle.kind"><code class="docutils literal notranslate"><span class="pre">GalleryBlockHandle.kind</span></code></a></li>
+<li><a class="reference internal" href="#viser.GalleryBlockHandle.set_icon"><code class="docutils literal notranslate"><span class="pre">GalleryBlockHandle.set_icon()</span></code></a></li>
 <li><a class="reference internal" href="#viser.GalleryBlockHandle.set_image"><code class="docutils literal notranslate"><span class="pre">GalleryBlockHandle.set_image()</span></code></a></li>
 <li><a class="reference internal" href="#viser.GalleryBlockHandle.remove"><code class="docutils literal notranslate"><span class="pre">GalleryBlockHandle.remove()</span></code></a></li>
 <li><a class="reference internal" href="#viser.GalleryBlockHandle.on_click"><code class="docutils literal notranslate"><span class="pre">GalleryBlockHandle.on_click()</span></code></a></li>
@@ -4122,6 +4173,7 @@ custom titlebar buttons.</p>
 </li>
 <li><a class="reference internal" href="#viser.GuiGalleryHandle"><code class="docutils literal notranslate"><span class="pre">GuiGalleryHandle</span></code></a><ul>
 <li><a class="reference internal" href="#viser.GuiGalleryHandle.add_block"><code class="docutils literal notranslate"><span class="pre">GuiGalleryHandle.add_block()</span></code></a></li>
+<li><a class="reference internal" href="#viser.GuiGalleryHandle.add_new_block"><code class="docutils literal notranslate"><span class="pre">GuiGalleryHandle.add_new_block()</span></code></a></li>
 <li><a class="reference internal" href="#viser.GuiGalleryHandle.remove_block"><code class="docutils literal notranslate"><span class="pre">GuiGalleryHandle.remove_block()</span></code></a></li>
 <li><a class="reference internal" href="#viser.GuiGalleryHandle.on_click"><code class="docutils literal notranslate"><span class="pre">GuiGalleryHandle.on_click()</span></code></a></li>
 <li><a class="reference internal" href="#viser.GuiGalleryHandle.remove"><code class="docutils literal notranslate"><span class="pre">GuiGalleryHandle.remove()</span></code></a></li>
