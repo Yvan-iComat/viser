@@ -1005,8 +1005,22 @@ class GalleryBlockHandle:
     def subtitle(self, subtitle: str | None) -> None:
         self._gallery._mutate_block(self._block_id, subtitle=subtitle)
 
+    @property
+    def kind(self) -> Literal["preview", "new"]:
+        """'preview' for snapshot blocks, 'new' for blocks from
+        :meth:`GuiGalleryHandle.add_new_block`."""
+        block = self._gallery._find_block(self._block_id)
+        return "preview" if block is None else block.kind
+
+    def set_icon(self, icon: IconName | None) -> None:
+        """Replace the icon of a 'new' block. Ignored by 'preview' blocks."""
+        self._gallery._mutate_block(
+            self._block_id, _icon_html=None if icon is None else svg_from_icon(icon)
+        )
+
     def set_image(self, image: np.ndarray) -> None:
-        """Replace this block's snapshot with a numpy image.
+        """Replace this block's snapshot with a numpy image. Ignored by 'new'
+        blocks, which have no snapshot area.
 
         Args:
             image: (H, W, 3) or (H, W, 4) uint8 array.
@@ -1147,6 +1161,8 @@ class GuiGalleryHandle(_GuiHandle[None], GuiGalleryProps):
                 subtitle=subtitle,
                 _data=data,
                 _format=image_format,
+                kind="preview",
+                _icon_html=None,
             ),
         )
         handle = GalleryBlockHandle(self, block_id)
@@ -1155,6 +1171,50 @@ class GuiGalleryHandle(_GuiHandle[None], GuiGalleryProps):
         if stl_data is not None:
             self._request_stl_snapshot(block_id, stl_data, timeout=timeout)
 
+        return handle
+
+    def add_new_block(
+        self,
+        title: str = "New project",
+        subtitle: str | None = None,
+        *,
+        icon: IconName | None = "plus",
+        first: bool = True,
+        block_id: str | None = None,
+    ) -> GalleryBlockHandle:
+        """Add a "create new" block: a dashed frame with centered text.
+
+        Meant as the entry point for creating a new item (project, model,
+        ...). It fills one grid cell, sized like its neighbors, and fires the
+        same click callbacks as any other block.
+
+        Args:
+            title: Text shown in the middle of the block.
+            subtitle: Optional hint shown below the title.
+            icon: Icon shown above the title, or None for text only.
+            first: Insert as the first block (the usual spot for a "new" tile)
+                rather than appending it.
+            block_id: Optional stable identifier. Generated if omitted.
+
+        Returns:
+            A handle for manipulating the new block.
+        """
+        block_id = block_id if block_id is not None else _make_uuid()
+        if self._find_block(block_id) is not None:
+            raise ValueError(f"Gallery already contains a block with id {block_id!r}.")
+
+        block = GuiGalleryBlock(
+            block_id=block_id,
+            title=title,
+            subtitle=subtitle,
+            _data=None,
+            _format="png",
+            kind="new",
+            _icon_html=None if icon is None else svg_from_icon(icon),
+        )
+        self.blocks = (block, *self.blocks) if first else (*self.blocks, block)
+        handle = GalleryBlockHandle(self, block_id)
+        self._block_handles[block_id] = handle
         return handle
 
     def _load_stl_bytes(self, block_id: str, stl: str | Path | bytes) -> bytes:

@@ -2421,6 +2421,11 @@ class GuiGalleryBlock:
     """(Private) Binary snapshot image data. None while a render is pending."""
     _format: Literal["jpeg", "png"]
     """(Private) Format of the snapshot image ('jpeg' or 'png')."""
+    kind: Literal["preview", "new"]
+    """'preview' is a framed snapshot with a footer; 'new' is a dashed
+    placeholder with centered text, used as a "create new item" action."""
+    _icon_html: Optional[str]
+    """(Private) SVG icon shown above the text of a 'new' block."""
 
 
 @dataclasses.dataclass

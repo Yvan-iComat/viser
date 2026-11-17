@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Box, Text } from "@mantine/core";
 import { GuiGalleryMessage } from "../WebsocketMessages";
 import { GuiComponentContext } from "../ControlPanel/GuiComponentContext";
+import { centeredIconWrapper } from "./ComponentStyles.css";
 
 type GalleryBlock = GuiGalleryMessage["props"]["blocks"][number];
 
@@ -126,6 +127,108 @@ const GalleryCard = React.memo(function GalleryCard({
   );
 });
 
+/** "Create new" tile: a dashed frame with an icon badge and centered text.
+ *
+ * Fills its grid cell (the grid stretches cards to the row height), so it lines
+ * up with the preview cards beside it. */
+const GalleryNewCard = React.memo(function GalleryNewCard({
+  block,
+  imageHeight,
+  disabled,
+  onClick,
+}: {
+  block: GalleryBlock;
+  imageHeight: number;
+  disabled: boolean;
+  onClick: () => void;
+}) {
+  const [hovered, setHovered] = useState(false);
+  const active = hovered && !disabled;
+  // Scale the badge with the block so it reads well in both a full-window
+  // gallery and a small docked one.
+  const badgeSize = Math.round(Math.min(48, Math.max(26, imageHeight * 0.28)));
+
+  return (
+    <Box
+      role="button"
+      tabIndex={disabled ? -1 : 0}
+      aria-label={block.title}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      onClick={(e: React.MouseEvent) => {
+        if (e.button !== 0 || disabled) return;
+        onClick();
+      }}
+      onKeyDown={(e: React.KeyboardEvent) => {
+        if (disabled) return;
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onClick();
+        }
+      }}
+      style={(theme) => ({
+        boxSizing: "border-box",
+        height: "100%",
+        // Standalone in a row it has no neighbor to stretch to; keep it at
+        // least as tall as a snapshot plus a one-line footer.
+        minHeight: `calc(${imageHeight}px + 2.4em)`,
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: "0.4em",
+        padding: "0.6em",
+        border: `2px dashed ${active ? theme.colors.blue[5] : theme.colors.gray[4]}`,
+        borderRadius: theme.radius.md,
+        backgroundColor: active ? theme.colors.blue[0] : "#fafbfc",
+        cursor: disabled ? "default" : "pointer",
+        opacity: disabled ? 0.5 : 1,
+        transition: "border-color 120ms, background-color 120ms",
+        textAlign: "center",
+      })}
+    >
+      {block._icon_html === null ? null : (
+        <Box
+          style={(theme) => ({
+            width: badgeSize,
+            height: badgeSize,
+            flexShrink: 0,
+            borderRadius: "50%",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: badgeSize * 0.55,
+            color: active ? "#fff" : theme.colors.gray[6],
+            backgroundColor: active
+              ? theme.colors.blue[5]
+              : theme.colors.gray[1],
+            transition: "color 120ms, background-color 120ms",
+          })}
+        >
+          <div
+            className={centeredIconWrapper}
+            dangerouslySetInnerHTML={{ __html: block._icon_html }}
+          />
+        </Box>
+      )}
+      <Text
+        fz="sm"
+        fw={500}
+        c={active ? "blue.7" : "gray.7"}
+        lineClamp={2}
+        style={{ transition: "color 120ms" }}
+      >
+        {block.title}
+      </Text>
+      {block.subtitle === null ? null : (
+        <Text fz="xs" c="dimmed" lineClamp={2}>
+          {block.subtitle}
+        </Text>
+      )}
+    </Box>
+  );
+});
+
 export default function GalleryComponent({ uuid, props }: GuiGalleryMessage) {
   const { messageSender } = React.useContext(GuiComponentContext)!;
   const imageUrls = useBlockImageUrls(props.blocks);
@@ -160,25 +263,37 @@ export default function GalleryComponent({ uuid, props }: GuiGalleryMessage) {
           // without any JS resize handling.
           gridTemplateColumns: `repeat(auto-fill, minmax(${props.block_width}px, 1fr))`,
           gap: props.gap,
-          alignItems: "start",
+          // Stretch so every card in a row shares its height: a "new" tile
+          // then matches its neighbors, and subtitle-less cards line up.
+          alignItems: "stretch",
         }}
       >
-        {blocks.map((block) => (
-          <GalleryCard
-            key={block.block_id}
-            block={block}
-            imageUrl={imageUrls[block.block_id]}
-            imageHeight={props.block_height}
-            disabled={props.disabled}
-            onClick={() =>
-              messageSender({
-                type: "GuiGalleryClickMessage",
-                uuid: uuid,
-                block_id: block.block_id,
-              })
-            }
-          />
-        ))}
+        {blocks.map((block) => {
+          const onClick = () =>
+            messageSender({
+              type: "GuiGalleryClickMessage",
+              uuid: uuid,
+              block_id: block.block_id,
+            });
+          return block.kind === "new" ? (
+            <GalleryNewCard
+              key={block.block_id}
+              block={block}
+              imageHeight={props.block_height}
+              disabled={props.disabled}
+              onClick={onClick}
+            />
+          ) : (
+            <GalleryCard
+              key={block.block_id}
+              block={block}
+              imageUrl={imageUrls[block.block_id]}
+              imageHeight={props.block_height}
+              disabled={props.disabled}
+              onClick={onClick}
+            />
+          );
+        })}
       </Box>
     </Box>
   );

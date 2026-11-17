@@ -1318,6 +1318,8 @@ export interface GuiGalleryMessage {
       subtitle: string | null;
       _data: Uint8Array<ArrayBuffer> | null;
       _format: "jpeg" | "png";
+      kind: "preview" | "new";
+      _icon_html: string | null;
     }[];
     block_width: number;
     block_height: number;

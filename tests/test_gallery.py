@@ -87,6 +87,35 @@ def test_mutating_removed_block_is_a_noop() -> None:
         server.stop()
 
 
+def test_new_block_goes_first_by_default() -> None:
+    """A "new" block is a dashed placeholder with no image, placed first."""
+    server = viser.ViserServer(port=0, verbose=False)
+    try:
+        gallery = server.gui.add_gallery()
+        gallery.add_block("A", image=_image())
+        new = gallery.add_new_block("New project", "hint")
+        last = gallery.add_new_block("Add model", icon=None, first=False)
+
+        assert [blk.title for blk in gallery.blocks] == [
+            "New project",
+            "A",
+            "Add model",
+        ]
+        assert new.kind == "new" and last.kind == "new"
+        assert gallery.blocks[1].kind == "preview"
+        assert gallery.blocks[0]._data is None
+        assert gallery.blocks[0]._icon_html is not None
+        assert gallery.blocks[2]._icon_html is None
+
+        new.set_icon(None)
+        assert gallery.blocks[0]._icon_html is None
+        # Duplicate ids are rejected the same way as for preview blocks.
+        with pytest.raises(ValueError, match="already contains"):
+            gallery.add_new_block(block_id=new.block_id)
+    finally:
+        server.stop()
+
+
 def test_remove_unknown_block_id_is_ignored() -> None:
     server = viser.ViserServer(port=0, verbose=False)
     try:

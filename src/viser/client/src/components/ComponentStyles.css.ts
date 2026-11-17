@@ -14,6 +14,20 @@ globalStyle(`${htmlIconWrapper} svg`, {
   transform: "translateY(-50%)",
 });
 
+// Icon inside a flex-centered box (gallery "new" badge). Unlike
+// htmlIconWrapper, the svg stays in flow: an absolute svg with `left: auto`
+// takes its static position, which inherited `text-align: center` pushes half
+// an icon to the right.
+export const centeredIconWrapper = style({
+  display: "flex",
+});
+
+globalStyle(`${centeredIconWrapper} svg`, {
+  display: "block",
+  width: "1em",
+  height: "1em",
+});
+
 // Class for sliders with default min/max marks. We use this for aestheticn
 // its; global styles are used to shift the min/max mark labels to stay closer
 // within the bounds of the slider.

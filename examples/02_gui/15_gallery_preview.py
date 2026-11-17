@@ -10,6 +10,7 @@ available width, so the grid reflows to fill its space.
   full-window overlay (the default) or inside a panel via ``parent=``
 * :meth:`viser.GuiGalleryHandle.add_block` to add blocks, from either a numpy
   image or an STL mesh (rendered to a snapshot in the browser)
+* :meth:`viser.GuiGalleryHandle.add_new_block` for a dashed "create new" tile
 * :meth:`viser.GalleryBlockHandle.on_click` for per-block click events
 * :meth:`viser.GuiGalleryHandle.on_click` for gallery-wide click events
 """
@@ -45,6 +46,17 @@ def main() -> None:
         block_height=160,
         gap=16,
     )
+
+    # A "create new" tile: dashed frame, centered icon and text. It goes first
+    # in the grid and sizes itself like the preview blocks around it.
+    new_part = gallery.add_new_block("New project", "Start from an empty model")
+
+    @new_part.on_click
+    def _(event: viser.GalleryBlockEvent) -> None:
+        count = sum(block.kind == "preview" for block in gallery.blocks) + 1
+        gallery.add_block(
+            f"Untitled {count}", "Draft", image=checkerboard((200, 205, 212))
+        )
 
     # Blocks backed by plain numpy images need no client, so they can be added
     # immediately.
@@ -98,6 +110,7 @@ def main() -> None:
     )
     for name in ["Latch Arm", "Header Flange"]:
         docked.add_block(name, image=checkerboard((160, 168, 180)))
+    docked.add_new_block("Add model", icon="cube-plus", first=False)
 
     @docked.on_click
     def _(event: viser.GalleryBlockEvent) -> None:
